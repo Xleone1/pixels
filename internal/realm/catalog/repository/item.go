@@ -12,7 +12,7 @@ import (
 
 const (
 	// itemColumns stores the shared catalog offer projection.
-	itemColumns = `id, page_id, definition_id, reward_kind, pet_type_id, pet_product_code, room_bundle_template_room_id, grants_effect_id, grants_effect_duration_seconds, name, cost_credits, cost_points, points_type, amount, limited_stack, limited_sells, bundle_discount_enabled, giftable, club_only, order_num, enabled, extra_data, scheduled_at, created_at, updated_at, deleted_at, version`
+	itemColumns = `id, page_id, definition_id, reward_kind, pet_type_id, pet_product_code, room_bundle_template_room_id, grants_effect_id, grants_effect_duration_seconds, grants_badge_code, name, cost_credits, cost_points, points_type, amount, limited_stack, limited_sells, bundle_discount_enabled, giftable, club_only, order_num, enabled, extra_data, scheduled_at, created_at, updated_at, deleted_at, version`
 
 	// listItemsSQL lists active catalog offers with an optional page filter.
 	listItemsSQL = `select ` + itemColumns + ` from catalog_items where deleted_at is null and ($1::bigint is null or page_id=$1) order by page_id, order_num, id`
@@ -21,14 +21,14 @@ const (
 	findItemSQL = `select ` + itemColumns + ` from catalog_items where id=$1 and deleted_at is null`
 
 	// createItemSQL creates one catalog offer.
-	createItemSQL = `insert into catalog_items (page_id, definition_id, reward_kind, pet_type_id, pet_product_code, room_bundle_template_room_id, grants_effect_id, grants_effect_duration_seconds, name, cost_credits, cost_points, points_type, amount, limited_stack, limited_sells, bundle_discount_enabled, giftable, club_only, order_num, enabled, extra_data, scheduled_at)
-values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) returning ` + itemColumns
+	createItemSQL = `insert into catalog_items (page_id, definition_id, reward_kind, pet_type_id, pet_product_code, room_bundle_template_room_id, grants_effect_id, grants_effect_duration_seconds, grants_badge_code, name, cost_credits, cost_points, points_type, amount, limited_stack, limited_sells, bundle_discount_enabled, giftable, club_only, order_num, enabled, extra_data, scheduled_at)
+values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23) returning ` + itemColumns
 
 	// updateItemSQL updates one active catalog offer using its version.
-	updateItemSQL = `update catalog_items set page_id=$2, definition_id=$3, reward_kind=$4, pet_type_id=$5, pet_product_code=$6, room_bundle_template_room_id=$7, grants_effect_id=$8, grants_effect_duration_seconds=$9, name=$10, cost_credits=$11, cost_points=$12,
-points_type=$13, amount=$14, limited_stack=$15, limited_sells=$16, bundle_discount_enabled=$17, giftable=$18,
-club_only=$19, order_num=$20, enabled=$21, extra_data=$22, scheduled_at=$23, updated_at=now(), version=version+1
-where id=$1 and version=$24 and deleted_at is null returning ` + itemColumns
+	updateItemSQL = `update catalog_items set page_id=$2, definition_id=$3, reward_kind=$4, pet_type_id=$5, pet_product_code=$6, room_bundle_template_room_id=$7, grants_effect_id=$8, grants_effect_duration_seconds=$9, grants_badge_code=$10, name=$11, cost_credits=$12, cost_points=$13,
+points_type=$14, amount=$15, limited_stack=$16, limited_sells=$17, bundle_discount_enabled=$18, giftable=$19,
+club_only=$20, order_num=$21, enabled=$22, extra_data=$23, scheduled_at=$24, updated_at=now(), version=version+1
+where id=$1 and version=$25 and deleted_at is null returning ` + itemColumns
 
 	// softDeleteItemSQL soft deletes one active catalog offer using its version.
 	softDeleteItemSQL = `update catalog_items set deleted_at=now(), updated_at=now(), version=version+1 where id=$1 and version=$2 and deleted_at is null`
@@ -121,12 +121,12 @@ func (repository *Repository) queryItem(ctx context.Context, query string, argum
 // itemValues maps offer persistence values in statement order.
 func itemValues(item catalogmodel.Item) []any {
 	var definitionID any = item.DefinitionID
-	if item.IsRoomBundle() || item.IsPet() {
+	if item.IsRoomBundle() || item.IsPet() || item.IsBadge() {
 		definitionID = nil
 	}
 	rewardKind := item.RewardKind
 	if rewardKind == "" {
 		rewardKind = catalogmodel.RewardFurniture
 	}
-	return []any{item.PageID, definitionID, rewardKind, item.PetTypeID, item.PetProductCode, item.RoomBundleTemplateRoomID, item.GrantsEffectID, item.GrantsEffectDurationSeconds, item.Name, item.CostCredits, item.CostPoints, item.PointsType, item.Amount, item.LimitedStack, item.LimitedSells, item.BundleDiscountEnabled, item.Giftable, item.ClubOnly, item.OrderNum, item.Enabled, item.ExtraData, item.ScheduledAt}
+	return []any{item.PageID, definitionID, rewardKind, item.PetTypeID, item.PetProductCode, item.RoomBundleTemplateRoomID, item.GrantsEffectID, item.GrantsEffectDurationSeconds, item.GrantsBadgeCode, item.Name, item.CostCredits, item.CostPoints, item.PointsType, item.Amount, item.LimitedStack, item.LimitedSells, item.BundleDiscountEnabled, item.Giftable, item.ClubOnly, item.OrderNum, item.Enabled, item.ExtraData, item.ScheduledAt}
 }

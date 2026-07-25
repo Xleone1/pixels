@@ -119,6 +119,20 @@ type PetGranter interface {
 	ProjectCatalog(ctx context.Context, reward PetReward)
 }
 
+// BadgeReward identifies one badge granted by a committed purchase.
+type BadgeReward struct {
+	// ID identifies the durable badge inventory row.
+	ID int64
+	// Code identifies the badge asset.
+	Code string
+}
+
+// BadgeGranter creates permanent catalog badge rewards transactionally.
+type BadgeGranter interface {
+	// GrantCatalog grants one badge inside the caller transaction.
+	GrantCatalog(ctx context.Context, playerID int64, code string) (BadgeReward, error)
+}
+
 // GroupCommerce validates and commits social-group catalog rewards.
 type GroupCommerce interface {
 	// ValidateCatalog validates membership, role, and entitlement state.
@@ -229,6 +243,9 @@ type PurchaseResult struct {
 
 	// GrantedPet identifies a typed pet reward when present.
 	GrantedPet *PetReward
+
+	// GrantedBadge identifies a permanent badge reward when present.
+	GrantedBadge *BadgeReward
 
 	// Products stores the offer products resolved before the purchase commits.
 	Products []catalogmodel.Product

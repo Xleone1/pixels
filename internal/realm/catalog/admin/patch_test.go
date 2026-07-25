@@ -94,9 +94,9 @@ func TestAdministrationRejectsInvalidMutations(t *testing.T) {
 	if _, err := fixture.service.UpdateItem(context.Background(), 1, ItemPatch{LimitedStack: &stack}); !errors.Is(err, ErrLimitedBelowSales) {
 		t.Fatalf("expected limited stack error, got %v", err)
 	}
-	_, err := fixture.service.CreateItem(context.Background(), ItemInput{PageID: 1, DefinitionID: 2, Name: "mixed",
+	created, err := fixture.service.CreateItem(context.Background(), ItemInput{PageID: 1, DefinitionID: 2, Name: "mixed",
 		CostCredits: 1, CostPoints: 1, PointsType: 5, Amount: 1})
-	if !errors.Is(err, ErrInvalidItem) {
-		t.Fatalf("expected invalid mixed price, got %v", err)
+	if err != nil || created.CostCredits != 1 || created.CostPoints != 1 {
+		t.Fatalf("expected valid mixed price, item=%#v error=%v", created, err)
 	}
 }

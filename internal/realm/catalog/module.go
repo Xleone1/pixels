@@ -15,6 +15,7 @@ import (
 	furnitureservice "github.com/niflaot/pixels/internal/realm/furniture/service"
 	groupmembership "github.com/niflaot/pixels/internal/realm/group/membership"
 	currencyservice "github.com/niflaot/pixels/internal/realm/inventory/currency/service"
+	playerachievement "github.com/niflaot/pixels/internal/realm/player/achievement"
 	playereffect "github.com/niflaot/pixels/internal/realm/player/effect"
 	playerservice "github.com/niflaot/pixels/internal/realm/player/service"
 	roombundle "github.com/niflaot/pixels/internal/realm/room/record/bundle"
@@ -42,8 +43,35 @@ var Module = fx.Module(
 )
 
 // NewService creates permission-aware catalog behavior.
-func NewService(store catalogrepo.Store, currencies currencyservice.Granter, furniture furnitureservice.DefinitionGranter, teleportPairs furnitureservice.TeleportPairer, events bus.Publisher, log *zap.Logger, permissions permissionservice.Checker, players playerservice.Finder, rooms roombundle.Manager, effects playereffect.Manager, filter *chatfilter.Service, groups *groupmembership.Service) *catalogservice.Service {
-	return catalogservice.New(store, currencies, furniture, events, log, permissions).WithTeleportPairer(teleportPairs).WithPlayers(players).WithRoomBundles(rooms).WithEffects(effects).WithTrophies(catalogtrophy.New(filter)).WithGroups(groups)
+func NewService(store catalogrepo.Store, currencies currencyservice.Granter, furniture furnitureservice.DefinitionGranter, teleportPairs furnitureservice.TeleportPairer, events bus.Publisher, log *zap.Logger, permissions permissionservice.Checker, players playerservice.Finder, rooms roombundle.Manager, effects playereffect.Manager, achievements *playerachievement.Service, filter *chatfilter.Service, groups *groupmembership.Service) *catalogservice.Service {
+	return catalogservice.New(store, currencies, furniture, events, log, permissions).WithTeleportPairer(teleportPairs).WithPlayers(players).WithRoomBundles(rooms).WithEffects(effects).WithBadges(badgeCatalog{achievements}).WithTrophies(catalogtrophy.New(filter)).WithGroups(groups)
+}
+
+// badgeCatalog adapts player achievements to transactional catalog grants.
+type badgeCatalog struct {
+	// achievements stores durable badge behavior.
+	achievements *playerachievement.Service
+}
+
+// GrantCatalog grants one unique badge and resolves its durable inventory id.
+func (catalog badgeCatalog) GrantCatalog(ctx context.Context, playerID int64, code string) (catalogservice.BadgeReward, error) {
+	granted, err := catalog.achievements.GrantBadge(ctx, playerID, code, "catalog")
+	if err != nil {
+		return catalogservice.BadgeReward{}, err
+	}
+	if !granted {
+		return catalogservice.BadgeReward{}, catalogservice.ErrBadgeAlreadyOwned
+	}
+	badges, err := catalog.achievements.List(ctx, playerID)
+	if err != nil {
+		return catalogservice.BadgeReward{}, err
+	}
+	for _, badge := range badges {
+		if badge.Code == code {
+			return catalogservice.BadgeReward{ID: badge.ID, Code: badge.Code}, nil
+		}
+	}
+	return catalogservice.BadgeReward{}, catalogservice.ErrCommerceUnavailable
 }
 
 // NewVoucherManager exposes voucher administration behavior.

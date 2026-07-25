@@ -24,6 +24,7 @@ import (
 	outunavailable "github.com/niflaot/pixels/networking/outbound/catalog/purchase/unavailable"
 	outrefresh "github.com/niflaot/pixels/networking/outbound/inventory/furniture/refresh"
 	outunseen "github.com/niflaot/pixels/networking/outbound/inventory/unseen"
+	outbadgeadd "github.com/niflaot/pixels/networking/outbound/progression/achievement/badgeadd"
 	"github.com/niflaot/pixels/networking/outbound/session/bubblealert"
 	"github.com/niflaot/pixels/pkg/i18n"
 	"go.uber.org/zap"
@@ -153,6 +154,20 @@ func (handler Handler) Handle(ctx context.Context, envelope command.Envelope[Com
 	}
 	if result.GrantedPet != nil {
 		packet, encodeErr := outok.Encode(mapped)
+		if encodeErr != nil {
+			return encodeErr
+		}
+		return envelope.Command.Connection.Send(ctx, packet)
+	}
+	if result.GrantedBadge != nil {
+		packet, encodeErr := outbadgeadd.Encode(int32(result.GrantedBadge.ID), result.GrantedBadge.Code)
+		if encodeErr != nil {
+			return encodeErr
+		}
+		if err := envelope.Command.Connection.Send(ctx, packet); err != nil {
+			return err
+		}
+		packet, encodeErr = outok.Encode(mapped)
 		if encodeErr != nil {
 			return encodeErr
 		}

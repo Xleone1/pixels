@@ -60,7 +60,7 @@ type promotionCatalogFixture struct {
 
 // Page returns one Room Ads page and offer.
 func (catalog *promotionCatalogFixture) Page(context.Context, int64, int64, bool) (catalogmodel.Page, []catalogmodel.Item, error) {
-	return catalogmodel.Page{Layout: "room_ads"}, []catalogmodel.Item{{Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: 990001}}}}, nil
+	return catalogmodel.Page{Layout: "roomads"}, []catalogmodel.Item{{Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: 990001}}}}, nil
 }
 
 // PurchaseWithin records post-commit projection without external state.

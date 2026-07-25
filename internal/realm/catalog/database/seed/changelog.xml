@@ -29,4 +29,6 @@
     <include file="development/0026_group_page_link_compatibility.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="development/0027_group_furniture_collection.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="development/0028_room_ads.sql" relativeToChangelogFile="true" contextFilter="development"/>
+    <include file="development/0030_catalog_compatibility.sql" relativeToChangelogFile="true" contextFilter="development"/>
+    <include file="development/0031_room_ads_recovery.sql" relativeToChangelogFile="true" contextFilter="development"/>
 </databaseChangeLog>

@@ -10,7 +10,7 @@ import (
 
 // CreateItem creates one catalog offer and its optional LTD stock.
 func (service *Service) CreateItem(ctx context.Context, input ItemInput) (catalogmodel.Item, error) {
-	item := catalogmodel.Item{PageID: input.PageID, DefinitionID: input.DefinitionID, RewardKind: input.RewardKind, PetTypeID: input.PetTypeID, PetProductCode: strings.TrimSpace(input.PetProductCode), RoomBundleTemplateRoomID: input.RoomBundleTemplateRoomID, GrantsEffectID: input.GrantsEffectID, GrantsEffectDurationSeconds: input.GrantsEffectDurationSeconds, Name: strings.TrimSpace(input.Name),
+	item := catalogmodel.Item{PageID: input.PageID, DefinitionID: input.DefinitionID, RewardKind: input.RewardKind, PetTypeID: input.PetTypeID, PetProductCode: strings.TrimSpace(input.PetProductCode), RoomBundleTemplateRoomID: input.RoomBundleTemplateRoomID, GrantsEffectID: input.GrantsEffectID, GrantsEffectDurationSeconds: input.GrantsEffectDurationSeconds, GrantsBadgeCode: strings.ToUpper(strings.TrimSpace(input.GrantsBadgeCode)), Name: strings.TrimSpace(input.Name),
 		CostCredits: input.CostCredits, CostPoints: input.CostPoints, PointsType: input.PointsType,
 		Amount: input.Amount, LimitedStack: input.LimitedStack, BundleDiscountEnabled: input.BundleDiscountEnabled, Giftable: input.Giftable, ClubOnly: input.ClubOnly,
 		OrderNum: input.OrderNum, Enabled: input.Enabled, ExtraData: input.ExtraData}
@@ -116,9 +116,6 @@ func (service *Service) validateItem(ctx context.Context, item catalogmodel.Item
 	if item.PointsType == catalogmodel.CreditsType && item.CostPoints != 0 {
 		return ErrInvalidItem
 	}
-	if item.PointsType != catalogmodel.CreditsType && item.CostCredits != 0 {
-		return ErrInvalidItem
-	}
 	if _, found, err := service.store.FindPageByID(ctx, item.PageID); err != nil || !found {
 		if err != nil {
 			return err
@@ -126,7 +123,7 @@ func (service *Service) validateItem(ctx context.Context, item catalogmodel.Item
 		return ErrPageNotFound
 	}
 	if item.IsRoomBundle() {
-		if item.DefinitionID != 0 || item.GrantsEffectID != nil || item.Amount != 0 || item.LimitedStack != 0 || item.LimitedSells != 0 || item.Giftable || item.BundleDiscountEnabled || service.roomBundles == nil {
+		if item.DefinitionID != 0 || item.GrantsEffectID != nil || item.GrantsBadgeCode != "" || item.Amount != 0 || item.LimitedStack != 0 || item.LimitedSells != 0 || item.Giftable || item.BundleDiscountEnabled || service.roomBundles == nil {
 			return ErrInvalidItem
 		}
 		if _, found, err := service.roomBundles.FindTemplate(ctx, *item.RoomBundleTemplateRoomID); err != nil || !found {
@@ -156,12 +153,20 @@ func (service *Service) validateItem(ctx context.Context, item catalogmodel.Item
 		return nil
 	}
 	if item.IsPet() {
-		if item.PetTypeID == nil || *item.PetTypeID < 0 || *item.PetTypeID > 35 || strings.TrimSpace(item.PetProductCode) == "" || item.DefinitionID != 0 || item.GrantsEffectID != nil || item.Amount != 1 || item.LimitedStack != 0 || item.LimitedSells != 0 || item.Giftable || item.BundleDiscountEnabled {
+		if item.PetTypeID == nil || *item.PetTypeID < 0 || *item.PetTypeID > 35 || strings.TrimSpace(item.PetProductCode) == "" || item.DefinitionID != 0 || item.GrantsEffectID != nil || item.GrantsBadgeCode != "" || item.Amount != 1 || item.LimitedStack != 0 || item.LimitedSells != 0 || item.Giftable || item.BundleDiscountEnabled {
 			return ErrInvalidItem
 		}
 		return nil
 	}
-	if item.RewardKind != catalogmodel.RewardFurniture || item.PetTypeID != nil || item.PetProductCode != "" {
+	if item.IsBadge() {
+		if len(item.GrantsBadgeCode) == 0 || len(item.GrantsBadgeCode) > 64 || item.DefinitionID != 0 || item.GrantsEffectID != nil ||
+			item.PetTypeID != nil || item.PetProductCode != "" || item.RoomBundleTemplateRoomID != nil || item.Amount != 1 ||
+			item.LimitedStack != 0 || item.LimitedSells != 0 || item.Giftable || item.BundleDiscountEnabled {
+			return ErrInvalidItem
+		}
+		return nil
+	}
+	if item.RewardKind != catalogmodel.RewardFurniture || item.PetTypeID != nil || item.PetProductCode != "" || item.GrantsBadgeCode != "" {
 		return ErrInvalidItem
 	}
 	if item.Amount < 0 || item.DefinitionID <= 0 && item.GrantsEffectID == nil || item.DefinitionID > 0 && item.Amount <= 0 || item.GrantsEffectID != nil && item.Giftable {
@@ -214,6 +219,9 @@ func applyItemPatch(item *catalogmodel.Item, patch ItemPatch) {
 	}
 	if patch.GrantsEffectDurationSeconds != nil {
 		item.GrantsEffectDurationSeconds = *patch.GrantsEffectDurationSeconds
+	}
+	if patch.GrantsBadgeCode != nil {
+		item.GrantsBadgeCode = strings.ToUpper(strings.TrimSpace(*patch.GrantsBadgeCode))
 	}
 	if patch.Name != nil {
 		item.Name = strings.TrimSpace(*patch.Name)

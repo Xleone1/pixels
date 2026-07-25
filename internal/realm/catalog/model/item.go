@@ -15,6 +15,8 @@ const (
 	RewardPet RewardKind = "pet"
 	// RewardService identifies a catalog purchase with no inventory grant.
 	RewardService RewardKind = "service"
+	// RewardBadge identifies one permanent player badge grant.
+	RewardBadge RewardKind = "badge"
 )
 
 // RewardKind identifies the durable reward coordinated by one offer.
@@ -48,6 +50,9 @@ type Item struct {
 
 	// GrantsEffectDurationSeconds stores one granted charge duration.
 	GrantsEffectDurationSeconds int32
+
+	// GrantsBadgeCode identifies the permanent badge asset reward.
+	GrantsBadgeCode string
 
 	// Name stores the stable localization slug.
 	Name string
@@ -106,6 +111,9 @@ func (item Item) IsPet() bool { return item.RewardKind == RewardPet }
 
 // IsService reports whether the offer charges for caller-owned domain behavior.
 func (item Item) IsService() bool { return item.RewardKind == RewardService }
+
+// IsBadge reports whether the offer grants one permanent badge.
+func (item Item) IsBadge() bool { return item.RewardKind == RewardBadge }
 
 // BulkDiscountEligible reports whether amount greater than one is allowed.
 func (item Item) BulkDiscountEligible(hasProducts bool) bool {

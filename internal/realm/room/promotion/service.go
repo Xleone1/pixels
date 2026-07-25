@@ -58,7 +58,7 @@ func (service *Service) Purchase(ctx context.Context, params PurchaseParams) (Pr
 		return Promotion{}, err
 	}
 	page, items, err := service.catalog.Page(ctx, params.PageID, params.PlayerID, params.HasClub)
-	if err != nil || page.Layout != "room_ads" || !containsOffer(items, params.OfferID) {
+	if err != nil || page.Layout != "roomads" || !containsOffer(items, params.OfferID) {
 		return Promotion{}, ErrInvalidOffer
 	}
 	var result Promotion

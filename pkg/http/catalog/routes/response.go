@@ -46,7 +46,7 @@ type ItemResponse struct {
 	PageID int64 `json:"pageId"`
 	// DefinitionID identifies the furniture definition.
 	DefinitionID int64 `json:"definitionId"`
-	// RewardKind identifies furniture or pet reward semantics.
+	// RewardKind identifies the durable reward semantics.
 	RewardKind catalogmodel.RewardKind `json:"rewardKind"`
 	// PetTypeID identifies the optional pet species reward.
 	PetTypeID *int32 `json:"petTypeId,omitempty"`
@@ -58,6 +58,8 @@ type ItemResponse struct {
 	GrantsEffectID *int32 `json:"grantsEffectId,omitempty"`
 	// GrantsEffectDurationSeconds stores one charge duration.
 	GrantsEffectDurationSeconds int32 `json:"grantsEffectDurationSeconds"`
+	// GrantsBadgeCode identifies the permanent badge reward.
+	GrantsBadgeCode string `json:"grantsBadgeCode,omitempty"`
 	// Name stores the localization slug.
 	Name string `json:"name"`
 	// CostCredits stores the credits price.
@@ -119,7 +121,7 @@ func pageResponse(page catalogmodel.Page) PageResponse {
 
 // itemResponse maps one catalog offer record.
 func itemResponse(item catalogmodel.Item) ItemResponse {
-	return ItemResponse{ID: item.ID, PageID: item.PageID, DefinitionID: item.DefinitionID, RewardKind: item.RewardKind, PetTypeID: item.PetTypeID, PetProductCode: item.PetProductCode, RoomBundleTemplateRoomID: item.RoomBundleTemplateRoomID, GrantsEffectID: item.GrantsEffectID, GrantsEffectDurationSeconds: item.GrantsEffectDurationSeconds, Name: item.Name,
+	return ItemResponse{ID: item.ID, PageID: item.PageID, DefinitionID: item.DefinitionID, RewardKind: item.RewardKind, PetTypeID: item.PetTypeID, PetProductCode: item.PetProductCode, RoomBundleTemplateRoomID: item.RoomBundleTemplateRoomID, GrantsEffectID: item.GrantsEffectID, GrantsEffectDurationSeconds: item.GrantsEffectDurationSeconds, GrantsBadgeCode: item.GrantsBadgeCode, Name: item.Name,
 		CostCredits: item.CostCredits, CostPoints: item.CostPoints, PointsType: item.PointsType, Amount: item.Amount,
 		LimitedStack: item.LimitedStack, LimitedSells: item.LimitedSells, BundleDiscountEnabled: item.BundleDiscountEnabled, Giftable: item.Giftable, ClubOnly: item.ClubOnly,
 		OrderNum: item.OrderNum, Enabled: item.Enabled, ExtraData: item.ExtraData, Version: item.Version.Version}

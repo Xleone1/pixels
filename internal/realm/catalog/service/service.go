@@ -33,6 +33,8 @@ type Service struct {
 
 	// pets grants typed pet offers inside the catalog transaction.
 	pets PetGranter
+	// badges grants permanent badge offers inside the catalog transaction.
+	badges BadgeGranter
 
 	// teleportPairs pairs teleport instances granted by one purchase.
 	teleportPairs furnitureservice.TeleportPairer
@@ -72,6 +74,12 @@ func (service *Service) WithGroups(groups GroupCommerce) *Service {
 // WithPets configures transactional typed pet rewards.
 func (service *Service) WithPets(pets PetGranter) *Service {
 	service.pets = pets
+	return service
+}
+
+// WithBadges configures transactional permanent badge rewards.
+func (service *Service) WithBadges(badges BadgeGranter) *Service {
+	service.badges = badges
 	return service
 }
 

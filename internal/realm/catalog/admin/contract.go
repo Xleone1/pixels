@@ -95,7 +95,7 @@ type ItemInput struct {
 	PageID int64
 	// DefinitionID identifies the granted furniture definition.
 	DefinitionID int64
-	// RewardKind identifies furniture or pet reward semantics.
+	// RewardKind identifies the durable reward semantics.
 	RewardKind catalogmodel.RewardKind
 	// PetTypeID identifies the species granted by a pet offer.
 	PetTypeID *int32
@@ -107,6 +107,8 @@ type ItemInput struct {
 	GrantsEffectID *int32
 	// GrantsEffectDurationSeconds stores one effect charge duration.
 	GrantsEffectDurationSeconds int32
+	// GrantsBadgeCode identifies the permanent badge reward.
+	GrantsBadgeCode string
 	// Name stores the stable localization slug.
 	Name string
 	// CostCredits stores the credits price.
@@ -151,6 +153,8 @@ type ItemPatch struct {
 	GrantsEffectID **int32
 	// GrantsEffectDurationSeconds replaces the effect charge duration.
 	GrantsEffectDurationSeconds *int32
+	// GrantsBadgeCode replaces the permanent badge reward.
+	GrantsBadgeCode *string
 	// Name replaces the localization slug when present.
 	Name *string
 	// CostCredits replaces the credits price when present.

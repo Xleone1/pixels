@@ -88,7 +88,7 @@ type ItemRequest struct {
 	PageID int64 `json:"pageId"`
 	// DefinitionID identifies the granted furniture definition.
 	DefinitionID int64 `json:"definitionId"`
-	// RewardKind identifies furniture or pet reward semantics.
+	// RewardKind identifies the durable reward semantics.
 	RewardKind string `json:"rewardKind"`
 	// PetTypeID identifies the species granted by a pet offer.
 	PetTypeID *int32 `json:"petTypeId,omitempty"`
@@ -100,6 +100,8 @@ type ItemRequest struct {
 	GrantsEffectID *int32 `json:"grantsEffectId,omitempty"`
 	// GrantsEffectDurationSeconds stores one effect charge duration.
 	GrantsEffectDurationSeconds int32 `json:"grantsEffectDurationSeconds"`
+	// GrantsBadgeCode identifies the permanent badge reward.
+	GrantsBadgeCode string `json:"grantsBadgeCode,omitempty"`
 	// Name stores the stable localization slug.
 	Name string `json:"name"`
 	// CostCredits stores the credits price.
@@ -132,7 +134,7 @@ type ItemPatchRequest struct {
 	PageID *int64 `json:"pageId"`
 	// DefinitionID replaces the furniture definition.
 	DefinitionID *int64 `json:"definitionId"`
-	// RewardKind replaces furniture or pet reward semantics.
+	// RewardKind replaces the durable reward semantics.
 	RewardKind *string `json:"rewardKind"`
 	// PetTypeID replaces the pet species.
 	PetTypeID *int32 `json:"petTypeId"`
@@ -150,6 +152,8 @@ type ItemPatchRequest struct {
 	ClearGrantsEffect bool `json:"clearGrantsEffect"`
 	// GrantsEffectDurationSeconds replaces one charge duration.
 	GrantsEffectDurationSeconds *int32 `json:"grantsEffectDurationSeconds"`
+	// GrantsBadgeCode replaces the permanent badge reward.
+	GrantsBadgeCode *string `json:"grantsBadgeCode"`
 	// Name replaces the localization slug.
 	Name *string `json:"name"`
 	// CostCredits replaces the credits price.
@@ -195,7 +199,7 @@ func pageInput(request PageRequest) catalogadmin.PageInput {
 
 // itemInput maps an HTTP offer request to administration input.
 func itemInput(request ItemRequest) catalogadmin.ItemInput {
-	return catalogadmin.ItemInput{PageID: request.PageID, DefinitionID: request.DefinitionID, RewardKind: catalogmodel.RewardKind(request.RewardKind), PetTypeID: request.PetTypeID, PetProductCode: request.PetProductCode, RoomBundleTemplateRoomID: request.RoomBundleTemplateRoomID, GrantsEffectID: request.GrantsEffectID, GrantsEffectDurationSeconds: request.GrantsEffectDurationSeconds, Name: request.Name,
+	return catalogadmin.ItemInput{PageID: request.PageID, DefinitionID: request.DefinitionID, RewardKind: catalogmodel.RewardKind(request.RewardKind), PetTypeID: request.PetTypeID, PetProductCode: request.PetProductCode, RoomBundleTemplateRoomID: request.RoomBundleTemplateRoomID, GrantsEffectID: request.GrantsEffectID, GrantsEffectDurationSeconds: request.GrantsEffectDurationSeconds, GrantsBadgeCode: request.GrantsBadgeCode, Name: request.Name,
 		CostCredits: request.CostCredits, CostPoints: request.CostPoints, PointsType: request.PointsType,
 		Amount: request.Amount, LimitedStack: request.LimitedStack, BundleDiscountEnabled: request.BundleDiscountEnabled, Giftable: request.Giftable, ClubOnly: request.ClubOnly,
 		OrderNum: request.OrderNum, Enabled: request.Enabled, ExtraData: request.ExtraData}

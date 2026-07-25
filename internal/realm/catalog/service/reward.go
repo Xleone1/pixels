@@ -85,36 +85,58 @@ func (service *Service) pairGrantedTeleports(ctx context.Context, playerID int64
 	return nil
 }
 
-// charge deducts the configured offer price.
-func (service *Service) charge(ctx context.Context, playerID int64, item catalogmodel.Item, params PurchaseParams) (int64, int64, int64, error) {
-	currencyType, cost := item.PointsType, item.CostPoints
-	if item.IsCredits() {
-		currencyType, cost = catalogmodel.CreditsType, item.CostCredits
-	}
+// chargeResult contains both balances and committed price components.
+type chargeResult struct {
+	// creditsBalance stores the resulting credits balance.
+	creditsBalance int64
+	// pointsBalance stores the resulting secondary-currency balance.
+	pointsBalance int64
+	// credits stores the charged credits.
+	credits int64
+	// points stores the charged secondary currency.
+	points int64
+}
+
+// charge deducts every configured offer price component.
+func (service *Service) charge(ctx context.Context, playerID int64, item catalogmodel.Item, params PurchaseParams) (chargeResult, error) {
+	credits := item.CostCredits
+	points := item.CostPoints
+	pointsType := item.PointsType
 	if params.OverrideCredits != nil {
-		currencyType, cost = catalogmodel.CreditsType, *params.OverrideCredits
+		credits = *params.OverrideCredits
 	}
 	if params.OverridePoints != nil {
-		cost = *params.OverridePoints
+		points = *params.OverridePoints
 		if params.OverridePointsType != nil {
-			currencyType = *params.OverridePointsType
+			pointsType = *params.OverridePointsType
 		}
 	}
-	if cost == 0 || params.Free {
-		return 0, 0, 0, nil
+	if params.Free {
+		return chargeResult{}, nil
 	}
 	payable := params.Amount
 	if params.Amount > 1 && params.OverrideCredits == nil && params.OverridePoints == nil {
 		payable -= DiscountedUnits(params.Amount)
 	}
-	cost *= int64(payable)
-	balance, err := service.currencies.Grant(ctx, currencyservice.GrantParams{PlayerID: playerID, CurrencyType: currencyType,
-		Amount: -cost, Reason: "catalog_purchase", ActorKind: currencyservice.ActorPlayer})
-	if currencyType == catalogmodel.CreditsType {
-		return balance, cost, 0, err
+	result := chargeResult{credits: credits * int64(payable), points: points * int64(payable)}
+	if result.credits != 0 {
+		balance, err := service.currencies.Grant(ctx, currencyservice.GrantParams{PlayerID: playerID, CurrencyType: catalogmodel.CreditsType,
+			Amount: -result.credits, Reason: "catalog_purchase", ActorKind: currencyservice.ActorPlayer})
+		if err != nil {
+			return chargeResult{}, err
+		}
+		result.creditsBalance = balance
+	}
+	if result.points != 0 {
+		balance, err := service.currencies.Grant(ctx, currencyservice.GrantParams{PlayerID: playerID, CurrencyType: pointsType,
+			Amount: -result.points, Reason: "catalog_purchase", ActorKind: currencyservice.ActorPlayer})
+		if err != nil {
+			return chargeResult{}, err
+		}
+		result.pointsBalance = balance
 	}
 
-	return balance, 0, cost, err
+	return result, nil
 }
 
 // PurchaseGift buys one wrapped offer for another player.

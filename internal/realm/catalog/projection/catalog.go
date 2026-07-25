@@ -23,8 +23,10 @@ const productTypeEffect = "e"
 
 const productTypePet = "p"
 
+const productTypeBadge = "b"
+
 // PageTree maps ordered pages into recursive Nitro catalog nodes.
-func PageTree(pages []catalogmodel.Page, translations i18n.Translator) ([]outpages.Node, error) {
+func PageTree(pages []catalogmodel.Page, translations i18n.Translator, offerSets ...map[int64][]int64) ([]outpages.Node, error) {
 	children := make(map[int64][]catalogmodel.Page)
 	roots := make([]catalogmodel.Page, 0)
 	for _, page := range pages {
@@ -35,7 +37,12 @@ func PageTree(pages []catalogmodel.Page, translations i18n.Translator) ([]outpag
 		children[*page.ParentID] = append(children[*page.ParentID], page)
 	}
 
-	return mapNodes(roots, children, translations)
+	var offers map[int64][]int64
+	if len(offerSets) != 0 {
+		offers = offerSets[0]
+	}
+
+	return mapNodes(roots, children, offers, translations)
 }
 
 // Offer maps one catalog item and furniture definition to Nitro offer data.
@@ -61,6 +68,12 @@ func OfferProducts(item catalogmodel.Item, products []catalogmodel.Product, defi
 		}
 		localizationID = item.PetProductCode
 		mapped = append(mapped, offer.Product{Type: productTypePet, ClassID: *item.PetTypeID, ExtraData: item.PetProductCode, Amount: 1})
+	}
+	if item.IsBadge() {
+		if item.GrantsBadgeCode == "" {
+			return offer.Offer{}, ErrUnsupportedFurniture
+		}
+		mapped = append(mapped, offer.Product{Type: productTypeBadge, ExtraData: item.GrantsBadgeCode, Amount: 1})
 	}
 	for _, product := range products {
 		definition, found := definitions[product.DefinitionID]
@@ -91,13 +104,20 @@ func OfferProducts(item catalogmodel.Item, products []catalogmodel.Product, defi
 }
 
 // mapNodes recursively maps sibling pages.
-func mapNodes(pages []catalogmodel.Page, children map[int64][]catalogmodel.Page, translations i18n.Translator) ([]outpages.Node, error) {
+func mapNodes(pages []catalogmodel.Page, children map[int64][]catalogmodel.Page, offers map[int64][]int64, translations i18n.Translator) ([]outpages.Node, error) {
 	nodes := make([]outpages.Node, 0, len(pages))
 	for _, page := range pages {
 		if !fitsInt32(page.ID) {
 			return nil, ErrProtocolRange
 		}
-		nested, err := mapNodes(children[page.ID], children, translations)
+		offerIDs := make([]int32, 0, len(offers[page.ID]))
+		for _, offerID := range offers[page.ID] {
+			if !fitsInt32(offerID) {
+				return nil, ErrProtocolRange
+			}
+			offerIDs = append(offerIDs, int32(offerID))
+		}
+		nested, err := mapNodes(children[page.ID], children, offers, translations)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +126,7 @@ func mapNodes(pages []catalogmodel.Page, children map[int64][]catalogmodel.Page,
 			localization = translations.Default(i18n.Key(localization))
 		}
 		nodes = append(nodes, outpages.Node{Visible: page.Visible, IconImage: page.IconImage, PageID: int32(page.ID),
-			Name: page.Name, Localization: localization, Children: nested})
+			Name: page.Name, Localization: localization, OfferIDs: offerIDs, Children: nested})
 	}
 
 	return nodes, nil

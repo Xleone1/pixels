@@ -3,6 +3,7 @@ package projection
 import (
 	"errors"
 	"math"
+	"reflect"
 	"testing"
 
 	catalogmodel "github.com/niflaot/pixels/internal/realm/catalog/model"
@@ -18,9 +19,22 @@ func TestPageTreeBuildsNestedLocalizedNodes(t *testing.T) {
 	nodes, err := PageTree([]catalogmodel.Page{
 		{Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: 1}}, Name: "root", Visible: true},
 		{Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: 2}}, ParentID: &parentID, Name: "chairs", Visible: true},
-	}, translations)
-	if err != nil || len(nodes) != 1 || nodes[0].Localization != "Furniture" || len(nodes[0].Children) != 1 {
+	}, translations, map[int64][]int64{2: {9, 10}})
+	if err != nil || len(nodes) != 1 || nodes[0].Localization != "Furniture" || len(nodes[0].Children) != 1 ||
+		!reflect.DeepEqual(nodes[0].Children[0].OfferIDs, []int32{9, 10}) {
 		t.Fatalf("unexpected nodes %#v error %v", nodes, err)
+	}
+}
+
+// TestOfferProductsMapsBadgeRewards verifies Nitro receives badge product metadata.
+func TestOfferProductsMapsBadgeRewards(t *testing.T) {
+	item := catalogmodel.Item{
+		Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: 15}}, RewardKind: catalogmodel.RewardBadge,
+		GrantsBadgeCode: "ACH_WIN", Name: "achievement_winner", Amount: 1, PointsType: 5, CostPoints: 10,
+	}
+	mapped, err := OfferProducts(item, nil, nil)
+	if err != nil || len(mapped.Products) != 1 || mapped.Products[0].Type != "b" || mapped.Products[0].ExtraData != "ACH_WIN" {
+		t.Fatalf("unexpected badge offer %#v error %v", mapped, err)
 	}
 }
 

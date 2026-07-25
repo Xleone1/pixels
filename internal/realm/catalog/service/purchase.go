@@ -96,6 +96,9 @@ func (service *Service) Purchase(ctx context.Context, params PurchaseParams) (Pu
 	if item.GrantsEffectID != nil && (params.Gift != nil || params.RecipientPlayerID != 0) {
 		return PurchaseResult{}, ErrOfferNotGiftable
 	}
+	if item.IsBadge() && (params.Gift != nil || params.RecipientPlayerID != 0 || params.Amount != 1) {
+		return PurchaseResult{}, ErrOfferNotGiftable
+	}
 	overrideQuantity := params.OverrideCredits != nil || params.OverridePoints != nil
 	if err := validateAmount(item, products, params.Amount, overrideQuantity); err != nil {
 		return PurchaseResult{}, err
@@ -247,23 +250,31 @@ func (service *Service) commitPurchase(ctx context.Context, params PurchaseParam
 		result.ClonedBotCount = created.BotCount
 	}
 
-	balance, credits, points, err := service.charge(ctx, params.PlayerID, item, params)
+	charge, err := service.charge(ctx, params.PlayerID, item, params)
 	if err != nil {
 		return err
 	}
-	result.ChargedCredits = credits
-	result.ChargedPoints = points
-	if item.IsCredits() {
-		result.NewCreditsBalance = balance
-	} else {
-		result.NewPointsBalance = balance
-	}
+	result.ChargedCredits = charge.credits
+	result.ChargedPoints = charge.points
+	result.NewCreditsBalance = charge.creditsBalance
+	result.NewPointsBalance = charge.pointsBalance
 
 	if item.IsRoomBundle() {
-		return service.logPurchase(ctx, params, item, result, credits, points)
+		return service.logPurchase(ctx, params, item, result, charge.credits, charge.points)
 	}
 	if item.IsService() {
-		return service.logPurchase(ctx, params, item, result, credits, points)
+		return service.logPurchase(ctx, params, item, result, charge.credits, charge.points)
+	}
+	if item.IsBadge() {
+		if service.badges == nil {
+			return ErrCommerceUnavailable
+		}
+		reward, grantErr := service.badges.GrantCatalog(ctx, params.PlayerID, item.GrantsBadgeCode)
+		if grantErr != nil {
+			return fmt.Errorf("grant catalog item %d badge: %w", item.ID, grantErr)
+		}
+		result.GrantedBadge = &reward
+		return service.logPurchase(ctx, params, item, result, charge.credits, charge.points)
 	}
 	if item.IsPet() {
 		if item.PetTypeID == nil {
@@ -274,7 +285,7 @@ func (service *Service) commitPurchase(ctx context.Context, params PurchaseParam
 			return fmt.Errorf("grant catalog item %d pet: %w", item.ID, grantErr)
 		}
 		result.GrantedPet = &reward
-		return service.logPurchase(ctx, params, item, result, credits, points)
+		return service.logPurchase(ctx, params, item, result, charge.credits, charge.points)
 	}
 	recipientID := params.RecipientPlayerID
 	if recipientID == 0 {
@@ -327,7 +338,7 @@ func (service *Service) commitPurchase(ctx context.Context, params PurchaseParam
 			return ErrLimitedCompletion
 		}
 	}
-	return service.logPurchase(ctx, params, item, result, credits, points)
+	return service.logPurchase(ctx, params, item, result, charge.credits, charge.points)
 }
 
 // groupSelection parses one server-recognized group product selection.

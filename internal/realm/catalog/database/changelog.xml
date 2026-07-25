@@ -22,4 +22,5 @@
     <include file="migrations/0015_room_bundle_bot_audit.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0016_pet_rewards.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0017_service_rewards.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0018_badge_rewards.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

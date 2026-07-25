@@ -46,4 +46,6 @@ var (
 	ErrTeleportPairing = errors.New("catalog teleport offer could not create a pair")
 	// ErrGroupSelection reports an invalid social-group product selection.
 	ErrGroupSelection = errors.New("catalog social-group selection is invalid")
+	// ErrBadgeAlreadyOwned reports a badge offer already present in inventory.
+	ErrBadgeAlreadyOwned = errors.New("catalog badge already owned")
 )

@@ -134,7 +134,8 @@ func itemPatch(request ItemPatchRequest) catalogadmin.ItemPatch {
 		RewardKind: rewardKind, PetTypeID: petTypeID, PetProductCode: request.PetProductCode,
 		RoomBundleTemplateRoomID: templateRoomID,
 		GrantsEffectID:           grantsEffectID, GrantsEffectDurationSeconds: request.GrantsEffectDurationSeconds,
-		CostCredits: request.CostCredits, CostPoints: request.CostPoints, PointsType: request.PointsType,
+		GrantsBadgeCode: request.GrantsBadgeCode,
+		CostCredits:     request.CostCredits, CostPoints: request.CostPoints, PointsType: request.PointsType,
 		Amount: request.Amount, LimitedStack: request.LimitedStack, BundleDiscountEnabled: request.BundleDiscountEnabled,
 		Giftable: request.Giftable, ClubOnly: request.ClubOnly,
 		OrderNum: request.OrderNum, Enabled: request.Enabled, ExtraData: request.ExtraData}

@@ -60,11 +60,18 @@ func (handler Handler) Handle(ctx context.Context, envelope command.Envelope[Com
 	}
 	viewer := player.OpenCatalog()
 	viewer.SetMode(envelope.Command.Mode)
-	pages, err := handler.Catalog.Pages(ctx, player.ID(), catalogsession.HasClub(player))
+	hasClub := catalogsession.HasClub(player)
+	pages, err := handler.Catalog.Pages(ctx, player.ID(), hasClub)
 	if err != nil {
 		return err
 	}
-	nodes, err := catalogprojection.PageTree(pages, handler.Translations)
+	offerIDs := make(map[int64][]int64, len(pages))
+	if index, ok := handler.Catalog.(catalogservice.IndexReader); ok {
+		for _, page := range pages {
+			offerIDs[page.ID] = index.PageOfferIDs(page.ID, hasClub)
+		}
+	}
+	nodes, err := catalogprojection.PageTree(pages, handler.Translations, offerIDs)
 	if err != nil {
 		return err
 	}

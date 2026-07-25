@@ -112,6 +112,59 @@ func TestPurchasePointsChargesConfiguredCurrency(t *testing.T) {
 	}
 }
 
+// TestPurchaseChargesCreditsAndSecondaryCurrencyAtomically verifies combined Hubbly prices.
+func TestPurchaseChargesCreditsAndSecondaryCurrencyAtomically(t *testing.T) {
+	item := itemForTest()
+	item.PointsType = 5
+	item.CostPoints = 4
+	fixture := newServiceFixture(t, item)
+
+	result, err := fixture.service.Purchase(context.Background(), PurchaseParams{PlayerID: 7, CatalogItemID: 10})
+	if err != nil {
+		t.Fatalf("purchase combined price: %v", err)
+	}
+	if result.NewCreditsBalance != 90 || result.NewPointsBalance != 96 || result.ChargedCredits != 10 || result.ChargedPoints != 4 {
+		t.Fatalf("unexpected combined result %#v", result)
+	}
+	if len(fixture.currency.calls) != 2 || fixture.currency.calls[0].CurrencyType != -1 ||
+		fixture.currency.calls[1].CurrencyType != 5 {
+		t.Fatalf("unexpected combined charges %#v", fixture.currency.calls)
+	}
+}
+
+// badgeGranterForTest records one permanent badge reward.
+type badgeGranterForTest struct {
+	// reward stores the returned badge.
+	reward BadgeReward
+	// calls stores granted codes.
+	calls []string
+}
+
+// GrantCatalog records one badge grant.
+func (granter *badgeGranterForTest) GrantCatalog(_ context.Context, _ int64, code string) (BadgeReward, error) {
+	granter.calls = append(granter.calls, code)
+	return granter.reward, nil
+}
+
+// TestPurchaseBadgeChargesAndGrants verifies permanent badge rewards.
+func TestPurchaseBadgeChargesAndGrants(t *testing.T) {
+	item := itemForTest()
+	item.DefinitionID = 0
+	item.RewardKind = "badge"
+	item.GrantsBadgeCode = "ACH_WIN"
+	fixture := newServiceFixture(t, item)
+	badges := &badgeGranterForTest{reward: BadgeReward{ID: 22, Code: "ACH_WIN"}}
+	fixture.service.WithBadges(badges)
+
+	result, err := fixture.service.Purchase(context.Background(), PurchaseParams{PlayerID: 7, CatalogItemID: 10})
+	if err != nil || result.GrantedBadge == nil || result.GrantedBadge.ID != 22 || len(badges.calls) != 1 {
+		t.Fatalf("unexpected badge result=%#v calls=%#v error=%v", result, badges.calls, err)
+	}
+	if len(fixture.furniture.calls) != 0 {
+		t.Fatalf("badge must not grant furniture %#v", fixture.furniture.calls)
+	}
+}
+
 // TestPurchaseInsufficientBalanceRollsBackReservation verifies failed charges grant nothing.
 func TestPurchaseInsufficientBalanceRollsBackReservation(t *testing.T) {
 	item := itemForTest()

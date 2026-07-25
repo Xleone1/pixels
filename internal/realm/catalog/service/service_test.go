@@ -107,6 +107,8 @@ type fakeCurrency struct {
 
 	// balance stores the current fake balance.
 	balance int64
+	// balances stores independent balances by currency type.
+	balances map[int32]int64
 
 	// calls stores committed grant inputs.
 	calls []currencyservice.GrantParams
@@ -122,10 +124,15 @@ func (currency *fakeCurrency) Grant(_ context.Context, params currencyservice.Gr
 	if currency.err != nil {
 		return 0, currency.err
 	}
-	currency.balance += params.Amount
+	balance, found := currency.balances[params.CurrencyType]
+	if !found {
+		balance = currency.balance
+	}
+	balance += params.Amount
+	currency.balances[params.CurrencyType] = balance
 	currency.calls = append(currency.calls, params)
 
-	return currency.balance, nil
+	return balance, nil
 }
 
 // fakeFurniture records catalog furniture grants.
@@ -229,7 +236,7 @@ type serviceFixture struct {
 func newServiceFixture(t *testing.T, item model.Item) serviceFixture {
 	t.Helper()
 	store := &fakeStore{pages: []model.Page{pageForTest()}, items: []model.Item{item}, available: true}
-	currency := &fakeCurrency{balance: 100}
+	currency := &fakeCurrency{balance: 100, balances: make(map[int32]int64)}
 	furniture := &fakeFurniture{definitions: []furnituremodel.Definition{{
 		Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: item.DefinitionID}}, SpriteID: 1, Name: item.Name,
 	}}}
@@ -256,5 +263,19 @@ func itemForTest() model.Item {
 		Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: 10}}, PageID: 1,
 		DefinitionID: 2, Name: "chair_plasto", CostCredits: 10, PointsType: model.CreditsType,
 		Amount: 1, Enabled: true, ExtraData: "0",
+	}
+}
+
+// TestPageOfferIDsAppliesOfferVisibility verifies index packets include direct offer ids.
+func TestPageOfferIDsAppliesOfferVisibility(t *testing.T) {
+	item := itemForTest()
+	item.ClubOnly = true
+	fixture := newServiceFixture(t, item)
+	if ids := fixture.service.PageOfferIDs(1, false); len(ids) != 0 {
+		t.Fatalf("unexpected regular offer ids %v", ids)
+	}
+	ids := fixture.service.PageOfferIDs(1, true)
+	if len(ids) != 1 || ids[0] != item.ID {
+		t.Fatalf("unexpected club offer ids %v", ids)
 	}
 }
