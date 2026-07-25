@@ -29,6 +29,24 @@ func (service *Service) useTraversal(ctx context.Context, request Request) error
 	}
 }
 
+// usePosture walks one player to the nearest declared sit or lay slot.
+func (service *Service) usePosture(request Request, slots []worldfurniture.Slot) error {
+	unit, found := request.Room.Unit(request.PlayerID)
+	if !found {
+		return nil
+	}
+	selected := slots[0]
+	selectedDistance := distance(unit.Position.Point, selected.Point)
+	for _, slot := range slots[1:] {
+		currentDistance := distance(unit.Position.Point, slot.Point)
+		if currentDistance < selectedDistance {
+			selected, selectedDistance = slot, currentDistance
+		}
+	}
+	_, err := request.Room.MoveTo(request.PlayerID, selected.Point)
+	return err
+}
+
 // useSwitch toggles immediately or after walking to the nearest activator.
 func (service *Service) useSwitch(ctx context.Context, request Request, remote bool) error {
 	if remote {

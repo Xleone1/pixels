@@ -89,20 +89,66 @@ func (catalog *Catalog) Allowed(value string, gender playermodel.Gender, club pl
 		return false
 	}
 	for index := 0; index < count; index++ {
-		part := parts[index]
-		rule, found := catalog.sets[setKey{kind: part.kind, id: part.setID}]
-		owned := contains(unlocked, part.setID)
-		if !found || rule.gender != 'U' && rule.gender != genderByte(gender) || int16(club) < rule.club || (!rule.selectable || rule.sellable) && !owned {
+		if !catalog.partAllowed(parts[index], gender, club, unlocked) {
 			return false
-		}
-		for colorIndex := 0; colorIndex < part.colorCount; colorIndex++ {
-			color, colorFound := catalog.colors[colorKey{paletteID: rule.paletteID, id: part.colors[colorIndex]}]
-			if !colorFound || !color.selectable || int16(club) < color.club {
-				return false
-			}
 		}
 	}
 	return true
+}
+
+// AllowedTransition validates new choices while preserving unchanged legacy figure parts.
+func (catalog *Catalog) AllowedTransition(previous string, value string, gender playermodel.Gender, club playermodel.ClubLevel, unlocked []int32) bool {
+	parts, count, valid := parse(value)
+	previousParts, previousCount, previousValid := parse(previous)
+	if !valid || catalog == nil {
+		return false
+	}
+	for index := 0; index < count; index++ {
+		if catalog.partAllowed(parts[index], gender, club, unlocked) {
+			continue
+		}
+		if !previousValid || !containsPart(previousParts, previousCount, parts[index]) {
+			return false
+		}
+	}
+	return true
+}
+
+// partAllowed validates one figure part against immutable entitlement rules.
+func (catalog *Catalog) partAllowed(part part, gender playermodel.Gender, club playermodel.ClubLevel, unlocked []int32) bool {
+	rule, found := catalog.sets[setKey{kind: part.kind, id: part.setID}]
+	owned := contains(unlocked, part.setID)
+	if !found || rule.gender != 'U' && rule.gender != genderByte(gender) || int16(club) < rule.club || (!rule.selectable || rule.sellable) && !owned {
+		return false
+	}
+	for colorIndex := 0; colorIndex < part.colorCount; colorIndex++ {
+		color, colorFound := catalog.colors[colorKey{paletteID: rule.paletteID, id: part.colors[colorIndex]}]
+		if !colorFound || !color.selectable || int16(club) < color.club {
+			return false
+		}
+	}
+	return true
+}
+
+// containsPart reports whether an exact normalized figure part was already present.
+func containsPart(parts [MaxParts]part, count int, expected part) bool {
+	for index := 0; index < count; index++ {
+		current := parts[index]
+		if current.kind != expected.kind || current.setID != expected.setID || current.colorCount != expected.colorCount {
+			continue
+		}
+		matched := true
+		for colorIndex := 0; colorIndex < current.colorCount; colorIndex++ {
+			if current.colors[colorIndex] != expected.colors[colorIndex] {
+				matched = false
+				break
+			}
+		}
+		if matched {
+			return true
+		}
+	}
+	return false
 }
 
 // contains reports whether one bounded unlock snapshot contains a set.

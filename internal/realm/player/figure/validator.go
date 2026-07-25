@@ -54,7 +54,7 @@ func parse(value string) ([MaxParts]part, int, bool) {
 		var numberValue int32
 		var valid bool
 		index, numberValue, valid = number(value, index)
-		if !valid {
+		if !valid || numberValue <= 0 {
 			return parts, 0, false
 		}
 		parts[partCount-1].setID = numberValue
@@ -68,6 +68,9 @@ func parse(value string) ([MaxParts]part, int, bool) {
 				return parts, 0, false
 			}
 			current := &parts[partCount-1]
+			if numberValue == 0 {
+				continue
+			}
 			current.colors[current.colorCount] = numberValue
 			current.colorCount++
 		}
@@ -85,7 +88,7 @@ func parse(value string) ([MaxParts]part, int, bool) {
 	return parts, partCount, partCount > 0
 }
 
-// number consumes one positive bounded decimal integer.
+// number consumes one non-negative bounded decimal integer.
 func number(value string, index int) (int, int32, bool) {
 	start := index
 	number := uint64(0)
@@ -96,7 +99,7 @@ func number(value string, index int) (int, int32, bool) {
 		}
 		index++
 	}
-	return index, int32(number), index > start && number > 0
+	return index, int32(number), index > start
 }
 
 // letter reports whether one byte is an ASCII letter.

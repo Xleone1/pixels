@@ -20,6 +20,8 @@ type profileStore struct {
 	tags []string
 	// result stores the next respect result.
 	result RespectResult
+	// respectErr stores one injected respect mutation failure.
+	respectErr error
 }
 
 // profileAdmin applies profile fields to one deterministic record.
@@ -81,7 +83,7 @@ func (*profileStore) RespectState(context.Context, int64, time.Time, int, int) (
 
 // GrantRespect returns the configured serialized result.
 func (store *profileStore) GrantRespect(context.Context, int64, int64, time.Time, int, bool) (RespectResult, error) {
-	return store.result, nil
+	return store.result, store.respectErr
 }
 
 // TestReplaceTagsNormalizesAndRejectsDuplicates verifies stable bounded tag replacement.

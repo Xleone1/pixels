@@ -186,9 +186,14 @@ func (service *Service) unlimited(ctx context.Context, playerID int64) bool {
 // figureAllowed resolves entitlement snapshots before immutable catalog validation.
 func (service *Service) figureAllowed(ctx context.Context, playerID int64, figure string, gender playermodel.Gender) (bool, error) {
 	club := playermodel.ClubLevelNone
+	previous := ""
 	if service.live != nil {
 		if player, found := service.live.Find(playerID); found {
-			club = player.Snapshot().ClubLevelAt(service.now())
+			snapshot := player.Snapshot()
+			club = snapshot.ClubLevelAt(service.now())
+			if snapshot.Gender == gender {
+				previous = snapshot.Look
+			}
 		}
 	}
 	unlocked := playerwardrobe.ClothingSnapshot{}
@@ -198,6 +203,9 @@ func (service *Service) figureAllowed(ctx context.Context, playerID int64, figur
 		if err != nil {
 			return false, err
 		}
+	}
+	if previous != "" {
+		return service.figures.AllowedTransition(previous, figure, gender, club, unlocked.FigureSetIDs), nil
 	}
 	return service.figures.Allowed(figure, gender, club, unlocked.FigureSetIDs), nil
 }

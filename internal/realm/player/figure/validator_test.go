@@ -10,6 +10,7 @@ func TestValid(t *testing.T) {
 	}{
 		{value: "hd-180-1.hr-100.ch-210-66.lg-270-82.sh-290-80", valid: true},
 		{value: "HD-180-1.hr-100", valid: true},
+		{value: "HD-180-1.hr-100-0", valid: true},
 		{value: "", valid: false},
 		{value: "hd", valid: false},
 		{value: "hd-0", valid: false},

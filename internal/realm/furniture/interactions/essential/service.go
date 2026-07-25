@@ -4,7 +4,6 @@ package essential
 import (
 	"context"
 	"errors"
-	"math/rand/v2"
 	"strconv"
 	"time"
 
@@ -34,12 +33,6 @@ var (
 )
 
 const effectFurnitureDurationSeconds int32 = 86400
-
-// Source produces bounded random values.
-type Source interface {
-	// IntN returns a value in [0, limit).
-	IntN(limit int) int
-}
 
 // Request describes one specialized furniture use.
 type Request struct {
@@ -87,14 +80,6 @@ type Service struct {
 	external []External
 }
 
-// defaultSource delegates to Go's concurrency-safe global random source.
-type defaultSource struct{}
-
-// IntN returns a bounded pseudo-random value.
-func (defaultSource) IntN(limit int) int {
-	return rand.IntN(limit)
-}
-
 // New creates the essential interaction service.
 func New(states furnitureservice.StateUpdater, permissions permissionservice.Checker, runtime *roomlive.Registry, connections *netconn.Registry, players *playerlive.Registry, events *bus.Bus, translations i18n.Translator, log *zap.Logger) *Service {
 	service := &Service{
@@ -118,6 +103,11 @@ func NewWithEffects(states furnitureservice.StateUpdater, permissions permission
 func (service *Service) Use(ctx context.Context, request Request) (bool, error) {
 	if service == nil || request.Room == nil || request.PlayerID <= 0 || request.Item.ID <= 0 {
 		return false, nil
+	}
+	if request.Item.Definition.AllowSit || request.Item.Definition.AllowLay {
+		if slots := worldfurniture.Slots(request.Item); len(slots) > 0 {
+			return true, service.usePosture(request, slots)
+		}
 	}
 	switch request.Item.Definition.InteractionType {
 	case "dice", "colorwheel", "random_state":
@@ -177,13 +167,6 @@ func (service *Service) useEffectGiver(ctx context.Context, request Request) err
 		_ = service.visual(async, request.Room, request.Item.ID, "0")
 	})
 	return nil
-}
-
-// SetSource replaces randomness for deterministic tests.
-func (service *Service) SetSource(source Source) {
-	if source != nil {
-		service.random = source
-	}
 }
 
 // visual changes and broadcasts an ephemeral state.

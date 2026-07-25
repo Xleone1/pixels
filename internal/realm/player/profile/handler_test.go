@@ -92,6 +92,64 @@ func TestMottoMutationFailureKeepsSessionConnected(t *testing.T) {
 	}
 }
 
+// TestProfileMutationFailuresKeepSessionConnected verifies storage failures become client feedback.
+func TestProfileMutationFailuresKeepSessionConnected(t *testing.T) {
+	tests := []struct {
+		name    string
+		service *Service
+		packet  codec.Packet
+		run     func(Handler, netconn.Context, codec.Packet) error
+	}{
+		{
+			name:    "figure",
+			service: New(&profileStore{}, &profileAdmin{err: errors.New("storage unavailable")}),
+			packet:  profileFigurePacket(t),
+			run: func(handler Handler, connection netconn.Context, packet codec.Packet) error {
+				return handler.figure(connection, packet)
+			},
+		},
+		{
+			name:    "respect",
+			service: New(&profileStore{respectErr: errors.New("storage unavailable")}, &profileAdmin{}),
+			packet:  profileRespectPacket(t),
+			run: func(handler Handler, connection netconn.Context, packet codec.Packet) error {
+				return handler.respect(connection, packet)
+			},
+		},
+	}
+	for _, current := range tests {
+		t.Run(current.name, func(t *testing.T) {
+			handler, connection, packets, _, _ := profileFixture(t, current.service)
+			if err := current.run(handler, connection, current.packet); err != nil {
+				t.Fatalf("handler disconnected: %v", err)
+			}
+			if len(*packets) != 1 {
+				t.Fatalf("packets=%#v expected one recoverable alert", *packets)
+			}
+		})
+	}
+}
+
+// profileFigurePacket creates one valid figure mutation packet.
+func profileFigurePacket(t testing.TB) codec.Packet {
+	t.Helper()
+	packet, err := codec.NewPacket(infigure.Header, infigure.Definition, codec.String("M"), codec.String("hd-180-1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return packet
+}
+
+// profileRespectPacket creates one valid respect mutation packet.
+func profileRespectPacket(t testing.TB) codec.Packet {
+	t.Helper()
+	packet, err := codec.NewPacket(inrespect.Header, inrespect.Definition, codec.Int32(8))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return packet
+}
+
 // TestProfileRespectClientFailures verifies duplicate, exhausted, self, and remote feedback.
 func TestProfileRespectClientFailures(t *testing.T) {
 	results := []struct {

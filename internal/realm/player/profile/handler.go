@@ -92,7 +92,7 @@ func (handler Handler) figure(connection netconn.Context, packet codec.Packet) e
 		if errors.Is(err, ErrInvalidFigure) {
 			return handler.alert(connection, "user.profile.figure_invalid")
 		}
-		return err
+		return handler.mutationFailed(connection, playerID, "figure", err)
 	}
 	player.SetProfile(record.Profile.Look, record.Profile.Gender, record.Profile.Motto)
 	response, err := outfigure.Encode(record.Profile.Look, string(record.Profile.Gender))
@@ -193,7 +193,7 @@ func (handler Handler) respect(connection netconn.Context, packet codec.Packet) 
 		case errors.Is(err, ErrRespectNotAllowed):
 			return handler.alert(connection, "user.profile.respect_same_user")
 		}
-		return err
+		return handler.mutationFailed(connection, actorID, "respect", err)
 	}
 	actor.SetRespect(actor.Snapshot().RespectsReceived, result.Remaining, actor.Snapshot().RespectsPetRemaining)
 	if handler.Events != nil {

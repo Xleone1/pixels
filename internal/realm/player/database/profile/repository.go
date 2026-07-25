@@ -70,43 +70,53 @@ func (repository *Repository) RespectState(ctx context.Context, playerID int64, 
 // GrantRespect serializes and applies one daily user respect.
 func (repository *Repository) GrantRespect(ctx context.Context, actorID int64, targetID int64, date time.Time, limit int, unlimited bool) (result playerprofile.RespectResult, err error) {
 	err = postgres.WithinScope(ctx, repository.pool, func(txCtx context.Context) error {
-		executor := postgres.ExecutorFor(txCtx, repository.pool)
-		dateValue := date.Format("2006-01-02")
-		if _, lockErr := executor.Exec(txCtx, `select pg_advisory_xact_lock(hashtextextended('user-respect:'||$1::text||':'||$2::text,0))`, actorID, dateValue); lockErr != nil {
-			return lockErr
-		}
-		var used int32
-		if countErr := executor.QueryRow(txCtx, `select count(*) from player_respect_grants where actor_player_id=$1 and grant_date=$2`, actorID, dateValue).Scan(&used); countErr != nil {
-			return countErr
-		}
-		result.Remaining = remaining(limit, used)
-		if !unlimited && result.Remaining == 0 {
-			return nil
-		}
-		command, insertErr := executor.Exec(txCtx, `insert into player_respect_grants(actor_player_id,target_player_id,grant_date,source) values($1,$2,$3,'user') on conflict do nothing`, actorID, targetID, dateValue)
-		if insertErr != nil {
-			return insertErr
-		}
-		if command.RowsAffected() == 0 {
-			result.Duplicate = true
-			return nil
-		}
-		sourceKey := fmt.Sprintf("user:%d:%d:%s", actorID, targetID, dateValue)
-		if _, insertErr = executor.Exec(txCtx, `insert into player_respect_ledger(source_key,player_id,amount,source) values($1,$2,1,'user') on conflict do nothing`, sourceKey, targetID); insertErr != nil {
-			return insertErr
-		}
-		if scanErr := executor.QueryRow(txCtx, `insert into player_respect_totals(player_id,received) values($1,1) on conflict(player_id) do update set received=player_respect_totals.received+1,updated_at=now() returning received`, targetID).Scan(&result.TotalReceived); scanErr != nil {
-			return scanErr
-		}
-		result.Applied = true
-		if unlimited {
-			result.Remaining = int32(limit)
-		} else {
-			result.Remaining--
-		}
-		return nil
+		var grantErr error
+		result, grantErr = grantRespect(txCtx, postgres.ExecutorFor(txCtx, repository.pool), actorID, targetID, date.Format("2006-01-02"), limit, unlimited)
+		return grantErr
 	})
 	return result, err
+}
+
+// grantRespect applies one serialized respect grant through the active transaction.
+func grantRespect(ctx context.Context, executor postgres.Executor, actorID int64, targetID int64, dateValue string, limit int, unlimited bool) (result playerprofile.RespectResult, err error) {
+	var lockedActorID int64
+	if lockErr := executor.QueryRow(ctx, `select id from players where id=$1 and deleted_at is null for update`, actorID).Scan(&lockedActorID); lockErr != nil {
+		return result, fmt.Errorf("lock respect actor: %w", lockErr)
+	}
+	var used int32
+	if countErr := executor.QueryRow(ctx, `select count(*) from player_respect_grants where actor_player_id=$1 and grant_date=$2`, actorID, dateValue).Scan(&used); countErr != nil {
+		return result, fmt.Errorf("count daily respect grants: %w", countErr)
+	}
+	result.Remaining = remaining(limit, used)
+	if !unlimited && result.Remaining == 0 {
+		return result, nil
+	}
+	command, insertErr := executor.Exec(ctx, `insert into player_respect_grants(actor_player_id,target_player_id,grant_date,source) values($1,$2,$3,'user') on conflict do nothing`, actorID, targetID, dateValue)
+	if insertErr != nil {
+		return result, fmt.Errorf("insert daily respect grant: %w", insertErr)
+	}
+	if command.RowsAffected() == 0 {
+		result.Duplicate = true
+		return result, nil
+	}
+	sourceKey := fmt.Sprintf("user:%d:%d:%s", actorID, targetID, dateValue)
+	command, insertErr = executor.Exec(ctx, `insert into player_respect_ledger(source_key,player_id,amount,source) values($1,$2,1,'user') on conflict do nothing`, sourceKey, targetID)
+	if insertErr != nil {
+		return result, fmt.Errorf("insert respect ledger entry: %w", insertErr)
+	}
+	if command.RowsAffected() == 0 {
+		return result, fmt.Errorf("insert respect ledger entry: source key %q already exists", sourceKey)
+	}
+	if scanErr := executor.QueryRow(ctx, `insert into player_respect_totals(player_id,received) values($1,1) on conflict(player_id) do update set received=player_respect_totals.received+1,updated_at=now() returning received`, targetID).Scan(&result.TotalReceived); scanErr != nil {
+		return result, fmt.Errorf("update received respect total: %w", scanErr)
+	}
+	result.Applied = true
+	if unlimited {
+		result.Remaining = int32(limit)
+	} else {
+		result.Remaining--
+	}
+	return result, nil
 }
 
 // remaining computes a bounded daily allowance.

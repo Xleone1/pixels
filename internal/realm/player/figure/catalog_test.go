@@ -57,6 +57,19 @@ func TestJSONCatalogAllowed(t *testing.T) {
 	}
 }
 
+// TestAllowedTransitionPreservesUnchangedLegacyParts verifies unrelated edits remain possible.
+func TestAllowedTransitionPreservesUnchangedLegacyParts(t *testing.T) {
+	catalog := testCatalog(t)
+	previous := "hd-180-1.hr-200-9"
+	next := "hd-180-1.hr-200-9.ch-300-1"
+	if !catalog.AllowedTransition(previous, next, playermodel.GenderMale, playermodel.ClubLevelHC, nil) {
+		t.Fatal("unchanged legacy hair color rejected")
+	}
+	if catalog.AllowedTransition(previous, "hd-180-1.hr-200-9.ha-400-1", playermodel.GenderMale, playermodel.ClubLevelNone, nil) {
+		t.Fatal("new locked clothing accepted")
+	}
+}
+
 // BenchmarkCatalogAllowed measures immutable entitlement validation.
 func BenchmarkCatalogAllowed(benchmark *testing.B) {
 	catalog := testCatalog(benchmark)

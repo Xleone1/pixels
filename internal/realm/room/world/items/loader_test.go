@@ -113,6 +113,49 @@ func TestToWorldDefinitionRejectsMalformedMetadata(t *testing.T) {
 	}
 }
 
+// TestToWorldDefinitionDerivesMissingPostureSlots verifies imported furnidata flags remain usable.
+func TestToWorldDefinitionDerivesMissingPostureSlots(t *testing.T) {
+	tests := []struct {
+		name       string
+		definition furnituremodel.Definition
+		status     worldfurniture.SlotStatus
+		count      int
+	}{
+		{
+			name: "double bed",
+			definition: furnituremodel.Definition{
+				Width: 2, Length: 3, AllowSit: true, AllowLay: true, Metadata: []byte(`{}`),
+			},
+			status: worldfurniture.SlotStatusLay,
+			count:  2,
+		},
+		{
+			name: "corner sofa",
+			definition: furnituremodel.Definition{
+				Width: 2, Length: 2, AllowSit: true, Metadata: []byte(`{}`),
+			},
+			status: worldfurniture.SlotStatusSit,
+			count:  4,
+		},
+	}
+	for _, current := range tests {
+		t.Run(current.name, func(t *testing.T) {
+			definition, err := ToWorldDefinition(current.definition)
+			if err != nil {
+				t.Fatalf("convert definition: %v", err)
+			}
+			if len(definition.Slots) != current.count {
+				t.Fatalf("slots=%#v expected count %d", definition.Slots, current.count)
+			}
+			for _, slot := range definition.Slots {
+				if slot.Status != current.status {
+					t.Fatalf("slot=%#v expected status %q", slot, current.status)
+				}
+			}
+		})
+	}
+}
+
 // TestRoundHeightRoundsToNearestQuarter verifies fixed-point decimal height conversion.
 func TestRoundHeightRoundsToNearestQuarter(t *testing.T) {
 	cases := map[float64]int{1.00: 4, 1.10: 4, 1.80: 7, 0.50: 2, 0: 0}

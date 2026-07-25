@@ -73,6 +73,9 @@ func ToWorldDefinition(definition furnituremodel.Definition) (worldfurniture.Def
 	if err != nil {
 		return worldfurniture.Definition{}, fmt.Errorf("parse furniture definition %d metadata: %w", definition.ID, err)
 	}
+	if len(slots) == 0 {
+		slots = deriveSlots(definition)
+	}
 
 	return worldfurniture.Definition{
 		SpriteID:              definition.SpriteID,
@@ -92,6 +95,34 @@ func ToWorldDefinition(definition furnituremodel.Definition) (worldfurniture.Def
 		AllowLay:              definition.AllowLay,
 		Slots:                 slots,
 	}, nil
+}
+
+// deriveSlots reconstructs omitted Hub furnidata posture slots from authoritative capability flags.
+func deriveSlots(definition furnituremodel.Definition) []worldfurniture.SlotDefinition {
+	if definition.Width <= 0 || definition.Length <= 0 {
+		return nil
+	}
+	if definition.AllowLay {
+		slots := make([]worldfurniture.SlotDefinition, 0, definition.Width)
+		for dx := range definition.Width {
+			slots = append(slots, worldfurniture.SlotDefinition{
+				DX: dx, Status: worldfurniture.SlotStatusLay, BodyRotation: worldunit.RotationNorth,
+			})
+		}
+		return slots
+	}
+	if !definition.AllowSit {
+		return nil
+	}
+	slots := make([]worldfurniture.SlotDefinition, 0, definition.Width*definition.Length)
+	for dy := range definition.Length {
+		for dx := range definition.Width {
+			slots = append(slots, worldfurniture.SlotDefinition{
+				DX: dx, DY: dy, Status: worldfurniture.SlotStatusSit, BodyRotation: worldunit.RotationNorth,
+			})
+		}
+	}
+	return slots
 }
 
 // parseSlots parses declared sit/lay slots from definition metadata.

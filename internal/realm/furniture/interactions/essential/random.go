@@ -2,6 +2,7 @@ package essential
 
 import (
 	"context"
+	"math/rand/v2"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +22,27 @@ const (
 	// randomRollingState stores Nitro's rolling sentinel.
 	randomRollingState = "-1"
 )
+
+// Source produces bounded random values.
+type Source interface {
+	// IntN returns a value in [0, limit).
+	IntN(limit int) int
+}
+
+// defaultSource delegates to Go's concurrency-safe global random source.
+type defaultSource struct{}
+
+// IntN returns a bounded pseudo-random value.
+func (defaultSource) IntN(limit int) int {
+	return rand.IntN(limit)
+}
+
+// SetSource replaces randomness for deterministic tests.
+func (service *Service) SetSource(source Source) {
+	if source != nil {
+		service.random = source
+	}
+}
 
 // useRandom starts one delayed random-state interaction.
 func (service *Service) useRandom(ctx context.Context, request Request) error {

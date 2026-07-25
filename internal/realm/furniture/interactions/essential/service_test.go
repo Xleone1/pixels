@@ -52,6 +52,35 @@ func TestServiceRoutesSupportedInteractions(t *testing.T) {
 	}
 }
 
+// TestUsePostureWalksToImportedFurnitureSlot verifies double-click traversal for beds and seats.
+func TestUsePostureWalksToImportedFurnitureSlot(t *testing.T) {
+	item := essentialItem("default", 1)
+	item.Definition.AllowLay = true
+	item.Definition.Slots = []worldfurniture.SlotDefinition{{
+		Status: worldfurniture.SlotStatusLay, BodyRotation: worldunit.RotationNorth,
+	}}
+	active := essentialRoom(t, item, 1)
+	service := New(nil, nil, nil, nil, nil, nil, nil, nil)
+	handled, err := service.Use(context.Background(), Request{PlayerID: 1, Room: active, Item: item})
+	if err != nil || !handled {
+		t.Fatalf("posture use handled=%t err=%v", handled, err)
+	}
+	for range 4 {
+		active.Tick()
+	}
+	unit, found := active.Unit(1)
+	if !found || unit.Position.Point != item.Point {
+		t.Fatalf("unit=%#v expected furniture point %#v", unit, item.Point)
+	}
+	foundLay := false
+	for _, status := range unit.Statuses {
+		foundLay = foundLay || status.Key == worldunit.StatusLay
+	}
+	if !foundLay {
+		t.Fatalf("unit did not settle into lay status: %#v", unit)
+	}
+}
+
 // TestMovementSubscriptionsProjectPlateState verifies bus registration and walk routing.
 func TestMovementSubscriptionsProjectPlateState(t *testing.T) {
 	item := essentialItem("colorplate", 3)
