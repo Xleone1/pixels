@@ -44,6 +44,26 @@ func TestAppendRegularProductOmitsLimitedFields(t *testing.T) {
 	}
 }
 
+// TestAppendBadgeProductUsesBadgeShape verifies badges omit furniture-only fields.
+func TestAppendBadgeProductUsesBadgeShape(t *testing.T) {
+	payload, err := appendProduct(nil, Product{
+		Type: "b", ClassID: 99, ExtraData: "ECT28", Amount: 7, Limited: true,
+		LimitedStack: 10, LimitedRemaining: 3,
+	})
+	if err != nil {
+		t.Fatalf("append badge product: %v", err)
+	}
+	values, remaining, err := codec.DecodePayload(nil, codec.Definition{
+		codec.StringField, codec.StringField,
+	}, payload)
+	if err != nil {
+		t.Fatalf("decode badge product: %v", err)
+	}
+	if len(remaining) != 0 || values[0].String != "b" || values[1].String != "ECT28" {
+		t.Fatalf("unexpected badge payload values=%#v remaining=%v", values, remaining)
+	}
+}
+
 // TestAppendPurchaseOmitsPageTrailer verifies Nitro purchase offer shape.
 func TestAppendPurchaseOmitsPageTrailer(t *testing.T) {
 	payload, err := AppendPurchase(nil, fixtureOffer())

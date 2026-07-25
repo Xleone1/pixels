@@ -94,6 +94,12 @@ func appendBase(dst []byte, value Offer) ([]byte, error) {
 
 // appendProduct appends one catalog product.
 func appendProduct(dst []byte, product Product) ([]byte, error) {
+	if product.Type == "b" {
+		return codec.AppendPayload(dst, codec.Definition{
+			codec.StringField, codec.StringField,
+		}, codec.String(product.Type), codec.String(product.ExtraData))
+	}
+
 	dst, err := codec.AppendPayload(dst, codec.Definition{
 		codec.StringField, codec.Int32Field, codec.StringField, codec.Int32Field, codec.BooleanField,
 	}, codec.String(product.Type), codec.Int32(product.ClassID), codec.String(product.ExtraData),
