@@ -36,6 +36,12 @@ func (service *Service) finishRewards(ctx context.Context, playerID int64, item 
 
 // validateAmount validates anti-cheat purchase quantity rules.
 func validateAmount(item catalogmodel.Item, products []catalogmodel.Product, amount int32, overrideQuantity bool) error {
+	if item.IsBot() {
+		if amount != 1 || len(products) != 0 {
+			return ErrInvalidAmount
+		}
+		return nil
+	}
 	if item.IsPet() {
 		if amount != 1 || len(products) != 0 {
 			return ErrInvalidAmount

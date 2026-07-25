@@ -17,6 +17,8 @@ const (
 	RewardService RewardKind = "service"
 	// RewardBadge identifies one permanent player badge grant.
 	RewardBadge RewardKind = "badge"
+	// RewardBot identifies one persistent inventory bot grant.
+	RewardBot RewardKind = "bot"
 )
 
 // RewardKind identifies the durable reward coordinated by one offer.
@@ -114,6 +116,9 @@ func (item Item) IsService() bool { return item.RewardKind == RewardService }
 
 // IsBadge reports whether the offer grants one permanent badge.
 func (item Item) IsBadge() bool { return item.RewardKind == RewardBadge }
+
+// IsBot reports whether the offer grants one persistent inventory bot.
+func (item Item) IsBot() bool { return item.RewardKind == RewardBot }
 
 // BulkDiscountEligible reports whether amount greater than one is allowed.
 func (item Item) BulkDiscountEligible(hasProducts bool) bool {

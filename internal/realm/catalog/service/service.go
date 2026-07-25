@@ -37,6 +37,8 @@ type Service struct {
 	pets PetGranter
 	// badges grants permanent badge offers inside the catalog transaction.
 	badges BadgeGranter
+	// bots grants persistent inventory bot offers inside the catalog transaction.
+	bots BotGranter
 
 	// teleportPairs pairs teleport instances granted by one purchase.
 	teleportPairs furnitureservice.TeleportPairer
@@ -82,6 +84,12 @@ func (service *Service) WithPets(pets PetGranter) *Service {
 // WithBadges configures transactional permanent badge rewards.
 func (service *Service) WithBadges(badges BadgeGranter) *Service {
 	service.badges = badges
+	return service
+}
+
+// WithBots configures transactional inventory bot rewards.
+func (service *Service) WithBots(bots BotGranter) *Service {
+	service.bots = bots
 	return service
 }
 

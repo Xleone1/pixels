@@ -4,6 +4,7 @@ package projection
 import (
 	"errors"
 	"math"
+	"strings"
 
 	catalogmodel "github.com/niflaot/pixels/internal/realm/catalog/model"
 	furnituremodel "github.com/niflaot/pixels/internal/realm/furniture/model"
@@ -25,6 +26,8 @@ const productTypeEffect = "e"
 const productTypePet = "p"
 
 const productTypeBadge = "b"
+
+const productTypeBot = "r"
 
 // PageTree maps ordered pages into recursive Nitro catalog nodes.
 func PageTree(pages []catalogmodel.Page, translations i18n.Translator, offerSets ...map[int64][]int64) ([]outpages.Node, error) {
@@ -76,6 +79,13 @@ func OfferProducts(item catalogmodel.Item, products []catalogmodel.Product, defi
 		}
 		mapped = append(mapped, offer.Product{Type: productTypeBadge, ExtraData: item.GrantsBadgeCode, Amount: 1})
 	}
+	if item.IsBot() {
+		figure := botTemplateValue(item.ExtraData, "figure")
+		if figure == "" {
+			return offer.Offer{}, ErrUnsupportedFurniture
+		}
+		mapped = append(mapped, offer.Product{Type: productTypeBot, ExtraData: figure, Amount: 1})
+	}
 	for _, product := range products {
 		definition, found := definitions[product.DefinitionID]
 		if !found || definition.SpriteID < 0 || definition.SpriteID > math.MaxInt32 {
@@ -102,6 +112,18 @@ func OfferProducts(item catalogmodel.Item, products []catalogmodel.Product, defi
 		Giftable: item.Giftable, ClubLevel: clubLevel(item.ClubOnly), BundlePurchaseAllowed: item.BundleDiscountEnabled,
 		Products: mapped, Pet: item.IsPet(),
 	}, nil
+}
+
+// botTemplateValue resolves one field from Hubbly's semicolon-delimited bot template.
+func botTemplateValue(template string, name string) string {
+	for _, field := range strings.Split(template, ";") {
+		key, value, found := strings.Cut(field, ":")
+		if found && strings.EqualFold(strings.TrimSpace(key), name) {
+			return strings.TrimSpace(value)
+		}
+	}
+
+	return ""
 }
 
 // mapNodes recursively maps sibling pages.

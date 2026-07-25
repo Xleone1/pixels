@@ -38,6 +38,18 @@ func TestOfferProductsMapsBadgeRewards(t *testing.T) {
 	}
 }
 
+// TestOfferProductsMapsBotRewards verifies Nitro receives robot figure metadata.
+func TestOfferProductsMapsBotRewards(t *testing.T) {
+	item := catalogmodel.Item{
+		Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: 16}}, RewardKind: catalogmodel.RewardBot,
+		Name: "bot_bartender", Amount: 1, ExtraData: "name:Love;figure:hd-600-1.ch-665-74;gender:f",
+	}
+	mapped, err := OfferProducts(item, nil, nil)
+	if err != nil || len(mapped.Products) != 1 || mapped.Products[0].Type != "r" || mapped.Products[0].ExtraData != "hd-600-1.ch-665-74" {
+		t.Fatalf("unexpected bot offer %#v error %v", mapped, err)
+	}
+}
+
 // TestOfferMapsLimitedFloorProduct verifies catalog offer mapping.
 func TestOfferMapsLimitedFloorProduct(t *testing.T) {
 	item := catalogmodel.Item{Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: 4}}, Name: "chair", CostCredits: 2,

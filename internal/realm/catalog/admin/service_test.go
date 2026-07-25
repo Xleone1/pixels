@@ -22,7 +22,7 @@ func TestPageLifecycle(t *testing.T) {
 	}
 	layout := "spaces"
 	updated, err := fixture.service.UpdatePage(context.Background(), created.ID, PagePatch{Layout: &layout})
-	if err != nil || updated.Layout != layout || fixture.catalog.refreshes != 2 {
+	if err != nil || updated.Layout != catalogmodel.SpacesLayout || fixture.catalog.refreshes != 2 {
 		t.Fatalf("unexpected updated page %#v refreshes=%d error %v", updated, fixture.catalog.refreshes, err)
 	}
 	pages, err := fixture.service.Pages(context.Background())

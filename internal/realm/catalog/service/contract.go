@@ -133,6 +133,34 @@ type BadgeGranter interface {
 	GrantCatalog(ctx context.Context, playerID int64, code string) (BadgeReward, error)
 }
 
+// BotGrantParams contains one trusted inventory bot catalog grant.
+type BotGrantParams struct {
+	// OwnerPlayerID identifies the inventory owner.
+	OwnerPlayerID int64
+	// CatalogItemID identifies the originating catalog offer.
+	CatalogItemID int64
+	// ProductCode identifies the bot template behavior.
+	ProductCode string
+	// ExtraData stores the trusted bot appearance template.
+	ExtraData string
+}
+
+// BotReward identifies one persistent bot created by a catalog purchase.
+type BotReward struct {
+	// ID identifies the granted bot.
+	ID int64
+	// OwnerPlayerID identifies the receiving inventory owner.
+	OwnerPlayerID int64
+}
+
+// BotGranter creates and projects bot catalog rewards.
+type BotGranter interface {
+	// GrantCatalog creates one bot inside the caller transaction.
+	GrantCatalog(ctx context.Context, params BotGrantParams) (BotReward, error)
+	// ProjectCatalog sends post-commit inventory projections.
+	ProjectCatalog(ctx context.Context, reward BotReward)
+}
+
 // GroupCommerce validates and commits social-group catalog rewards.
 type GroupCommerce interface {
 	// ValidateCatalog validates membership, role, and entitlement state.
@@ -246,6 +274,9 @@ type PurchaseResult struct {
 
 	// GrantedBadge identifies a permanent badge reward when present.
 	GrantedBadge *BadgeReward
+
+	// GrantedBot identifies the persistent inventory bot reward when present.
+	GrantedBot *BotReward
 
 	// Products stores the offer products resolved before the purchase commits.
 	Products []catalogmodel.Product

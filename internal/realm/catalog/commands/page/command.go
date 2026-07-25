@@ -104,32 +104,18 @@ func (handler Handler) Handle(ctx context.Context, envelope command.Envelope[Com
 		offers = append(offers, mapped)
 	}
 	viewer.SetPage(page.ID)
-	texts := []string{pageDescription(handler.Translations, page.Name), "", "", ""}
-	if page.Layout == "room_bundle" && handler.Translations != nil {
-		texts[1] = handler.Translations.Default(i18n.Key("catalog.page." + page.Name + ".teaser"))
-		texts[2] = handler.Translations.Default(i18n.Key("catalog.page." + page.Name + ".details"))
+	localization := pageLocalization(handler.Translations, page)
+	if page.Layout == catalogmodel.RoomBundleLayout {
+		localization.Texts[1] = optionalTranslation(handler.Translations, page.Name, "teaser")
+		localization.Texts[2] = optionalTranslation(handler.Translations, page.Name, "details")
 	}
 	packet, err := outpage.Encode(int32(page.ID), viewer.Mode(), page.Layout,
-		outpage.Localization{Images: []string{"", "", ""}, Texts: texts}, offers, envelope.Command.OfferID)
+		localization, offers, envelope.Command.OfferID)
 	if err != nil {
 		return err
 	}
 
 	return envelope.Command.Connection.Send(ctx, packet)
-}
-
-// pageDescription resolves optional catalog copy without exposing a missing key.
-func pageDescription(translations i18n.Translator, pageName string) string {
-	if translations == nil {
-		return ""
-	}
-	key := i18n.Key("catalog.page." + pageName + ".description")
-	description := translations.Default(key)
-	if description == string(key) {
-		return ""
-	}
-
-	return description
 }
 
 // products resolves optional bundle products with a legacy single-product fallback.

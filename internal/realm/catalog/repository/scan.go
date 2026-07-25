@@ -40,6 +40,7 @@ func scanPage(row pgx.Row) (catalogmodel.Page, error) {
 	}
 	page.DeletedAt = timePointer(deletedAt)
 	page.ExpiresAt = timePointer(expiresAt)
+	page.Layout = catalogmodel.NormalizeLayout(page.Layout)
 
 	return page, nil
 }

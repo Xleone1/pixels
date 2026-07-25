@@ -167,6 +167,14 @@ func (service *Service) validateItem(ctx context.Context, item catalogmodel.Item
 		}
 		return nil
 	}
+	if item.IsBot() {
+		if item.DefinitionID != 0 || item.GrantsEffectID != nil || item.GrantsBadgeCode != "" || item.PetTypeID != nil ||
+			item.PetProductCode != "" || item.RoomBundleTemplateRoomID != nil || item.Amount != 1 || item.LimitedStack != 0 ||
+			item.LimitedSells != 0 || item.Giftable || item.BundleDiscountEnabled || strings.TrimSpace(item.ExtraData) == "" {
+			return ErrInvalidItem
+		}
+		return nil
+	}
 	if item.RewardKind != catalogmodel.RewardFurniture || item.PetTypeID != nil || item.PetProductCode != "" || item.GrantsBadgeCode != "" {
 		return ErrInvalidItem
 	}

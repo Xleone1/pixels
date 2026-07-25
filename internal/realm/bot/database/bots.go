@@ -46,6 +46,24 @@ func (repository *Repository) CountInventory(ctx context.Context, playerID int64
 	return count, err
 }
 
+// Create inserts one inventory bot.
+func (repository *Repository) Create(ctx context.Context, bot botrecord.Bot) (botrecord.Bot, error) {
+	const query = `insert into bots(owner_player_id,behavior_type,name,motto,figure,gender,can_walk,dance_type,chat_auto,chat_random,chat_delay_seconds,bubble_style,effect_id)
+values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) returning id`
+	if err := repository.executorFor(ctx).QueryRow(ctx, query, bot.OwnerPlayerID, bot.BehaviorType, bot.Name, bot.Motto, bot.Figure, bot.Gender, bot.CanWalk, bot.DanceType, bot.ChatAuto, bot.ChatRandom, bot.ChatDelaySeconds, bot.BubbleStyle, bot.EffectID).Scan(&bot.ID); err != nil {
+		return botrecord.Bot{}, err
+	}
+	created, found, err := repository.Find(ctx, bot.ID)
+	if err != nil {
+		return botrecord.Bot{}, err
+	}
+	if !found {
+		return botrecord.Bot{}, botrecord.ErrBotNotFound
+	}
+
+	return created, nil
+}
+
 // Place moves an owned inventory bot into a room.
 func (repository *Repository) Place(ctx context.Context, botID int64, ownerID int64, roomID int64, x int, y int, z float64, rotation int16) (botrecord.Bot, bool, error) {
 	command, err := repository.executorFor(ctx).Exec(ctx, `update bots set room_id=$3,x=$4,y=$5,z=$6,rotation=$7,updated_at=now(),version=version+1 where id=$1 and owner_player_id=$2 and room_id is null`, botID, ownerID, roomID, x, y, z, rotation)

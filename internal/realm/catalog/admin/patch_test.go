@@ -27,7 +27,7 @@ func TestApplyPagePatchAppliesEveryPresentField(t *testing.T) {
 	page := catalogmodel.Page{}
 	applyPagePatch(&page, PagePatch{ParentID: &parent, Name: &name, Layout: &layout, IconColor: &color,
 		IconImage: &image, RequiredNode: &required, OrderNum: &order, Visible: &visible, Enabled: &enabled, ClubOnly: &club})
-	if page.ParentID == nil || *page.ParentID != 2 || page.Name != name || page.Layout != layout || page.IconColor != color ||
+	if page.ParentID == nil || *page.ParentID != 2 || page.Name != name || page.Layout != catalogmodel.SpacesLayout || page.IconColor != color ||
 		page.IconImage != image || page.RequiredNode == nil || *page.RequiredNode != node || page.OrderNum != order || !page.Visible || !page.Enabled || !page.ClubOnly {
 		t.Fatalf("unexpected page %#v", page)
 	}

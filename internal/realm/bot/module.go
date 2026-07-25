@@ -5,6 +5,7 @@ import (
 
 	botadmin "github.com/niflaot/pixels/internal/realm/bot/admin"
 	"github.com/niflaot/pixels/internal/realm/bot/behavior"
+	botcatalog "github.com/niflaot/pixels/internal/realm/bot/catalog"
 	botcommands "github.com/niflaot/pixels/internal/realm/bot/commands"
 	botcore "github.com/niflaot/pixels/internal/realm/bot/core"
 	botdb "github.com/niflaot/pixels/internal/realm/bot/database"
@@ -13,6 +14,7 @@ import (
 	botpolicy "github.com/niflaot/pixels/internal/realm/bot/policy"
 	botrecord "github.com/niflaot/pixels/internal/realm/bot/record"
 	botsettings "github.com/niflaot/pixels/internal/realm/bot/settings"
+	catalogservice "github.com/niflaot/pixels/internal/realm/catalog/service"
 	chatshouted "github.com/niflaot/pixels/internal/realm/chat/events/shouted"
 	chattalked "github.com/niflaot/pixels/internal/realm/chat/events/talked"
 	realmconn "github.com/niflaot/pixels/internal/realm/connection"
@@ -32,12 +34,18 @@ import (
 // Module provides bot persistence, behaviors, protocol, and room runtime wiring.
 var Module = fx.Module(
 	"realm-bot",
-	fx.Provide(botpolicy.LoadConfig, botdb.New, NewStore, NewRoomBundleCloner, behavior.NewRegistry, botcore.New, botlifecycle.New, botsettings.New, botadmin.New, NewInventoryHandler, NewPlacementHandler, NewSettingsHandler),
+	fx.Provide(botpolicy.LoadConfig, botdb.New, NewStore, NewRoomBundleCloner, behavior.NewRegistry, botcore.New, botlifecycle.New, botsettings.New, botadmin.New, botcatalog.New, NewInventoryHandler, NewPlacementHandler, NewSettingsHandler),
 	fx.Invoke(behavior.RegisterBuiltins),
 	fx.Invoke(RegisterHandlers),
 	fx.Invoke(RegisterRuntime),
 	fx.Invoke(RegisterWiredSpeech),
+	fx.Invoke(RegisterCatalogReward),
 )
+
+// RegisterCatalogReward connects bot offers to bot inventory persistence.
+func RegisterCatalogReward(catalog *catalogservice.Service, bots *botcatalog.Service) {
+	catalog.WithBots(bots)
+}
 
 // RegisterWiredSpeech installs filtered bot-speech interception.
 func RegisterWiredSpeech(service *botcore.Service, bridge *wiredbridge.SpeechBridge) {

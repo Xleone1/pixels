@@ -17,6 +17,8 @@ type Store interface {
 	Room(context.Context, int64) ([]Bot, error)
 	// CountInventory counts bots held by one player.
 	CountInventory(context.Context, int64) (int, error)
+	// Create inserts one inventory bot.
+	Create(context.Context, Bot) (Bot, error)
 	// Place moves an owned inventory bot into a room.
 	Place(context.Context, int64, int64, int64, int, int, float64, int16) (Bot, bool, error)
 	// Pickup moves a placed bot to a receiving owner.

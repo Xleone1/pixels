@@ -76,13 +76,13 @@ func TestPageDescriptionTreatsMissingCopyAsOptional(t *testing.T) {
 	translations := i18n.NewCatalog(i18n.Config{}, map[i18n.Locale]map[i18n.Key]string{
 		"es": {"catalog.page.chairs.description": "Encuentra asientos para cada sala."},
 	})
-	if description := pageDescription(translations, "chairs"); description != "Encuentra asientos para cada sala." {
+	if description := optionalTranslation(translations, "chairs", "description"); description != "Encuentra asientos para cada sala." {
 		t.Fatalf("unexpected page description %q", description)
 	}
-	if description := pageDescription(translations, "private_collection"); description != "" {
+	if description := optionalTranslation(translations, "private_collection", "description"); description != "" {
 		t.Fatalf("expected missing description to stay empty, got %q", description)
 	}
-	if description := pageDescription(nil, "chairs"); description != "" {
+	if description := optionalTranslation(nil, "chairs", "description"); description != "" {
 		t.Fatalf("expected nil translations to stay empty, got %q", description)
 	}
 }

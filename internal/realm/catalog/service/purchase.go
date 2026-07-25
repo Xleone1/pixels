@@ -72,6 +72,14 @@ func (service *Service) Purchase(ctx context.Context, params PurchaseParams) (Pu
 			}
 		}
 	}
+	if item.IsBot() {
+		if service.bots == nil {
+			return PurchaseResult{}, ErrCommerceUnavailable
+		}
+		if params.Gift != nil || params.RecipientPlayerID != 0 {
+			return PurchaseResult{}, ErrOfferNotGiftable
+		}
+	}
 	groupID, _, groupProduct, err := service.groupSelection(params, item)
 	if err != nil {
 		return PurchaseResult{}, err
@@ -98,6 +106,9 @@ func (service *Service) Purchase(ctx context.Context, params PurchaseParams) (Pu
 	}
 	if item.IsBadge() && (params.Gift != nil || params.RecipientPlayerID != 0 || params.Amount != 1) {
 		return PurchaseResult{}, ErrOfferNotGiftable
+	}
+	if item.IsBot() && params.Amount != 1 {
+		return PurchaseResult{}, ErrInvalidAmount
 	}
 	overrideQuantity := params.OverrideCredits != nil || params.OverridePoints != nil
 	if err := validateAmount(item, products, params.Amount, overrideQuantity); err != nil {
@@ -172,6 +183,9 @@ func (service *Service) projectPurchase(ctx context.Context, effect purchaseEffe
 	}
 	if result.GrantedPet != nil {
 		service.pets.ProjectCatalog(ctx, *result.GrantedPet)
+	}
+	if result.GrantedBot != nil {
+		service.bots.ProjectCatalog(ctx, *result.GrantedBot)
 	}
 	service.publishPurchase(ctx, params.PlayerID, result)
 }
@@ -285,6 +299,19 @@ func (service *Service) commitPurchase(ctx context.Context, params PurchaseParam
 			return fmt.Errorf("grant catalog item %d pet: %w", item.ID, grantErr)
 		}
 		result.GrantedPet = &reward
+		return service.logPurchase(ctx, params, item, result, charge.credits, charge.points)
+	}
+	if item.IsBot() {
+		reward, grantErr := service.bots.GrantCatalog(ctx, BotGrantParams{
+			OwnerPlayerID: params.PlayerID,
+			CatalogItemID: item.ID,
+			ProductCode:   item.Name,
+			ExtraData:     item.ExtraData,
+		})
+		if grantErr != nil {
+			return fmt.Errorf("grant catalog item %d bot: %w", item.ID, grantErr)
+		}
+		result.GrantedBot = &reward
 		return service.logPurchase(ctx, params, item, result, charge.credits, charge.points)
 	}
 	recipientID := params.RecipientPlayerID

@@ -112,7 +112,7 @@ func TestPurchasePointsChargesConfiguredCurrency(t *testing.T) {
 	}
 }
 
-// TestPurchaseChargesCreditsAndSecondaryCurrencyAtomically verifies combined Hubbly prices.
+// TestPurchaseChargesCreditsAndSecondaryCurrencyAtomically verifies combined hotel prices.
 func TestPurchaseChargesCreditsAndSecondaryCurrencyAtomically(t *testing.T) {
 	item := itemForTest()
 	item.PointsType = 5
@@ -162,6 +162,47 @@ func TestPurchaseBadgeChargesAndGrants(t *testing.T) {
 	}
 	if len(fixture.furniture.calls) != 0 {
 		t.Fatalf("badge must not grant furniture %#v", fixture.furniture.calls)
+	}
+}
+
+// botGranterForTest records one persistent bot reward.
+type botGranterForTest struct {
+	// reward stores the returned bot.
+	reward BotReward
+	// calls stores grant parameters.
+	calls []BotGrantParams
+	// projected stores projected rewards.
+	projected []BotReward
+}
+
+// GrantCatalog records one bot grant.
+func (granter *botGranterForTest) GrantCatalog(_ context.Context, params BotGrantParams) (BotReward, error) {
+	granter.calls = append(granter.calls, params)
+	return granter.reward, nil
+}
+
+// ProjectCatalog records one post-commit projection.
+func (granter *botGranterForTest) ProjectCatalog(_ context.Context, reward BotReward) {
+	granter.projected = append(granter.projected, reward)
+}
+
+// TestPurchaseBotChargesGrantsAndProjects verifies transactional bot catalog rewards.
+func TestPurchaseBotChargesGrantsAndProjects(t *testing.T) {
+	item := itemForTest()
+	item.DefinitionID = 0
+	item.RewardKind = "bot"
+	item.Name = "bot_bartender"
+	item.ExtraData = "name:Love;figure:hd-600-1;gender:f"
+	fixture := newServiceFixture(t, item)
+	bots := &botGranterForTest{reward: BotReward{ID: 31, OwnerPlayerID: 7}}
+	fixture.service.WithBots(bots)
+
+	result, err := fixture.service.Purchase(context.Background(), PurchaseParams{PlayerID: 7, CatalogItemID: 10})
+	if err != nil || result.GrantedBot == nil || result.GrantedBot.ID != 31 || len(bots.calls) != 1 || len(bots.projected) != 1 {
+		t.Fatalf("unexpected bot result=%#v calls=%#v projected=%#v error=%v", result, bots.calls, bots.projected, err)
+	}
+	if len(fixture.furniture.calls) != 0 {
+		t.Fatalf("bot must not grant furniture %#v", fixture.furniture.calls)
 	}
 }
 

@@ -11,7 +11,7 @@ import (
 
 // CreatePage creates one catalog page.
 func (service *Service) CreatePage(ctx context.Context, input PageInput) (catalogmodel.Page, error) {
-	page := catalogmodel.Page{ParentID: input.ParentID, Name: strings.TrimSpace(input.Name), Layout: strings.TrimSpace(input.Layout),
+	page := catalogmodel.Page{ParentID: input.ParentID, Name: strings.TrimSpace(input.Name), Layout: catalogmodel.NormalizeLayout(strings.TrimSpace(input.Layout)),
 		IconColor: input.IconColor, IconImage: input.IconImage, RequiredNode: input.RequiredNode, OrderNum: input.OrderNum,
 		Visible: input.Visible, Enabled: input.Enabled, ClubOnly: input.ClubOnly}
 	if err := service.validatePage(ctx, page); err != nil {
@@ -95,7 +95,7 @@ func applyPagePatch(page *catalogmodel.Page, patch PagePatch) {
 		page.Name = strings.TrimSpace(*patch.Name)
 	}
 	if patch.Layout != nil {
-		page.Layout = strings.TrimSpace(*patch.Layout)
+		page.Layout = catalogmodel.NormalizeLayout(strings.TrimSpace(*patch.Layout))
 	}
 	if patch.IconColor != nil {
 		page.IconColor = *patch.IconColor
