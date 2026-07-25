@@ -31,4 +31,11 @@ cross join (values
 where page.name='bots' and page.deleted_at is null
   and not exists (select 1 from catalog_items item where item.page_id=page.id and item.name=source.name and item.deleted_at is null)
 on conflict (id) do update set page_id=excluded.page_id,reward_kind='bot',definition_id=null,name=excluded.name,cost_credits=excluded.cost_credits,cost_points=0,points_type=-1,amount=1,limited_stack=0,club_only=false,order_num=excluded.order_num,enabled=true,giftable=false,extra_data=excluded.extra_data,deleted_at=null,updated_at=now();
+
+update catalog_pages page
+set layout='info_loyalty',updated_at=now(),version=version+1
+where page.layout='default_3x3'
+  and page.deleted_at is null
+  and not exists (select 1 from catalog_pages child where child.parent_id=page.id and child.deleted_at is null)
+  and not exists (select 1 from catalog_items item where item.page_id=page.id and item.enabled and item.deleted_at is null);
 --rollback delete from catalog_items where id between 990101 and 990103;
