@@ -1,5 +1,7 @@
 package openapi
 
+import "time"
+
 // AdminPlayerSettingsRequest documents an optimistic attributed settings mutation.
 type AdminPlayerSettingsRequest struct {
 	AdminPlayerPathRequest
@@ -41,6 +43,64 @@ type AdminPlayerAttributedRequest struct {
 	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
 	// Reason explains the administrative mutation.
 	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
+}
+
+// AdminPlayerNameAuthorizationRequest documents one reversible rename policy.
+type AdminPlayerNameAuthorizationRequest struct {
+	AdminPlayerAttributedRequest
+	// Allowed reports whether one self-service rename is enabled.
+	Allowed bool `json:"allowed" required:"true"`
+}
+
+// AdminPlayerNameChangeRequest documents one direct attributed rename.
+type AdminPlayerNameChangeRequest struct {
+	AdminPlayerAttributedRequest
+	// Username stores the requested visible name.
+	Username string `json:"username" required:"true" minLength:"3" maxLength:"15"`
+}
+
+// AdminPlayerSelfNameChangeRequest documents one self-service candidate.
+type AdminPlayerSelfNameChangeRequest struct {
+	AdminPlayerPathRequest
+	// Username stores the requested visible name.
+	Username string `json:"username" required:"true" minLength:"3" maxLength:"15"`
+}
+
+// AdminPlayerNameCheckResponse documents one Nitro-compatible decision.
+type AdminPlayerNameCheckResponse struct {
+	// Code stores the stable username result code.
+	Code int32 `json:"code" required:"true" minimum:"0" maximum:"6"`
+	// Username stores the normalized candidate.
+	Username string `json:"username" required:"true"`
+	// Suggestions stores bounded available alternatives.
+	Suggestions []string `json:"suggestions" required:"true" maxItems:"4"`
+}
+
+// AdminPlayerNameHistoryRequest documents one bounded audit query.
+type AdminPlayerNameHistoryRequest struct {
+	AdminPlayerPathRequest
+	// Limit bounds returned entries and defaults to fifty.
+	Limit int `query:"limit,omitempty" minimum:"1" maximum:"200" default:"50"`
+}
+
+// AdminPlayerNameChangeResponse documents one committed username audit entry.
+type AdminPlayerNameChangeResponse struct {
+	// ID identifies the audit entry.
+	ID int64 `json:"id" required:"true"`
+	// PlayerID identifies the renamed player.
+	PlayerID int64 `json:"playerId" required:"true"`
+	// OldUsername stores the previous visible name.
+	OldUsername string `json:"oldUsername" required:"true"`
+	// NewUsername stores the resulting visible name.
+	NewUsername string `json:"newUsername" required:"true"`
+	// ActorPlayerID identifies the responsible player.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true"`
+	// Reason explains the identity mutation.
+	Reason string `json:"reason" required:"true"`
+	// Source identifies the mutation boundary.
+	Source string `json:"source" required:"true" enum:"client,api"`
+	// ChangedAt stores the committed mutation time.
+	ChangedAt time.Time `json:"changedAt" required:"true"`
 }
 
 // AdminPlayerSettingsResponse documents durable client settings.

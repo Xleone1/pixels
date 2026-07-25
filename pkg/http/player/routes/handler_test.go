@@ -222,6 +222,9 @@ func (manager *fakeManager) Update(_ context.Context, _ int64, params playerserv
 	if params.Motto != nil {
 		manager.record.Profile.Motto = *params.Motto
 	}
+	if params.AllowNameChange != nil {
+		manager.record.Profile.AllowNameChange = *params.AllowNameChange
+	}
 
 	return manager.record, nil
 }

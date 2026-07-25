@@ -11,6 +11,7 @@ import (
 	currencyservice "github.com/niflaot/pixels/internal/realm/inventory/currency/service"
 	navservice "github.com/niflaot/pixels/internal/realm/navigator/core"
 	playereffect "github.com/niflaot/pixels/internal/realm/player/effect"
+	playeridentity "github.com/niflaot/pixels/internal/realm/player/identity"
 	playerprofile "github.com/niflaot/pixels/internal/realm/player/profile"
 	playerservice "github.com/niflaot/pixels/internal/realm/player/service"
 	playersettings "github.com/niflaot/pixels/internal/realm/player/settings"
@@ -60,11 +61,11 @@ func registerPublic(app *fiber.App, config config.AppConfig, info build.Info, we
 }
 
 // registerPrivate registers private authenticated fallback routes.
-func registerPrivate(app *fiber.App, sso *sso.Service, redisClient *redispkg.Client, players playerservice.AdminManager, effects playereffect.Manager, settings *playersettings.Service, profile *playerprofile.Service, wardrobe *playerwardrobe.Service, rooms roomservice.Manager, runtime *roomlive.Registry, roomEntry *roomentry.Service, navigator navservice.Manager, currencyAdmin currencyroutes.Dependencies, catalogAdmin catalogroutes.Dependencies, botAdmin botroutes.Dependencies, petAdmin petroutes.Dependencies, groupAdmin grouproutes.Dependencies, craftingAdmin craftingroutes.Dependencies, cameraAdmin cameraroutes.Dependencies, progressionAdmin progressionroutes.Dependencies, gameAdmin gameroutes.Dependencies, permissionAdmin permissionroutes.Dependencies, roomAdmin roomroutes.Dependencies, chatAdmin chatroutes.Dependencies, messengerAdmin messengerroutes.Dependencies, moderationAdmin moderationroutes.Dependencies, subscriptionAdmin subscriptionroutes.Dependencies, tradingAdmin tradingroutes.Dependencies, pluginRoutes *pluginroutes.Registry, log *zap.Logger) {
+func registerPrivate(app *fiber.App, sso *sso.Service, redisClient *redispkg.Client, players playerservice.AdminManager, effects playereffect.Manager, identity *playeridentity.Service, settings *playersettings.Service, profile *playerprofile.Service, wardrobe *playerwardrobe.Service, rooms roomservice.Manager, runtime *roomlive.Registry, roomEntry *roomentry.Service, navigator navservice.Manager, currencyAdmin currencyroutes.Dependencies, catalogAdmin catalogroutes.Dependencies, botAdmin botroutes.Dependencies, petAdmin petroutes.Dependencies, groupAdmin grouproutes.Dependencies, craftingAdmin craftingroutes.Dependencies, cameraAdmin cameraroutes.Dependencies, progressionAdmin progressionroutes.Dependencies, gameAdmin gameroutes.Dependencies, permissionAdmin permissionroutes.Dependencies, roomAdmin roomroutes.Dependencies, chatAdmin chatroutes.Dependencies, messengerAdmin messengerroutes.Dependencies, moderationAdmin moderationroutes.Dependencies, subscriptionAdmin subscriptionroutes.Dependencies, tradingAdmin tradingroutes.Dependencies, pluginRoutes *pluginroutes.Registry, log *zap.Logger) {
 	app.Post("/api/sso/tickets", createSSOTicketHandler(sso, redisClient))
 	playerroutes.Register(app, players, redisClient, currencyAdmin.Players, currencyAdmin.Connections, effects)
 	if settings != nil && profile != nil && wardrobe != nil {
-		playerroutes.RegisterRemaining(app, playerroutes.RemainingDependencies{Players: players, Settings: settings, Profile: profile, Wardrobe: wardrobe, Live: currencyAdmin.Players})
+		playerroutes.RegisterRemaining(app, playerroutes.RemainingDependencies{Players: players, Identity: identity, Settings: settings, Profile: profile, Wardrobe: wardrobe, Live: currencyAdmin.Players, Rooms: runtime, Connections: currencyAdmin.Connections})
 	}
 	wsroutes.Register(app, currencyAdmin.Connections)
 	roomroutes.Register(app, rooms, runtime, currencyAdmin.Connections, navigator, currencyAdmin.Players, roomEntry, roomAdmin)

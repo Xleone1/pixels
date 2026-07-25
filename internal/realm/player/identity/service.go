@@ -62,23 +62,47 @@ func (service *Service) Check(ctx context.Context, playerID int64, candidate str
 		result.Code = ResultDisabled
 		return result, nil
 	}
-	_, taken, err := service.players.FindByUsername(ctx, result.Username)
+	existing, taken, err := service.players.FindByUsername(ctx, result.Username)
 	if err != nil {
 		return CheckResult{}, err
 	}
-	if taken {
+	if taken && existing.Player.ID != playerID {
 		result.Code = ResultTaken
 		result.Suggestions, err = service.suggestions(ctx, result.Username)
 		return result, err
 	}
 	if service.reservations != nil {
-		reserved, reserveErr := service.reservations.SetIfAbsent(ctx, reservationKey(result.Username), []byte(strconv.FormatInt(playerID, 10)), service.config.ReservationTTL)
+		playerValue := strconv.FormatInt(playerID, 10)
+		key := reservationKey(result.Username)
+		reserved, reserveErr := service.reservations.SetIfAbsent(
+			ctx,
+			key,
+			[]byte(playerValue),
+			service.config.ReservationTTL,
+		)
 		if reserveErr != nil {
 			return CheckResult{}, reserveErr
 		}
 		if !reserved {
-			result.Code = ResultTaken
-			result.Suggestions, err = service.suggestions(ctx, result.Username)
+			owner, found, findErr := service.reservations.Find(ctx, key)
+			if findErr != nil {
+				return CheckResult{}, findErr
+			}
+			if found && string(owner) == playerValue {
+				if expireErr := service.reservations.Expire(
+					ctx,
+					key,
+					service.config.ReservationTTL,
+				); expireErr != nil {
+					return CheckResult{}, expireErr
+				}
+			} else {
+				result.Code = ResultTaken
+				result.Suggestions, err = service.suggestions(
+					ctx,
+					result.Username,
+				)
+			}
 		}
 	}
 	return result, err
@@ -90,12 +114,22 @@ func (service *Service) Rename(ctx context.Context, playerID int64, candidate st
 	if service.validate(candidate) != ResultAvailable || service.reserved(candidate) || service.filtered(candidate) {
 		return RenameResult{}, ErrReservationMissing
 	}
+	record, found, err := service.players.FindByID(ctx, playerID)
+	if err != nil {
+		return RenameResult{}, err
+	}
+	if !found {
+		return RenameResult{}, ErrPlayerNotFound
+	}
+	if strings.EqualFold(record.Player.Username, candidate) {
+		return service.store.Rename(ctx, playerID, candidate)
+	}
 	if service.reservations != nil {
-		value, found, err := service.reservations.Take(ctx, reservationKey(candidate))
+		value, reserved, err := service.reservations.Take(ctx, reservationKey(candidate))
 		if err != nil {
 			return RenameResult{}, err
 		}
-		if !found || string(value) != strconv.FormatInt(playerID, 10) {
+		if !reserved || string(value) != strconv.FormatInt(playerID, 10) {
 			return RenameResult{}, ErrReservationMissing
 		}
 	}

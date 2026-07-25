@@ -5,17 +5,22 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	playeridentity "github.com/niflaot/pixels/internal/realm/player/identity"
 	playerlive "github.com/niflaot/pixels/internal/realm/player/live"
 	playerprofile "github.com/niflaot/pixels/internal/realm/player/profile"
 	playerservice "github.com/niflaot/pixels/internal/realm/player/service"
 	playersettings "github.com/niflaot/pixels/internal/realm/player/settings"
 	playerwardrobe "github.com/niflaot/pixels/internal/realm/player/wardrobe"
+	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
+	netconn "github.com/niflaot/pixels/networking/connection"
 )
 
 // RemainingDependencies contains focused remaining user administration capabilities.
 type RemainingDependencies struct {
 	// Players updates existing player profile policy.
 	Players playerservice.AdminManager
+	// Identity validates, commits, and audits username changes.
+	Identity *playeridentity.Service
 	// Settings reads and updates client settings.
 	Settings *playersettings.Service
 	// Profile manages public tags.
@@ -24,6 +29,10 @@ type RemainingDependencies struct {
 	Wardrobe *playerwardrobe.Service
 	// Live stores online projections.
 	Live *playerlive.Registry
+	// Rooms stores active room projections.
+	Rooms *roomlive.Registry
+	// Connections sends live protocol projections.
+	Connections *netconn.Registry
 }
 
 // SettingsPatchRequest contains one attributed optimistic settings mutation.
@@ -58,14 +67,6 @@ type TagsRequest struct {
 	Reason string `json:"reason"`
 }
 
-// AllowNameChangeRequest contains one attributed rename-policy grant.
-type AllowNameChangeRequest struct {
-	// ActorPlayerID identifies the administrative actor.
-	ActorPlayerID int64 `json:"actorPlayerId"`
-	// Reason explains the mutation.
-	Reason string `json:"reason"`
-}
-
 // WardrobeResponse combines saved outfits and clothing unlocks.
 type WardrobeResponse struct {
 	// Outfits stores ordered saved slots.
@@ -81,6 +82,12 @@ func RegisterRemaining(app *fiber.App, dependencies RemainingDependencies) {
 	app.Put("/api/admin/players/:id/profile/tags", replaceTags(dependencies))
 	app.Get("/api/admin/players/:id/wardrobe", readWardrobe(dependencies))
 	app.Post("/api/admin/players/:id/name-change/allow", allowNameChange(dependencies))
+	app.Delete("/api/admin/players/:id/name-change/allow", revokeNameChange(dependencies))
+	app.Put("/api/admin/players/:id/name-change/authorization", setNameChangeAuthorization(dependencies))
+	app.Post("/api/admin/players/:id/name-change/check", checkOwnNameChange(dependencies))
+	app.Post("/api/admin/players/:id/name-change/confirm", confirmOwnNameChange(dependencies))
+	app.Post("/api/admin/players/:id/name-change", changeName(dependencies))
+	app.Get("/api/admin/players/:id/name-changes", readNameChanges(dependencies))
 }
 
 // readSettings returns one durable settings snapshot.
@@ -160,31 +167,6 @@ func readWardrobe(dependencies RemainingDependencies) fiber.Handler {
 			return err
 		}
 		return ctx.JSON(WardrobeResponse{Outfits: outfits, Clothing: clothing})
-	}
-}
-
-// allowNameChange enables one one-shot username change through the player aggregate.
-func allowNameChange(dependencies RemainingDependencies) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		id, err := remainingPlayerID(ctx)
-		if err != nil {
-			return err
-		}
-		var request AllowNameChangeRequest
-		if err = ctx.BodyParser(&request); err != nil || !attributed(request.ActorPlayerID, request.Reason) {
-			return fiber.NewError(fiber.StatusBadRequest, "invalid name-change policy request")
-		}
-		allowed := true
-		record, err := dependencies.Players.Update(ctx.Context(), id, playerservice.UpdateParams{AllowNameChange: &allowed})
-		if err != nil {
-			return playerError(err)
-		}
-		if dependencies.Live != nil {
-			if player, found := dependencies.Live.Find(id); found {
-				player.SetUsername(record.Player.Username, true)
-			}
-		}
-		return ctx.JSON(playerResponse(record))
 	}
 }
 

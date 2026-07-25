@@ -31,6 +31,21 @@ func (store failingRenameStore) Rename(context.Context, int64, string) (RenameRe
 	return RenameResult{}, store.err
 }
 
+// RenameAdmin returns the configured failure.
+func (store failingRenameStore) RenameAdmin(context.Context, int64, string, int64, string) (RenameResult, error) {
+	return RenameResult{}, store.err
+}
+
+// NameChanges returns the configured failure.
+func (store failingRenameStore) NameChanges(context.Context, int64, int) ([]NameChange, error) {
+	return nil, store.err
+}
+
+// SetAuthorization returns the configured failure.
+func (store failingRenameStore) SetAuthorization(context.Context, int64, bool, int64, string) error {
+	return store.err
+}
+
 // TestIdentityHandlersCheckAndRename verifies successful packet adaptation and live projection.
 func TestIdentityHandlersCheckAndRename(t *testing.T) {
 	store := &renameStore{}

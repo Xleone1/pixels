@@ -15,4 +15,5 @@
     <include file="migrations/0008_add_badges_respect.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0009_add_badge_projection.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0010_user_remaining.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0011_name_change_authorizations.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

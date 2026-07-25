@@ -1,7 +1,10 @@
 // Package identity owns player username availability and committed renames.
 package identity
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 const (
 	// ResultAvailable reports an available valid username.
@@ -25,6 +28,10 @@ var (
 	ErrRenameDisabled = errors.New("username change disabled")
 	// ErrUsernameTaken reports a database uniqueness conflict.
 	ErrUsernameTaken = errors.New("username taken")
+	// ErrPlayerNotFound reports a missing active target player.
+	ErrPlayerNotFound = errors.New("player not found")
+	// ErrInvalidAttribution reports incomplete administrative audit data.
+	ErrInvalidAttribution = errors.New("invalid name change attribution")
 )
 
 // CheckResult contains username policy and availability output.
@@ -43,4 +50,24 @@ type RenameResult struct {
 	OldUsername string
 	// NewUsername stores the committed visible name.
 	NewUsername string
+}
+
+// NameChange contains one durable username audit entry.
+type NameChange struct {
+	// ID identifies the audit entry.
+	ID int64
+	// PlayerID identifies the renamed player.
+	PlayerID int64
+	// OldUsername stores the previous visible name.
+	OldUsername string
+	// NewUsername stores the resulting visible name.
+	NewUsername string
+	// ActorPlayerID identifies the player responsible for the change.
+	ActorPlayerID int64
+	// Reason explains why the name was changed.
+	Reason string
+	// Source identifies the mutation boundary.
+	Source string
+	// ChangedAt stores the committed mutation time.
+	ChangedAt time.Time
 }

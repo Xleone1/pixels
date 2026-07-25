@@ -171,6 +171,12 @@ func adminPlayerOperations() []operation {
 		adminPlayer(http.MethodPut, "/api/admin/players/{id}/profile/tags", "Replace player profile tags", &AdminPlayerTagsRequest{}, &AdminPlayerTagsResponse{}, http.StatusOK),
 		adminPlayer(http.MethodGet, "/api/admin/players/{id}/wardrobe", "Read player wardrobe", &AdminPlayerPathRequest{}, &AdminPlayerWardrobeResponse{}, http.StatusOK),
 		adminPlayer(http.MethodPost, "/api/admin/players/{id}/name-change/allow", "Allow one player name change", &AdminPlayerAttributedRequest{}, &AdminPlayerResponse{}, http.StatusOK),
+		adminPlayer(http.MethodDelete, "/api/admin/players/{id}/name-change/allow", "Revoke one player name change", &AdminPlayerAttributedRequest{}, &AdminPlayerResponse{}, http.StatusOK),
+		adminPlayer(http.MethodPut, "/api/admin/players/{id}/name-change/authorization", "Replace player name-change authorization", &AdminPlayerNameAuthorizationRequest{}, &AdminPlayerResponse{}, http.StatusOK),
+		adminPlayer(http.MethodPost, "/api/admin/players/{id}/name-change/check", "Check and reserve a self-service username", &AdminPlayerSelfNameChangeRequest{}, &AdminPlayerNameCheckResponse{}, http.StatusOK),
+		adminPlayer(http.MethodPost, "/api/admin/players/{id}/name-change/confirm", "Confirm a reserved self-service username", &AdminPlayerSelfNameChangeRequest{}, &AdminPlayerNameCheckResponse{}, http.StatusOK),
+		adminPlayer(http.MethodPost, "/api/admin/players/{id}/name-change", "Change player username administratively", &AdminPlayerNameChangeRequest{}, &AdminPlayerResponse{}, http.StatusOK),
+		adminPlayer(http.MethodGet, "/api/admin/players/{id}/name-changes", "Read player username history", &AdminPlayerNameHistoryRequest{}, []AdminPlayerNameChangeResponse{}, http.StatusOK),
 	}
 }
 

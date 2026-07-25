@@ -4,17 +4,23 @@ import (
 	"context"
 
 	playerlive "github.com/niflaot/pixels/internal/realm/player/live"
+	"github.com/niflaot/pixels/networking/codec"
 	netconn "github.com/niflaot/pixels/networking/connection"
 	outinfo "github.com/niflaot/pixels/networking/outbound/user/info"
 	"go.uber.org/zap"
 )
 
-// sendInfo encodes and sends one live user snapshot.
-func sendInfo(connection netconn.Context, snapshot playerlive.Snapshot) error {
-	packet, err := outinfo.Encode(outinfo.Params{UserID: int32(snapshot.ID), Username: snapshot.Username, Figure: snapshot.Look,
+// EncodeInfo encodes one live user snapshot for projection boundaries.
+func EncodeInfo(snapshot playerlive.Snapshot) (codec.Packet, error) {
+	return outinfo.Encode(outinfo.Params{UserID: int32(snapshot.ID), Username: snapshot.Username, Figure: snapshot.Look,
 		Gender: string(snapshot.Gender), Motto: snapshot.Motto, CanChangeName: snapshot.AllowNameChange,
 		RespectsReceived: snapshot.RespectsReceived, RespectsRemaining: snapshot.RespectsRemaining,
 		RespectsPetRemaining: snapshot.RespectsPetRemaining, LastAccessDate: snapshot.LastAccessDate, SafetyLocked: snapshot.SafetyLocked})
+}
+
+// sendInfo encodes and sends one live user snapshot.
+func sendInfo(connection netconn.Context, snapshot playerlive.Snapshot) error {
+	packet, err := EncodeInfo(snapshot)
 	if err != nil {
 		return err
 	}

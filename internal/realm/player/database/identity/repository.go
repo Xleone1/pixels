@@ -23,11 +23,24 @@ func New(pool *postgres.Pool) *Repository { return &Repository{pool: pool} }
 
 // Rename commits one one-shot username replacement and audit row.
 func (repository *Repository) Rename(ctx context.Context, playerID int64, username string) (result playeridentity.RenameResult, err error) {
+	return repository.rename(ctx, playerID, username, playerID, "self-service", "client", true)
+}
+
+// RenameAdmin commits one attributed administrative username replacement.
+func (repository *Repository) RenameAdmin(ctx context.Context, playerID int64, username string, actorPlayerID int64, reason string) (result playeridentity.RenameResult, err error) {
+	return repository.rename(ctx, playerID, username, actorPlayerID, reason, "api", false)
+}
+
+// rename commits one username replacement and its audit entry.
+func (repository *Repository) rename(ctx context.Context, playerID int64, username string, actorPlayerID int64, reason string, source string, requireAllowed bool) (result playeridentity.RenameResult, err error) {
 	err = postgres.WithinScope(ctx, repository.pool, func(txCtx context.Context) error {
 		executor := postgres.ExecutorFor(txCtx, repository.pool)
 		var allowed bool
 		lockErr := executor.QueryRow(txCtx, `select p.username,pp.allow_name_change from players p join player_profiles pp on pp.player_id=p.id where p.id=$1 and p.deleted_at is null for update of p,pp`, playerID).Scan(&result.OldUsername, &allowed)
-		if errors.Is(lockErr, pgx.ErrNoRows) || lockErr == nil && !allowed {
+		if errors.Is(lockErr, pgx.ErrNoRows) {
+			return playeridentity.ErrPlayerNotFound
+		}
+		if lockErr == nil && requireAllowed && !allowed {
 			return playeridentity.ErrRenameDisabled
 		}
 		if lockErr != nil {
@@ -42,7 +55,7 @@ func (repository *Repository) Rename(ctx context.Context, playerID int64, userna
 		if _, updateErr := executor.Exec(txCtx, `update rooms set owner_name=$2,updated_at=now(),version=version+1 where owner_player_id=$1 and deleted_at is null`, playerID, username); updateErr != nil {
 			return updateErr
 		}
-		_, insertErr := executor.Exec(txCtx, `insert into player_name_changes(player_id,old_username,new_username,actor_player_id,reason,source) values($1,$2,$3,$1,'self-service','client')`, playerID, result.OldUsername, username)
+		_, insertErr := executor.Exec(txCtx, `insert into player_name_changes(player_id,old_username,new_username,actor_player_id,reason,source) values($1,$2,$3,$4,$5,$6)`, playerID, result.OldUsername, username, actorPlayerID, reason, source)
 		return insertErr
 	})
 	if err != nil {
