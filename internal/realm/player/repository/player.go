@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
+	playerconstraint "github.com/niflaot/pixels/internal/realm/player/database/constraint"
 	playermodel "github.com/niflaot/pixels/internal/realm/player/model"
 	"github.com/niflaot/pixels/pkg/postgres"
 )
@@ -84,8 +84,7 @@ func (repository *Repository) UpdateClub(ctx context.Context, playerID int64, cl
 func (repository *Repository) CreatePlayer(ctx context.Context, params CreatePlayerParams) (playermodel.Player, error) {
 	player, err := scanPlayer(postgres.ExecutorFor(ctx, repository.executor).QueryRow(ctx, createPlayerSQL, params.Username))
 	if err != nil {
-		var postgresError *pgconn.PgError
-		if errors.As(err, &postgresError) && postgresError.Code == "23505" {
+		if playerconstraint.IsActiveUsernameConflict(err) {
 			return playermodel.Player{}, ErrUsernameTaken
 		}
 		return playermodel.Player{}, fmt.Errorf("create player: %w", err)
@@ -101,8 +100,7 @@ func (repository *Repository) UpdatePlayer(ctx context.Context, params UpdatePla
 		return playermodel.Player{}, false, nil
 	}
 	if err != nil {
-		var postgresError *pgconn.PgError
-		if errors.As(err, &postgresError) && postgresError.Code == "23505" {
+		if playerconstraint.IsActiveUsernameConflict(err) {
 			return playermodel.Player{}, false, ErrUsernameTaken
 		}
 		return playermodel.Player{}, false, fmt.Errorf("update player: %w", err)

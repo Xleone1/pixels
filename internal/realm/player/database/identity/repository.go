@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
+	playerconstraint "github.com/niflaot/pixels/internal/realm/player/database/constraint"
 	playeridentity "github.com/niflaot/pixels/internal/realm/player/identity"
 	"github.com/niflaot/pixels/pkg/postgres"
 )
@@ -59,8 +59,7 @@ func (repository *Repository) rename(ctx context.Context, playerID int64, userna
 		return insertErr
 	})
 	if err != nil {
-		var postgresError *pgconn.PgError
-		if errors.As(err, &postgresError) && postgresError.Code == "23505" {
+		if playerconstraint.IsActiveUsernameConflict(err) {
 			return playeridentity.RenameResult{}, playeridentity.ErrUsernameTaken
 		}
 		return playeridentity.RenameResult{}, fmt.Errorf("rename player: %w", err)

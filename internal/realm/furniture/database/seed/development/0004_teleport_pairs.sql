@@ -1,6 +1,7 @@
 --liquibase formatted sql
 
 --changeset pixels:pixels-furniture-seed-development-0004-teleport-pairs context:development
+--validCheckSum: 9:78e148106c127e7f6d4dcfad6ebeab52
 insert into furniture_definitions (
     id, sprite_id, name, public_name, kind, width, length, stack_height,
     allow_stack, allow_walk, allow_sit, allow_lay, allow_inventory_stack,

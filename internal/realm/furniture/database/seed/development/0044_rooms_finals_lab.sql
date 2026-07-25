@@ -1,7 +1,7 @@
 --liquibase formatted sql
 
 --changeset pixels:furniture-seed-rooms-finals-0044 context:development
---validCheckSum:ANY
+--validCheckSum: 9:cc51a4d61a3781ea047662dd4df5fa71
 insert into furniture_definitions(
  id,sprite_id,name,public_name,kind,width,length,stack_height,
  allow_stack,allow_walk,allow_sit,allow_lay,allow_inventory_stack,
