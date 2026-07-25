@@ -1,0 +1,1735 @@
+{
+  "audit_id": "pixelados-2026-07-25",
+  "reviews": [
+    {
+      "id": 800044,
+      "name": "17_ww_pillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800160,
+      "name": "Angel_Baby_Pink_Sofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800201,
+      "name": "Atlanta_Elayne_Bed_1",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "Cama o hamaca claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800252,
+      "name": "Atlanta_Japandi_Bed_1",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "Cama o hamaca claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800281,
+      "name": "Atlanta_Japandi_Hammock",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "Cama o hamaca claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800295,
+      "name": "Atlanta_Japandi_Pillow_2",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800296,
+      "name": "Atlanta_Japandi_Pillow_3",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800318,
+      "name": "Atlanta_Japandi_Rattan_Chair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800494,
+      "name": "BW_HeadmasterChair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800520,
+      "name": "BW_Hogwartsdiningbench",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800521,
+      "name": "BW_Hufflepouf",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800523,
+      "name": "BW_HufflepuffChair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800526,
+      "name": "BW_HufflepuffSofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800566,
+      "name": "BW_SlytherinArmchair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800568,
+      "name": "BW_SlytherinChair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800574,
+      "name": "BW_SlytherinStool",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800576,
+      "name": "BW_SlytherinThrone",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800582,
+      "name": "BW_TeacherChair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800586,
+      "name": "BW_TrainSofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800589,
+      "name": "BW_diningbench",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800600,
+      "name": "Barrel_Stool",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El nombre funcional identifica un asiento; el icono no estaba disponible.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800756,
+      "name": "BobbaCouch",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800792,
+      "name": "Bubblejuice_throne_Atlanta",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800901,
+      "name": "Cama_japo",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "Cama o hamaca claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800911,
+      "name": "Chaise_de_bar_argent",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800912,
+      "name": "Chaise_de_bar_noire",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800913,
+      "name": "Chaise_de_bar_or",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 800999,
+      "name": "Cupid_chair",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El nombre funcional identifica un asiento; el icono no estaba disponible.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 801084,
+      "name": "Dark_green_sofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 801101,
+      "name": "Diofante_Banco",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 801386,
+      "name": "GrimmauldChair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 801388,
+      "name": "GrimmauldSofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 801888,
+      "name": "Habblet_carebears_bed",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 802895,
+      "name": "Irinc_Diofante_Cama",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 803208,
+      "name": "Machi_original41_JPseat",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 803234,
+      "name": "Mansion_Christmas_Pillow",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 803511,
+      "name": "Noel_c20_City_RocheChaise",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 803648,
+      "name": "Pirates_Bench",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El nombre funcional identifica un asiento; el icono no estaba disponible.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 803653,
+      "name": "Pirates_Stool",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El nombre funcional identifica un asiento; el icono no estaba disponible.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 803921,
+      "name": "Sillon_Cuero_Cheapy4",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 803955,
+      "name": "Sofa_grande",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 804254,
+      "name": "Wniverso_Sofa_Natalino",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 804271,
+      "name": "Wniverso_sofa_Ursinho_natalino",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 804343,
+      "name": "Yvess5_Ascenseur_Flit",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 804866,
+      "name": "Yvess5_Tennis_Chaise",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 805385,
+      "name": "aeki_23_pillow_01",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 805386,
+      "name": "aeki_23_pillow_01_01",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 805520,
+      "name": "anc16_sofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 805527,
+      "name": "anc_comfy_tree",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 805543,
+      "name": "angel_bgpink_flip_chair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 805544,
+      "name": "angel_blue_flip_chair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 805575,
+      "name": "angel_white_stool",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 805650,
+      "name": "antoh_xs_casinothrone",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El nombre funcional identifica un asiento; el icono no estaba disponible.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 805868,
+      "name": "art_c20_pillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 806005,
+      "name": "autumn_c20_tree2",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 806050,
+      "name": "azul_h17_sofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 806224,
+      "name": "banco_cmnto_plano",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 808792,
+      "name": "bonusrare19_2*4",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 808793,
+      "name": "bonusrare19_2*5",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 809408,
+      "name": "burd_h17_sofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 809426,
+      "name": "bw_hogwartsbench",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 809452,
+      "name": "byesw_hand",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 809878,
+      "name": "cc_zebra_couch",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 811077,
+      "name": "cstm_f24_cute_bearybed",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "Cama o hamaca claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 811090,
+      "name": "cstm_f24_cute_polarpillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 811249,
+      "name": "cstm_j21_grunge_couch_r",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 811554,
+      "name": "cuer_h17_sofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 812323,
+      "name": "durm_bench",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 812568,
+      "name": "easter_c22_fossilbench",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 812743,
+      "name": "easter_r16_throne",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 813823,
+      "name": "garden_flowerbed",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 814195,
+      "name": "gracie_24_stool_01_01",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 814457,
+      "name": "habblet_mel_chairminibed",
+      "status": "lay",
+      "confidence": "medium",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 815012,
+      "name": "habbox_chair_hancar",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 815123,
+      "name": "habbox_coral_seabed_details",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 815202,
+      "name": "habbox_cupid_woodchair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 819043,
+      "name": "habbox_viking_stool",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 820089,
+      "name": "hlive_c25_hwcraftingbed",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 820182,
+      "name": "hlive_clr25_dinersofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 820509,
+      "name": "hotel_pillow",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 820529,
+      "name": "hp_bench",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 820531,
+      "name": "hp_bigchair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 820703,
+      "name": "hp_smallchair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 821235,
+      "name": "hween_c20_floatingbed",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 821678,
+      "name": "india_c20_eleseat",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 821685,
+      "name": "india_c20_longpillow",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 821807,
+      "name": "irinc_mario_chair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 821815,
+      "name": "irinc_mario_junglebed",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 821900,
+      "name": "irinc_shadow_lgbtchair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 822089,
+      "name": "jp_bed",
+      "status": "lay",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canLayOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 822342,
+      "name": "kasja_cf_smileypillow",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 822392,
+      "name": "kasja_g_flowerbed",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 822442,
+      "name": "kasja_mansionplay_daybed",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 822463,
+      "name": "kasja_s_bench",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 822829,
+      "name": "legendary16_chair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 823625,
+      "name": "mansion_purple5_throne",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 823737,
+      "name": "matcha_f25_chair_02",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 823845,
+      "name": "mel_hellokittypillow",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 823933,
+      "name": "mel_shellpillow",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 824101,
+      "name": "mini_flower_pillow_marion",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 824598,
+      "name": "mystics_bbed",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 824610,
+      "name": "mystics_gbed",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 824723,
+      "name": "neon_pillow_by_jonas",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 824857,
+      "name": "nest_bed",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 825365,
+      "name": "nft_sc24_hotelit",
+      "status": "none",
+      "confidence": "medium",
+      "reason": "El icono no muestra una superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 825379,
+      "name": "nft_u23_sonft_sofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 825887,
+      "name": "oliver_cstm_tennis_judge_chair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 826029,
+      "name": "orientala19r_chair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 826063,
+      "name": "origins_c24_pirate_bed_one",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 826064,
+      "name": "origins_c24_pirate_bed_two",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 826410,
+      "name": "pcnc_tree",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 826682,
+      "name": "pink_ribbon_pillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 827106,
+      "name": "plta_h17_sofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 829463,
+      "name": "rainbow_throne",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 830747,
+      "name": "rare_samuraipillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 830749,
+      "name": "rare_samuraithrone",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 830764,
+      "name": "rav3_colourable_pillow",
+      "status": "none",
+      "confidence": "low",
+      "reason": "No se pudo recuperar el icono; clasificación conservadora.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 830838,
+      "name": "recycler_patchpillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 831396,
+      "name": "rusticroots_workbench",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 831505,
+      "name": "sanrio_c22_keroppisofa",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 831507,
+      "name": "sanrio_c22_mymelodybed",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 832011,
+      "name": "shadow_lgbtchair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 832290,
+      "name": "shtrdl_greenhouse_seedbed_1x1",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 832291,
+      "name": "shtrdl_greenhouse_seedbed_2x1",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 832418,
+      "name": "sleepy_24_bed_back_01",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 832419,
+      "name": "sleepy_24_bed_back_corner_01",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 832420,
+      "name": "sleepy_24_bed_back_desk_01",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 832421,
+      "name": "sleepy_24_bed_back_desk_01_01",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 832422,
+      "name": "sleepy_24_bed_back_desk_02_01",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 832523,
+      "name": "sofa_hogwarts",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 833208,
+      "name": "stef_crystalthrone",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 833225,
+      "name": "stone_flowerbed",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 833594,
+      "name": "test_effectswitch",
+      "status": "lay",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canLayOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 833651,
+      "name": "thai_c21_pillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 833691,
+      "name": "throne_bed_black",
+      "status": "lay",
+      "confidence": "medium",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 833692,
+      "name": "throne_bed_green",
+      "status": "lay",
+      "confidence": "medium",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 833693,
+      "name": "throne_bed_purple",
+      "status": "lay",
+      "confidence": "medium",
+      "reason": "El icono muestra una cama claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 834829,
+      "name": "waasa_hbct_bed",
+      "status": "none",
+      "confidence": "medium",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 834864,
+      "name": "wean_fauteuil",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 834871,
+      "name": "wean_pouf",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 835880,
+      "name": "xmas_c16_tinybed",
+      "status": "lay",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canLayOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 835903,
+      "name": "xmas_c17_engage_ted",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 835973,
+      "name": "xmas_c19_balcony",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 836640,
+      "name": "zombie_memorial_chair",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie apta para postura.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 970064,
+      "name": "Atlanta_scandi_bench_2",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 970209,
+      "name": "DIY_a174_SakuraCookingBench",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 970213,
+      "name": "DIY_a178_WaterChair",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 970234,
+      "name": "DIY_a265_ChickenPillow",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 971022,
+      "name": "Sofa_Cartier",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 971238,
+      "name": "Yvess5_DJ20_Pouf",
+      "status": "sit",
+      "confidence": "medium",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 971748,
+      "name": "auxiliarbanco",
+      "status": "none",
+      "confidence": "medium",
+      "reason": "Cojín bajo sin asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 972437,
+      "name": "bedrum_23_stool_01",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "Asiento claramente visible en el icono.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 972517,
+      "name": "black_ruffle_bed",
+      "status": "lay",
+      "confidence": "high",
+      "reason": "Cama o hamaca claramente acostable.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 973490,
+      "name": "cstm_hw16_pillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 973544,
+      "name": "cstm_m20_pillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 973545,
+      "name": "cstm_m_pillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 973552,
+      "name": "cstm_old_greek_pillow",
+      "status": "none",
+      "confidence": "high",
+      "reason": "Almohada o adorno sin superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 974068,
+      "name": "fest_c19_loverstent",
+      "status": "lay",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canLayOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 975439,
+      "name": "habcrush_c18_wiltedplantbed",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 975554,
+      "name": "hblooza14_planepadb",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 975555,
+      "name": "hblooza14_planepadr",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 976193,
+      "name": "irinc_pablok_flowerbed",
+      "status": "none",
+      "confidence": "high",
+      "reason": "El icono no muestra una superficie de asiento.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 976368,
+      "name": "kasja_s_stool",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento definido.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 976722,
+      "name": "market_c19_trolley",
+      "status": "sit",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canSitOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 977221,
+      "name": "nft_xmas11_throne",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 977410,
+      "name": "orien_stoel_klein",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 977430,
+      "name": "origins_c25_heartsofa_black",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 977431,
+      "name": "origins_c25_heartsofa_blue",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 977432,
+      "name": "origins_c25_heartsofa_green",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 977433,
+      "name": "origins_c25_heartsofa_pink",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 977434,
+      "name": "origins_c25_heartsofa_white",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 977435,
+      "name": "origins_c25_heartsofa_yellow",
+      "status": "sit",
+      "confidence": "high",
+      "reason": "El icono muestra un asiento claro.",
+      "source": "visual_review",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    },
+    {
+      "id": 978726,
+      "name": "test_tent",
+      "status": "lay",
+      "confidence": "high",
+      "source": "furniture_data",
+      "reason": "FurnitureData declara canLayOn=true.",
+      "previous_allow_sit": false,
+      "previous_allow_lay": false
+    }
+  ]
+}
