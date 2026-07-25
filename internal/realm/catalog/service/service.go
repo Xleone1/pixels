@@ -24,6 +24,8 @@ type Service struct {
 	store catalogrepo.Store
 	// commerce persists optional extended store capabilities.
 	commerce catalogrepo.CommerceStore
+	// purchaseHistory reads player-specific recently purchased offers.
+	purchaseHistory catalogrepo.PurchaseHistoryReader
 
 	// currencies charges player balances.
 	currencies currencyservice.Granter
@@ -115,6 +117,7 @@ func New(store catalogrepo.Store, currencies currencyservice.Granter, furniture 
 
 	service := &Service{store: store, currencies: currencies, furniture: furniture, cache: newCache(), events: events, log: log}
 	service.commerce, _ = store.(catalogrepo.CommerceStore)
+	service.purchaseHistory, _ = store.(catalogrepo.PurchaseHistoryReader)
 	if len(checkers) > 0 {
 		service.permissions = checkers[0]
 	}
@@ -189,53 +192,6 @@ func (service *Service) Definition(_ context.Context, definitionID int64) (furni
 	definition, found := service.cache.definition(definitionID)
 
 	return definition, found, nil
-}
-
-// Pages returns pages visible to one player capability set.
-func (service *Service) Pages(ctx context.Context, playerID int64, hasClub bool) ([]catalogmodel.Page, error) {
-	pages := service.cache.pages()
-	visible := make([]catalogmodel.Page, 0, len(pages))
-	for _, page := range pages {
-		accessible, err := service.pageAccessible(ctx, page, playerID, hasClub)
-		if err != nil {
-			return nil, err
-		}
-		if accessible {
-			visible = append(visible, page)
-		}
-	}
-
-	return visible, nil
-}
-
-// Page returns one visible page and its enabled offers.
-func (service *Service) Page(ctx context.Context, pageID int64, playerID int64, hasClub bool) (catalogmodel.Page, []catalogmodel.Item, error) {
-	page, found := service.cache.page(pageID)
-	if !found {
-		return catalogmodel.Page{}, nil, ErrPageNotFound
-	}
-	accessible, err := service.pageAccessible(ctx, page, playerID, hasClub)
-	if err != nil {
-		return catalogmodel.Page{}, nil, err
-	}
-	if !accessible {
-		return catalogmodel.Page{}, nil, ErrOfferNotVisible
-	}
-
-	items := service.cache.pageItems(pageID)
-	visible := make([]catalogmodel.Item, 0, len(items))
-	for _, item := range items {
-		if item.Enabled && (!item.ClubOnly || hasClub) {
-			visible = append(visible, item)
-		}
-	}
-
-	return page, visible, nil
-}
-
-// SanitizeList returns definitions without an enabled active offer.
-func (service *Service) SanitizeList(ctx context.Context) ([]furnituremodel.Definition, error) {
-	return service.store.SanitizeList(ctx)
 }
 
 // MarkNewAdditionsSeen records catalog novelty acknowledgement.

@@ -4,6 +4,8 @@ package record
 import "time"
 
 const (
+	// MaxTypeID identifies the highest pet species supported by current Nitro assets.
+	MaxTypeID int32 = 80
 	// StateInventory identifies a pet held outside a room.
 	StateInventory = "inventory"
 	// StateRoom identifies a pet placed in a room.

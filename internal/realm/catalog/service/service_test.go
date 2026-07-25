@@ -39,6 +39,9 @@ type fakeStore struct {
 
 	// txCalls counts opened transactions.
 	txCalls int
+
+	// recentItemIDs stores player purchase history in recent order.
+	recentItemIDs []int64
 }
 
 // ListPages lists fixture pages.
@@ -60,6 +63,11 @@ func (store *fakeStore) ListItems(context.Context, *int64) ([]model.Item, error)
 // SanitizeList lists fixture orphan definitions.
 func (store *fakeStore) SanitizeList(context.Context) ([]furnituremodel.Definition, error) {
 	return append([]furnituremodel.Definition{}, store.sanitize...), nil
+}
+
+// ListRecentPurchaseItemIDs lists fixture purchase history.
+func (store *fakeStore) ListRecentPurchaseItemIDs(context.Context, int64, int32) ([]int64, error) {
+	return append([]int64{}, store.recentItemIDs...), nil
 }
 
 // WithinTransaction serializes work and restores catalog state on failure.

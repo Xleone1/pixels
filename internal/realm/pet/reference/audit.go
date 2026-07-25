@@ -26,23 +26,16 @@ func validate(species []petrecord.Species, breeds []petrecord.Breed, commands []
 }
 
 // validateSpecies audits every stable renderer slot.
-func validateSpecies(species []petrecord.Species) ([36]bool, error) {
-	present := [36]bool{}
+func validateSpecies(species []petrecord.Species) ([petrecord.MaxTypeID + 1]bool, error) {
+	present := [petrecord.MaxTypeID + 1]bool{}
 	if len(species) != len(present) {
-		return present, fmt.Errorf("pet reference audit: expected 36 species slots, got %d", len(species))
+		return present, fmt.Errorf("pet reference audit: expected %d species slots, got %d", len(present), len(species))
 	}
-	reservedEnabled := false
 	for _, item := range species {
 		if item.TypeID < 0 || item.TypeID >= int32(len(present)) || present[item.TypeID] || item.Slug == "" || item.MaximumLevel < 1 || item.MaximumLevel > 20 {
 			return present, fmt.Errorf("pet reference audit: invalid or duplicate species %d", item.TypeID)
 		}
 		present[item.TypeID] = true
-		if item.TypeID == 13 {
-			reservedEnabled = item.Enabled
-		}
-	}
-	if !present[13] || reservedEnabled {
-		return present, fmt.Errorf("pet reference audit: historical species slot 13 must remain disabled")
 	}
 	return present, nil
 }
@@ -65,12 +58,12 @@ func validateCommands(commands []petrecord.Command) ([47]bool, error) {
 }
 
 // validateBreedsAndMappings audits enabled appearance and command relationships.
-func validateBreedsAndMappings(species []petrecord.Species, breeds []petrecord.Breed, bySpecies map[int32][]int32, speciesPresent [36]bool, commandPresent [47]bool) error {
-	breedCount := [36]int{}
+func validateBreedsAndMappings(species []petrecord.Species, breeds []petrecord.Breed, bySpecies map[int32][]int32, speciesPresent [petrecord.MaxTypeID + 1]bool, commandPresent [47]bool) error {
+	breedCount := [petrecord.MaxTypeID + 1]int{}
 	breedKeys := make(map[BreedKey]struct{}, len(breeds))
 	for _, item := range breeds {
 		key := BreedKey{TypeID: item.TypeID, BreedID: item.BreedID, PaletteID: item.PaletteID}
-		if item.TypeID < 0 || item.TypeID >= 36 || !speciesPresent[item.TypeID] {
+		if item.TypeID < 0 || item.TypeID >= int32(len(speciesPresent)) || !speciesPresent[item.TypeID] {
 			return fmt.Errorf("pet reference audit: breed references species %d", item.TypeID)
 		}
 		if _, duplicate := breedKeys[key]; duplicate {
@@ -100,10 +93,10 @@ func validateBreedsAndMappings(species []petrecord.Species, breeds []petrecord.B
 }
 
 // validateProducts audits typed furniture handlers and species restrictions.
-func validateProducts(products []petrecord.ProductRule, speciesPresent [36]bool) error {
+func validateProducts(products []petrecord.ProductRule, speciesPresent [petrecord.MaxTypeID + 1]bool) error {
 	definitions := make(map[int64]struct{}, len(products))
 	for _, item := range products {
-		if item.DefinitionID <= 0 || item.TypeID < -1 || item.TypeID >= 36 || item.TypeID >= 0 && !speciesPresent[item.TypeID] || !validProductKind(item.Kind) {
+		if item.DefinitionID <= 0 || item.TypeID < -1 || item.TypeID >= int32(len(speciesPresent)) || item.TypeID >= 0 && !speciesPresent[item.TypeID] || !validProductKind(item.Kind) {
 			return fmt.Errorf("pet reference audit: invalid product rule for definition %d", item.DefinitionID)
 		}
 		if _, duplicate := definitions[item.DefinitionID]; duplicate {

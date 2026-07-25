@@ -7,6 +7,7 @@ import (
 
 	catalogmodel "github.com/niflaot/pixels/internal/realm/catalog/model"
 	furnituremodel "github.com/niflaot/pixels/internal/realm/furniture/model"
+	petrecord "github.com/niflaot/pixels/internal/realm/pet/record"
 	"github.com/niflaot/pixels/networking/outbound/catalog/offer"
 	outpages "github.com/niflaot/pixels/networking/outbound/catalog/pages"
 	"github.com/niflaot/pixels/pkg/i18n"
@@ -63,7 +64,7 @@ func OfferProducts(item catalogmodel.Item, products []catalogmodel.Product, defi
 	mapped := make([]offer.Product, 0, len(products)+1)
 	localizationID := "catalog.item." + item.Name
 	if item.IsPet() {
-		if item.PetTypeID == nil || *item.PetTypeID < 0 || *item.PetTypeID > 35 || item.PetProductCode == "" {
+		if item.PetTypeID == nil || *item.PetTypeID < 0 || *item.PetTypeID > petrecord.MaxTypeID || item.PetProductCode == "" {
 			return offer.Offer{}, ErrUnsupportedFurniture
 		}
 		localizationID = item.PetProductCode

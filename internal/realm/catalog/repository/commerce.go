@@ -98,6 +98,32 @@ func (repository *Repository) LogPurchase(ctx context.Context, playerID int64, i
 	return err
 }
 
+// ListRecentPurchaseItemIDs returns distinct offers in most-recent purchase order.
+func (repository *Repository) ListRecentPurchaseItemIDs(ctx context.Context, playerID int64, limit int32) ([]int64, error) {
+	rows, err := repository.executorFor(ctx).Query(ctx, `select catalog_item_id
+from catalog_purchase_log
+where player_id=$1
+group by catalog_item_id
+order by max(purchased_at) desc, catalog_item_id desc
+limit $2`, playerID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list recent catalog purchases for player %d: %w", playerID, err)
+	}
+	defer rows.Close()
+	result := make([]int64, 0)
+	for rows.Next() {
+		var itemID int64
+		if err := rows.Scan(&itemID); err != nil {
+			return nil, fmt.Errorf("scan recent catalog purchase for player %d: %w", playerID, err)
+		}
+		result = append(result, itemID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate recent catalog purchases for player %d: %w", playerID, err)
+	}
+	return result, nil
+}
+
 // CreditsSpentSince sums kickback-eligible purchases.
 func (repository *Repository) CreditsSpentSince(ctx context.Context, playerID int64, since time.Time) (int64, error) {
 	var amount int64

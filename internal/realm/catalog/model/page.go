@@ -11,6 +11,10 @@ import (
 const (
 	// DefaultLayout identifies the first supported catalog page layout.
 	DefaultLayout = "default_3x3"
+	// RecentPurchasesLayout identifies the player-specific purchase history page.
+	RecentPurchasesLayout = "recent_purchases"
+	// SoldLimitedItemsLayout identifies the dynamic sold-out LTD archive.
+	SoldLimitedItemsLayout = "sold_ltd_items"
 )
 
 // Page contains one persistent catalog page.

@@ -57,13 +57,13 @@ func TestParsePurchaseDataValidatesExactNitroShape(t *testing.T) {
 
 // TestTypeFromProductCodeValidatesSpeciesRange verifies trusted product parsing.
 func TestTypeFromProductCodeValidatesSpeciesRange(t *testing.T) {
-	for value, expected := range map[string]int32{"pet0": 0, "a15": 15, "pet35": 35} {
+	for value, expected := range map[string]int32{"pet0": 0, "a15": 15, "pet80": 80} {
 		actual, err := typeFromProductCode(value)
 		if err != nil || actual != expected {
 			t.Fatalf("product %q: expected %d, got %d err=%v", value, expected, actual, err)
 		}
 	}
-	for _, value := range []string{"pet", "petx", "pet36"} {
+	for _, value := range []string{"pet", "petx", "pet81"} {
 		if _, err := typeFromProductCode(value); !errors.Is(err, petrecord.ErrInvalidAppearance) {
 			t.Fatalf("expected invalid appearance for %q, got %v", value, err)
 		}

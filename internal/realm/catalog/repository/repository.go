@@ -59,6 +59,12 @@ type CommerceStore interface {
 	CreditsSpentBetween(context.Context, int64, time.Time, time.Time) (int64, error)
 }
 
+// PurchaseHistoryReader reads player-specific catalog history.
+type PurchaseHistoryReader interface {
+	// ListRecentPurchaseItemIDs returns distinct offers in most-recent purchase order.
+	ListRecentPurchaseItemIDs(context.Context, int64, int32) ([]int64, error)
+}
+
 // VoucherAdminStore manages voucher administration records.
 type VoucherAdminStore interface {
 	ListVouchers(context.Context) ([]catalogmodel.Voucher, error)

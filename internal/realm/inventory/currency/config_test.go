@@ -14,7 +14,7 @@ func TestLoadConfigUsesDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
-	if config.Types != "-1:credits,0:duckets,5:diamonds" {
+	if config.Types != "-1:credits,0:duckets,5:diamonds,101:respects,102:poker_chips,104:gotw_points" {
 		t.Fatalf("unexpected currency types %q", config.Types)
 	}
 	if !reflect.DeepEqual(config.LedgerTypes, []int32{-1}) {

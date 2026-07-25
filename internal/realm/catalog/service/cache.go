@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"sort"
 	"sync/atomic"
 	"time"
 
@@ -106,6 +107,38 @@ func (cache *catalogCache) item(id int64) (catalogmodel.Item, bool) {
 // pageItems returns one page's cached offers in persistence order.
 func (cache *catalogCache) pageItems(pageID int64) []catalogmodel.Item {
 	return cache.snapshot.Load().itemsByPage[pageID]
+}
+
+// itemsByID returns cached offers in the requested identifier order.
+func (cache *catalogCache) itemsByID(ids []int64) []catalogmodel.Item {
+	snapshot := cache.snapshot.Load()
+	items := make([]catalogmodel.Item, 0, len(ids))
+	for _, id := range ids {
+		if item, found := snapshot.items[id]; found {
+			items = append(items, item)
+		}
+	}
+	return items
+}
+
+// soldLimitedItems returns completed LTD series in stable offer order.
+func (cache *catalogCache) soldLimitedItems() []catalogmodel.Item {
+	snapshot := cache.snapshot.Load()
+	items := make([]catalogmodel.Item, 0)
+	for _, pageItems := range snapshot.itemsByPage {
+		for _, item := range pageItems {
+			if item.IsLimited() && item.LimitedSells >= item.LimitedStack {
+				items = append(items, item)
+			}
+		}
+	}
+	sort.Slice(items, func(left, right int) bool {
+		if items[left].OrderNum == items[right].OrderNum {
+			return items[left].ID < items[right].ID
+		}
+		return items[left].OrderNum < items[right].OrderNum
+	})
+	return items
 }
 
 // Item returns one cached catalog item.

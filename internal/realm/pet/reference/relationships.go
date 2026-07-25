@@ -8,10 +8,10 @@ import (
 )
 
 // validateBehaviorReferences audits vocal and breeding relationship manifests.
-func validateBehaviorReferences(species []petrecord.Species, breeds []petrecord.Breed, vocals []petrecord.Vocal, rules []petrecord.BreedingRule, races []petrecord.BreedingRace, speciesPresent [36]bool) error {
-	vocalCount := [36]int{}
+func validateBehaviorReferences(species []petrecord.Species, breeds []petrecord.Breed, vocals []petrecord.Vocal, rules []petrecord.BreedingRule, races []petrecord.BreedingRace, speciesPresent [petrecord.MaxTypeID + 1]bool) error {
+	vocalCount := [petrecord.MaxTypeID + 1]int{}
 	for _, item := range vocals {
-		if item.TypeID < 0 || item.TypeID >= 36 || !speciesPresent[item.TypeID] || item.Mood == "" || item.TextKey == "" || item.Weight < 1 || item.Cooldown < time.Second || item.Cooldown > time.Hour {
+		if item.TypeID < 0 || item.TypeID >= int32(len(speciesPresent)) || !speciesPresent[item.TypeID] || item.Mood == "" || item.TextKey == "" || item.Weight < 1 || item.Cooldown < time.Second || item.Cooldown > time.Hour {
 			return fmt.Errorf("pet reference audit: invalid vocal for species %d", item.TypeID)
 		}
 		if item.Enabled {
@@ -23,10 +23,10 @@ func validateBehaviorReferences(species []petrecord.Species, breeds []petrecord.
 		breedKeys[BreedKey{TypeID: item.TypeID, BreedID: item.BreedID, PaletteID: item.PaletteID}] = item.Enabled
 	}
 	ruleKeys := make(map[BreedingKey]struct{}, len(rules))
-	resultCount := [36]int{}
+	resultCount := [petrecord.MaxTypeID + 1]int{}
 	for _, item := range rules {
 		key := breedingKey(item.ParentOneTypeID, item.ParentTwoTypeID)
-		if key.ParentOneTypeID != item.ParentOneTypeID || key.ParentTwoTypeID != item.ParentTwoTypeID || item.ParentOneTypeID < 0 || item.ParentOneTypeID >= 36 || item.ParentTwoTypeID < 0 || item.ParentTwoTypeID >= 36 || item.ResultTypeID < 0 || item.ResultTypeID >= 36 || !speciesPresent[item.ParentOneTypeID] || !speciesPresent[item.ParentTwoTypeID] || !speciesPresent[item.ResultTypeID] {
+		if key.ParentOneTypeID != item.ParentOneTypeID || key.ParentTwoTypeID != item.ParentTwoTypeID || item.ParentOneTypeID < 0 || item.ParentOneTypeID >= int32(len(speciesPresent)) || item.ParentTwoTypeID < 0 || item.ParentTwoTypeID >= int32(len(speciesPresent)) || item.ResultTypeID < 0 || item.ResultTypeID >= int32(len(speciesPresent)) || !speciesPresent[item.ParentOneTypeID] || !speciesPresent[item.ParentTwoTypeID] || !speciesPresent[item.ResultTypeID] {
 			return fmt.Errorf("pet reference audit: invalid breeding rule %d/%d", item.ParentOneTypeID, item.ParentTwoTypeID)
 		}
 		if _, duplicate := ruleKeys[key]; duplicate {
@@ -37,7 +37,7 @@ func validateBehaviorReferences(species []petrecord.Species, breeds []petrecord.
 	raceKeys := make(map[BreedKey]struct{}, len(races))
 	for _, item := range races {
 		key := BreedKey{TypeID: item.ResultTypeID, BreedID: item.BreedID, PaletteID: item.PaletteID}
-		if item.ResultTypeID < 0 || item.ResultTypeID >= 36 || !breedKeys[key] || item.Weight < 1 {
+		if item.ResultTypeID < 0 || item.ResultTypeID >= int32(len(speciesPresent)) || !breedKeys[key] || item.Weight < 1 {
 			return fmt.Errorf("pet reference audit: invalid breeding race %+v", key)
 		}
 		if _, duplicate := raceKeys[key]; duplicate {

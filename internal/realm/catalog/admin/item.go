@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	catalogmodel "github.com/niflaot/pixels/internal/realm/catalog/model"
+	petrecord "github.com/niflaot/pixels/internal/realm/pet/record"
 )
 
 // CreateItem creates one catalog offer and its optional LTD stock.
@@ -153,7 +154,7 @@ func (service *Service) validateItem(ctx context.Context, item catalogmodel.Item
 		return nil
 	}
 	if item.IsPet() {
-		if item.PetTypeID == nil || *item.PetTypeID < 0 || *item.PetTypeID > 35 || strings.TrimSpace(item.PetProductCode) == "" || item.DefinitionID != 0 || item.GrantsEffectID != nil || item.GrantsBadgeCode != "" || item.Amount != 1 || item.LimitedStack != 0 || item.LimitedSells != 0 || item.Giftable || item.BundleDiscountEnabled {
+		if item.PetTypeID == nil || *item.PetTypeID < 0 || *item.PetTypeID > petrecord.MaxTypeID || strings.TrimSpace(item.PetProductCode) == "" || item.DefinitionID != 0 || item.GrantsEffectID != nil || item.GrantsBadgeCode != "" || item.Amount != 1 || item.LimitedStack != 0 || item.LimitedSells != 0 || item.Giftable || item.BundleDiscountEnabled {
 			return ErrInvalidItem
 		}
 		return nil

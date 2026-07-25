@@ -11,9 +11,9 @@ import (
 // Snapshot stores one immutable reference generation.
 type Snapshot struct {
 	// Species stores species by type identifier.
-	Species [36]petrecord.Species
+	Species [petrecord.MaxTypeID + 1]petrecord.Species
 	// SpeciesPresent reports loaded slots without map lookups.
-	SpeciesPresent [36]bool
+	SpeciesPresent [petrecord.MaxTypeID + 1]bool
 	// Breeds stores appearance records by composite key.
 	Breeds map[BreedKey]petrecord.Breed
 	// Commands stores commands by protocol identifier.
@@ -21,15 +21,15 @@ type Snapshot struct {
 	// CommandPresent reports loaded commands without map lookups.
 	CommandPresent [47]bool
 	// SpeciesCommands stores ordered command IDs by species.
-	SpeciesCommands [36][]int32
+	SpeciesCommands [petrecord.MaxTypeID + 1][]int32
 	// ProductRules stores typed products by furniture definition.
 	ProductRules map[int64]petrecord.ProductRule
 	// Vocals stores ordered localized speech by species.
-	Vocals [36][]petrecord.Vocal
+	Vocals [petrecord.MaxTypeID + 1][]petrecord.Vocal
 	// BreedingRules stores canonical parent compatibility rules.
 	BreedingRules map[BreedingKey]petrecord.BreedingRule
 	// BreedingRaces stores weighted result appearances by species.
-	BreedingRaces [36][]petrecord.BreedingRace
+	BreedingRaces [petrecord.MaxTypeID + 1][]petrecord.BreedingRace
 }
 
 // BreedKey identifies one appearance reference record.

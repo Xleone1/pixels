@@ -79,8 +79,8 @@ func TestRefreshPublishesCompleteGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !current.SpeciesPresent[35] || !current.CommandPresent[46] || current.CommandPresent[39] {
-		t.Fatalf("unexpected published manifest: species=%v command46=%v command39=%v", current.SpeciesPresent[35], current.CommandPresent[46], current.CommandPresent[39])
+	if !current.SpeciesPresent[petrecord.MaxTypeID] || !current.CommandPresent[46] || current.CommandPresent[39] {
+		t.Fatalf("unexpected published manifest: species=%v command46=%v command39=%v", current.SpeciesPresent[petrecord.MaxTypeID], current.CommandPresent[46], current.CommandPresent[39])
 	}
 }
 
@@ -91,10 +91,9 @@ func TestRefreshRejectsIncompleteReferences(t *testing.T) {
 		mutate func(*referenceStore)
 		want   string
 	}{
-		{name: "species slot", mutate: func(store *referenceStore) { store.species = store.species[:35] }, want: "36 species"},
-		{name: "reserved enabled", mutate: func(store *referenceStore) { store.species[13].Enabled = true }, want: "slot 13"},
+		{name: "species slot", mutate: func(store *referenceStore) { store.species = store.species[:petrecord.MaxTypeID] }, want: "81 species"},
 		{name: "command missing", mutate: func(store *referenceStore) { store.commands = store.commands[:45] }, want: "command 46"},
-		{name: "breed missing", mutate: func(store *referenceStore) { store.breeds = store.breeds[:35] }, want: "no enabled breed"},
+		{name: "breed missing", mutate: func(store *referenceStore) { store.breeds = store.breeds[:len(store.breeds)-1] }, want: "no enabled breed"},
 		{name: "mapping missing", mutate: func(store *referenceStore) { store.speciesCommands[0] = nil }, want: "no commands"},
 		{name: "product kind", mutate: func(store *referenceStore) { store.products[0].Kind = "unknown" }, want: "product rule"},
 		{name: "vocal missing", mutate: func(store *referenceStore) { store.vocals = store.vocals[1:] }, want: "no vocal"},
@@ -114,7 +113,7 @@ func TestRefreshRejectsIncompleteReferences(t *testing.T) {
 
 // completeReferenceStore creates every canonical species and command slot.
 func completeReferenceStore() referenceStore {
-	store := referenceStore{speciesCommands: make(map[int32][]int32, 36), products: []petrecord.ProductRule{{DefinitionID: 1, Kind: "food", TypeID: -1, Enabled: true}}}
+	store := referenceStore{speciesCommands: make(map[int32][]int32, petrecord.MaxTypeID+1), products: []petrecord.ProductRule{{DefinitionID: 1, Kind: "food", TypeID: -1, Enabled: true}}}
 	commandIDs := make([]int32, 0, 46)
 	for id := int32(0); id <= 46; id++ {
 		if id == 39 {
@@ -123,16 +122,13 @@ func completeReferenceStore() referenceStore {
 		store.commands = append(store.commands, petrecord.Command{ID: id, NameKey: "command"})
 		commandIDs = append(commandIDs, id)
 	}
-	for typeID := int32(0); typeID < 36; typeID++ {
-		enabled := typeID != 13
-		store.species = append(store.species, petrecord.Species{TypeID: typeID, Slug: "species", MaximumLevel: 20, Breedable: enabled, Enabled: enabled})
-		store.breeds = append(store.breeds, petrecord.Breed{TypeID: typeID, Enabled: enabled})
-		if enabled {
-			store.speciesCommands[typeID] = append([]int32(nil), commandIDs...)
-			store.vocals = append(store.vocals, petrecord.Vocal{TypeID: typeID, Mood: "idle", TextKey: "pet.vocal.generic", Weight: 1, Cooldown: 15 * time.Second, Enabled: true})
-			store.breedingRules = append(store.breedingRules, petrecord.BreedingRule{ParentOneTypeID: typeID, ParentTwoTypeID: typeID, ResultTypeID: typeID, Enabled: true})
-			store.breedingRaces = append(store.breedingRaces, petrecord.BreedingRace{ResultTypeID: typeID, Weight: 100, Enabled: true})
-		}
+	for typeID := int32(0); typeID <= petrecord.MaxTypeID; typeID++ {
+		store.species = append(store.species, petrecord.Species{TypeID: typeID, Slug: "species", MaximumLevel: 20, Breedable: true, Enabled: true})
+		store.breeds = append(store.breeds, petrecord.Breed{TypeID: typeID, Enabled: true})
+		store.speciesCommands[typeID] = append([]int32(nil), commandIDs...)
+		store.vocals = append(store.vocals, petrecord.Vocal{TypeID: typeID, Mood: "idle", TextKey: "pet.vocal.generic", Weight: 1, Cooldown: 15 * time.Second, Enabled: true})
+		store.breedingRules = append(store.breedingRules, petrecord.BreedingRule{ParentOneTypeID: typeID, ParentTwoTypeID: typeID, ResultTypeID: typeID, Enabled: true})
+		store.breedingRaces = append(store.breedingRaces, petrecord.BreedingRace{ResultTypeID: typeID, Weight: 100, Enabled: true})
 	}
 	return store
 }

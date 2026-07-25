@@ -14,7 +14,7 @@ func (repository *Repository) Species(ctx context.Context) ([]petrecord.Species,
 		return nil, err
 	}
 	defer rows.Close()
-	items := make([]petrecord.Species, 0, 36)
+	items := make([]petrecord.Species, 0, petrecord.MaxTypeID+1)
 	for rows.Next() {
 		item := petrecord.Species{}
 		if err = rows.Scan(&item.TypeID, &item.Slug, &item.DisplayKey, &item.BehaviorKind, &item.MaximumLevel, &item.Rideable, &item.Breedable, &item.Plant, &item.Enabled); err != nil {
@@ -70,7 +70,7 @@ func (repository *Repository) Commands(ctx context.Context) ([]petrecord.Command
 		return nil, nil, err
 	}
 	defer links.Close()
-	bySpecies := make(map[int32][]int32, 36)
+	bySpecies := make(map[int32][]int32, petrecord.MaxTypeID+1)
 	for links.Next() {
 		var typeID, commandID int32
 		if err = links.Scan(&typeID, &commandID); err != nil {
@@ -106,7 +106,7 @@ func (repository *Repository) Vocals(ctx context.Context) ([]petrecord.Vocal, er
 		return nil, err
 	}
 	defer rows.Close()
-	items := make([]petrecord.Vocal, 0, 36)
+	items := make([]petrecord.Vocal, 0, petrecord.MaxTypeID+1)
 	for rows.Next() {
 		item := petrecord.Vocal{}
 		var cooldown int64
@@ -125,7 +125,7 @@ func (repository *Repository) BreedingRules(ctx context.Context) ([]petrecord.Br
 	if err != nil {
 		return nil, nil, err
 	}
-	rules := make([]petrecord.BreedingRule, 0, 35)
+	rules := make([]petrecord.BreedingRule, 0, petrecord.MaxTypeID+1)
 	for ruleRows.Next() {
 		item := petrecord.BreedingRule{}
 		if err = ruleRows.Scan(&item.ParentOneTypeID, &item.ParentTwoTypeID, &item.ResultTypeID, &item.Enabled); err != nil {

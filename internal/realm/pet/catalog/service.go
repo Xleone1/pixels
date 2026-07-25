@@ -209,7 +209,7 @@ func typeFromProductCode(value string) (int32, error) {
 		return 0, petrecord.ErrInvalidAppearance
 	}
 	parsed, err := strconv.ParseInt(value[index:], 10, 32)
-	if err != nil || parsed < 0 || parsed > 35 {
+	if err != nil || parsed < 0 || parsed > int64(petrecord.MaxTypeID) {
 		return 0, petrecord.ErrInvalidAppearance
 	}
 	return int32(parsed), nil

@@ -39,7 +39,7 @@ func (service *Service) requestPackageName(ctx context.Context, request essentia
 		return petrecord.ErrNoRights
 	}
 	typeID, err := strconv.ParseInt(strings.TrimSpace(request.Item.Definition.CustomParams), 10, 32)
-	if err != nil || typeID < 0 || typeID > 35 {
+	if err != nil || typeID < 0 || typeID > int64(petrecord.MaxTypeID) {
 		return petrecord.ErrInvalidProduct
 	}
 	references, err := service.references.Current(ctx)

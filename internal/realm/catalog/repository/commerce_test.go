@@ -30,3 +30,18 @@ func TestCreditsSpentBetweenUsesBothPeriodBoundaries(t *testing.T) {
 		t.Fatalf("amount=%d query=%q arguments=%#v error=%v", amount, executor.query, executor.arguments, err)
 	}
 }
+
+// TestListRecentPurchaseItemIDsKeepsDatabaseOrder verifies distinct recent history projection.
+func TestListRecentPurchaseItemIDsKeepsDatabaseOrder(t *testing.T) {
+	executor := &fakeExecutor{rows: &fakeRows{values: [][]any{{int64(8)}, {int64(3)}}}}
+	ids, err := newRepository(executor).ListRecentPurchaseItemIDs(context.Background(), 7, 100)
+	if err != nil || len(ids) != 2 || ids[0] != 8 || ids[1] != 3 {
+		t.Fatalf("ids=%v error=%v", ids, err)
+	}
+	if len(executor.arguments) != 2 || executor.arguments[0] != int64(7) || executor.arguments[1] != int32(100) {
+		t.Fatalf("unexpected arguments: %#v", executor.arguments)
+	}
+	if !strings.Contains(executor.query, "group by catalog_item_id") || !strings.Contains(executor.query, "max(purchased_at) desc") {
+		t.Fatalf("unexpected query: %s", executor.query)
+	}
+}

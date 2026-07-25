@@ -11,4 +11,6 @@
     <include file="migrations/0006_contextual_training.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0007_stationary_plants.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0008_monsterplant_appearance.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0009_extended_species.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0010_monster_species_relationships.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>
