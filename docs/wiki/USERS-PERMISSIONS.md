@@ -58,6 +58,169 @@ Realms register concrete nodes in code at startup. This produces a catalog with 
 
 `PIXELS_EFFECT_ALLOW_UNPERMITTED_CLEAR=true` provides one narrow exception: a player without `admin.effect` may execute `:effect 0` to clear their own active effect. It never permits selecting a nonzero effect.
 
+## Registered permission catalog
+
+The following 113 concrete nodes are registered by production code. This is the
+canonical operator-facing inventory: tests and fixtures are intentionally
+excluded. Whenever code adds, removes, or renames a node, this catalog must be
+updated in the same change.
+
+### Administration, CMS, and moderation
+
+| Node | Capability |
+|---|---|
+| `admin.about` | Read private build and plugin metadata with `:about` |
+| `admin.alert` | Send a direct player alert with `:alert` |
+| `admin.effect` | Select or clear an owned avatar effect with `:effect` |
+| `admin.halert` | Broadcast a hotel alert with `:halert` |
+| `admin.trace` | Capture the issuing player's packet traffic with `:trace` |
+| `cms.maintenance.bypass` | Enter the CMS while maintenance mode is active |
+| `cms.maintenance.early_access.manage` | Grant and revoke maintenance early access |
+| `cms.maintenance.manage` | Configure CMS maintenance windows |
+| `cms.news.manage` | Create, edit, and remove CMS news |
+| `cms.permissions.groups.create` | Create permission groups from the CMS |
+| `cms.permissions.groups.members.manage` | Add and remove permission-group members |
+| `cms.permissions.groups.nodes.manage` | Grant, deny, and remove group nodes |
+| `cms.permissions.groups.update` | Update permission-group metadata |
+| `cms.permissions.groups.view` | View permission groups and their details |
+| `cms.store.packages.manage` | Manage CMS store packages |
+| `cms.store.transactions.authorize` | Authorize CMS store transactions |
+| `cms.store.transactions.view` | View CMS store transactions |
+| `moderation.chatlog.read` | Read moderation chat logs |
+| `moderation.guardian.duty` | Perform Guardian duty flows |
+| `moderation.guide.duty` | Perform Guide duty flows |
+| `moderation.issue.manage` | Claim, reply to, and close moderation issues |
+| `moderation.room.override` | Use staff moderation controls in any room |
+| `moderation.sanction.apply` | Apply and revoke supported sanctions |
+| `moderation.sanction.ban` | Apply ban sanctions |
+| `moderation.sanction.immune` | Reject sanctions targeting this player |
+| `moderation.tool.access` | Open and receive the moderation tool projection |
+
+### Catalog, economy, subscriptions, and progression
+
+| Node | Capability |
+|---|---|
+| `catalog.admin.manage` | Manage catalog pages and offers |
+| `catalog.admin.voucher.manage` | Manage catalog voucher definitions |
+| `currency.admin.manage` | Mutate player currency through administration |
+| `currency.economy.infinite` | Bypass player-originated currency deductions |
+| `marketplace.admin.manage` | Perform marketplace administration |
+| `progression.definitions.manage.any` | Manage progression definitions |
+| `progression.perk.trade` | Receive Nitro's `TRADE` perk and use trading |
+| `progression.player.override.any` | Override player progression |
+| `progression.quest.manage.any` | Manage quest definitions and state |
+| `subscription.admin.calendar.manage` | Manage subscription calendar rewards |
+| `subscription.admin.club_offer.manage` | Manage club subscription offers |
+| `subscription.admin.membership.grant` | Grant club memberships administratively |
+| `subscription.admin.targeted_offer.manage` | Manage targeted subscription offers |
+| `subscription.calendar.staff.bypass` | Bypass normal calendar availability gates |
+| `trade.bypass_restrictions` | Bypass ordinary trade restrictions |
+| `trade.moderation.lock` | Lock or unlock trading through moderation |
+
+### Chat, messenger, and player profile
+
+| Node | Capability |
+|---|---|
+| `chat.bubble.any` | Use chat bubbles otherwise unavailable to the player |
+| `chat.filter.immune` | Bypass the hotel chat word filter |
+| `chat.flood.immune` | Bypass chat flood throttling |
+| `chat.length.unlimited` | Bypass the normal chat message length limit |
+| `chat.whisper.observe.any` | Observe whispers between other room occupants |
+| `messenger.follow.any` | Follow players without the ordinary relationship gate |
+| `messenger.friends.unlimited` | Bypass the Messenger friend limit |
+| `navigator.favorite.unlimited` | Bypass the Navigator favorite-room limit |
+| `player.admin.effect.grant` | Grant or revoke player effects through administration |
+| `player.hotel.ambassador` | Project the hotel-ambassador client capability |
+| `profile.respect.unlimited` | Bypass the daily respect quota |
+
+### Camera, crafting, games, and bots
+
+| Node | Capability |
+|---|---|
+| `bot.any_room_owner` | Manage bots as though owning their room |
+| `bot.place_anywhere` | Place bots without the ordinary placement restriction |
+| `bot.unlimited` | Bypass the bot ownership and room limits |
+| `camera.capture.use` | Capture and purchase camera photos |
+| `camera.gallery.moderate.any` | Moderate any camera gallery publication |
+| `camera.settings.manage.any` | Manage camera settings for any target |
+| `crafting.altar.manage.any` | Manage any crafting altar |
+| `crafting.player.override.any` | Override player crafting state |
+| `crafting.recycler.manage.any` | Manage recycler configuration and state |
+| `games.center.manage.any` | Manage Game Center definitions |
+| `games.polls.manage.any` | Manage hotel polls |
+
+### Social groups
+
+| Node | Capability |
+|---|---|
+| `group.badge.manage.any` | Change any social group's badge |
+| `group.create` | Create a social group |
+| `group.delete.any` | Deactivate or restore any social group |
+| `group.forum.manage.any` | Manage any social-group forum |
+| `group.forum.moderate.any` | Moderate posts and threads in any group forum |
+| `group.home_room.rebind` | Rebind a group's home room |
+| `group.manage.any` | Edit any social group's identity and settings |
+| `group.members.manage.any` | Add, remove, or change members in any group |
+| `group.read.deactivated` | Read deactivated social groups |
+| `group.roles.manage.any` | Manage roles in any social group |
+
+### Pets
+
+| Node | Capability |
+|---|---|
+| `pet.inventory.limit.bypass` | Bypass the pet inventory limit |
+| `pet.lifecycle.manage` | Administratively manage pet lifecycle state |
+| `pet.manage.any` | Manage pets owned by another player |
+| `pet.move.any` | Move any pet regardless of ordinary room authority |
+| `pet.place.any` | Place pets without the ordinary ownership restriction |
+| `pet.respect.limit.bypass` | Bypass the daily pet-respect limit |
+| `pet.room.limit.bypass` | Bypass the per-room pet limit |
+
+### Rooms and furniture
+
+| Node | Capability |
+|---|---|
+| `room.admin.bundle_template.manage` | Manage hidden room-bundle templates |
+| `room.ambassador.alert` | Send room ambassador alerts |
+| `room.delete.any` | Delete any room |
+| `room.doorbell.answer.any` | Answer the doorbell in any room |
+| `room.enter.any` | Bypass ordinary room entry policy |
+| `room.enter.full` | Enter a room at its normal occupancy limit |
+| `room.floorplan.any.edit` | Edit the floor plan of any room |
+| `room.floorplan.own.edit` | Edit an owned room's floor plan |
+| `room.furniture.any.manage` | Place, move, use, or pick up furniture in any room |
+| `room.moderation.any.ban` | Ban a player from any room |
+| `room.moderation.any.kick` | Kick a player from any room |
+| `room.moderation.any.mute` | Mute a player in any room |
+| `room.moderation.own.ban` | Ban a player from an owned room |
+| `room.moderation.own.kick` | Kick a player from an owned room |
+| `room.moderation.own.mute` | Mute a player in an owned room |
+| `room.moderation.policy.any.manage` | Change moderation policy in any room |
+| `room.moderation.policy.own.manage` | Change moderation policy in an owned room |
+| `room.promotion.manage.any` | Manage any room promotion |
+| `room.rights.any.grant` | Grant rights in any room |
+| `room.rights.any.revoke` | Revoke rights in any room |
+| `room.rights.own.grant` | Grant rights in an owned room |
+| `room.rights.own.revoke` | Revoke rights in an owned room |
+| `room.settings.any.manage` | Change settings for any room |
+| `room.settings.own.manage` | Change settings for an owned room |
+| `room.staffpick.manage` | Add and remove staff-picked rooms |
+| `room.unkickable` | Prevent room kicks and kick-like furniture effects |
+| `room.wired.admin` | Use administrative Wired behavior |
+| `room.wired.compatibility.use` | Use Wired compatibility behavior |
+| `room.wired.configure` | Configure Wired with ordinary room authority |
+| `room.wired.configure.any` | Configure Wired in any room |
+| `room.wired.inspect` | Inspect Wired configuration |
+| `room.wired.reward.manage` | Configure Wired rewards |
+
+Plugin nodes are registered dynamically as
+`plugin.<plugin-name>.<local-node>`, so their concrete inventory depends on the
+plugins loaded by the current process. Catalog page `required_node` values do
+not create permissions: they must reference an already registered concrete node,
+including a loaded plugin node. Wildcards such as `*`, `room.*`, and
+`plugin.example.*` are stored grants and are therefore not entries in this
+concrete-node catalog.
+
 ## Grants and denies
 
 Both permission groups and individual players may store a node with `allowed=true` or `allowed=false`. A false grant is an explicit deny. Removing a grant is different from denying it: removal lets the resolver continue to another source, while a deny is a decision.

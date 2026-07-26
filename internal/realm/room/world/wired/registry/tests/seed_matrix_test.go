@@ -55,6 +55,21 @@ func TestDevelopmentLabsPlaceAndConfigureManifest(t *testing.T) {
 	}
 }
 
+// TestExtraLabSelectedTriggersUseExplicitSelectionMode prevents invalid seeded target selections.
+func TestExtraLabSelectedTriggersUseExplicitSelectionMode(t *testing.T) {
+	path := repositoryPath(t, "internal/realm/furniture/database/seed/development/0031_wired_lab_extras.sql")
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, itemID := range []string{"426000", "426010", "426020", "426030"} {
+		expected := "(" + itemID + ",'[]','',1,0)"
+		if !strings.Contains(string(contents), expected) {
+			t.Errorf("WIRED item %s has no explicit selection mode", itemID)
+		}
+	}
+}
+
 // seededDefinitions maps development furniture definition ids to interactions.
 func seededDefinitions(t *testing.T) map[int64]string {
 	t.Helper()

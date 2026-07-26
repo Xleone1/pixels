@@ -32,10 +32,10 @@ on conflict(id) do update set definition_id=excluded.definition_id,owner_player_
 
 insert into room_wired_settings(item_id,int_params,string_param,selection_mode,delay_pulses)
 values
-    (426000,'[]','',0,0),(426001,'[]','PASS roller walk-on fired.',0,0),
-    (426010,'[]','',0,0),(426011,'[]','PASS roller walk-off fired.',0,0),
-    (426020,'[]','',0,0),(426021,'[]','PASS carpet entered.',0,0),
-    (426030,'[]','',0,0),(426031,'[]','PASS carpet left.',0,0),
+    (426000,'[]','',1,0),(426001,'[]','PASS roller walk-on fired.',0,0),
+    (426010,'[]','',1,0),(426011,'[]','PASS roller walk-off fired.',0,0),
+    (426020,'[]','',1,0),(426021,'[]','PASS carpet entered.',0,0),
+    (426030,'[]','',1,0),(426031,'[]','PASS carpet left.',0,0),
     (426040,'[]','juno',0,0),(426041,'[]','PASS filtered entry for juno.',0,0),
     (426050,'[]','minutereward',0,0),(426051,'[3,1,0,1]','',0,0),
     (426060,'[]','',0,0),(426061,'[]','Extras lab: ride the roller onto the plate, cross the carpet, re-enter as juno, say minutereward.',0,0)

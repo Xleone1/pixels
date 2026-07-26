@@ -207,6 +207,9 @@ minimum manual checks expected when touching it.
   group, then specificity and nearest child within that group's inheritance chain.
 - Catalog page access uses optional `required_node`; player-originated currency
   deductions honor `currency.economy.infinite` without bypassing admin mutations.
+- Every permission node added, removed, renamed, or behaviorally changed in code
+  must update the canonical catalog in `docs/wiki/USERS-PERMISSIONS.md` in the
+  same change.
 - Test after changes:
   - `go test ./internal/permission/... ./pkg/http/permission/...`
   - `go test ./networking/outbound/session/permissions ./networking/outbound/session/perks`
