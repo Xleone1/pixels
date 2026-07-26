@@ -127,9 +127,9 @@ func testRecord(id int64) playerservice.Record {
 			Username: "test_player",
 		},
 		Profile: playermodel.Profile{
-			PlayerID:        id,
-			Look:            "hd-180-1",
-			Gender:          playermodel.GenderMale,
+			PlayerID: id,
+			Look:     "hd-180-1",
+			Gender:   playermodel.GenderMale,
 			Motto:    "Test fixture.",
 		},
 	}
