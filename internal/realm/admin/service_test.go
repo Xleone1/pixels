@@ -100,7 +100,7 @@ func newServiceFixture() serviceFixture {
 	bindings := binding.NewRegistry()
 	connections := netconn.NewRegistry()
 	traces := &traceManager{}
-	service := New(build.NewInfo("pixels", "v0.0.3", "1234567890"), &loader.Loader{}, players, bindings, connections, nil, nil, zap.NewNop())
+	service := New(Config{}, build.NewInfo("pixels", "v0.0.3", "1234567890"), &loader.Loader{}, players, bindings, connections, nil, nil, nil, zap.NewNop())
 	service.tracer = traces
 	return serviceFixture{service: service, players: players, bindings: bindings, connections: connections, trace: traces}
 }

@@ -11,4 +11,6 @@ var (
 	AboutPermission = permission.RegisterNode("admin.about", "")
 	// TracePermission allows capturing production protocol traffic.
 	TracePermission = permission.RegisterNode("admin.trace", "")
+	// EffectPermission allows selecting or clearing the issuer's avatar effect.
+	EffectPermission = permission.RegisterNode("admin.effect", "")
 )

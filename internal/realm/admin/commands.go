@@ -46,6 +46,16 @@ func traceCommand(service *Service) brigodier.LiteralNodeBuilder {
 		}))
 }
 
+// effectCommand builds the personal avatar effect selector.
+func effectCommand(service *Service) brigodier.LiteralNodeBuilder {
+	return brigodier.Literal("effect").
+		Requires(service.canUseEffectCommand).
+		Then(brigodier.Argument("id", brigodier.Int32).
+			Executes(commandExecution(func(ctx context.Context, sender sdkcommand.Sender, call *brigodier.CommandContext) error {
+				return service.Effect(ctx, sender, call.Int32("id"))
+			})))
+}
+
 // commandExecution resolves one required sender before domain execution.
 func commandExecution(execute func(context.Context, sdkcommand.Sender, *brigodier.CommandContext) error) brigodier.Command {
 	return brigodier.CommandFunc(func(call *brigodier.CommandContext) error {

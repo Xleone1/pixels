@@ -3,12 +3,14 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/niflaot/pixels/internal/plugin/loader"
 	admintrace "github.com/niflaot/pixels/internal/realm/admin/trace"
+	playereffect "github.com/niflaot/pixels/internal/realm/player/effect"
 	playerlive "github.com/niflaot/pixels/internal/realm/player/live"
 	"github.com/niflaot/pixels/internal/realm/session/binding"
 	netconn "github.com/niflaot/pixels/networking/connection"
@@ -21,6 +23,8 @@ import (
 
 // Service implements first-party administrative command behavior.
 type Service struct {
+	// config controls command compatibility behavior.
+	config Config
 	// build stores current release metadata.
 	build build.Info
 	// plugins reports loaded dynamic plugins.
@@ -33,6 +37,8 @@ type Service struct {
 	connections *netconn.Registry
 	// tracer captures selected bidirectional traffic.
 	tracer TraceManager
+	// effects selects and clears player-owned avatar effects.
+	effects playereffect.Manager
 	// translations localizes command feedback.
 	translations i18n.Translator
 	// log records accountable administrative actions.
@@ -50,12 +56,12 @@ type TraceManager interface {
 }
 
 // New creates the first-party administrative command service.
-func New(info build.Info, plugins *loader.Loader, players *playerlive.Registry, bindings *binding.Registry, connections *netconn.Registry, tracer *admintrace.Tracer, translations i18n.Translator, log *zap.Logger) *Service {
+func New(config Config, info build.Info, plugins *loader.Loader, players *playerlive.Registry, bindings *binding.Registry, connections *netconn.Registry, tracer *admintrace.Tracer, effects playereffect.Manager, translations i18n.Translator, log *zap.Logger) *Service {
 	if log == nil {
 		log = zap.NewNop()
 	}
 
-	return &Service{build: info, plugins: plugins, players: players, bindings: bindings, connections: connections, tracer: tracer, translations: translations, log: log}
+	return &Service{config: config, build: info, plugins: plugins, players: players, bindings: bindings, connections: connections, tracer: tracer, effects: effects, translations: translations, log: log}
 }
 
 // Alert sends one popup to an exact connected username.
@@ -145,6 +151,39 @@ func (service *Service) ToggleTrace(ctx context.Context, sender sdkcommand.Sende
 	}
 
 	return sender.Reply(ctx, service.message("admin.command.trace.started", "Trace activado hasta {expires}.", i18n.Params{"expires": session.ExpiresAt.Format("2006-01-02 15:04:05 MST")}))
+}
+
+// Effect selects one owned effect or clears the current selection with id zero.
+func (service *Service) Effect(ctx context.Context, sender sdkcommand.Sender, effectID int32) error {
+	permitted := sender.HasPermission(string(EffectPermission))
+	if !permitted && (!service.config.AllowUnpermittedEffectClear || effectID != 0) {
+		return sender.Reply(ctx, service.message("admin.command.effect.denied", "No tienes permiso para seleccionar ese efecto."))
+	}
+	if effectID < 0 {
+		return sender.Reply(ctx, service.message("admin.command.effect.invalid", "El identificador del efecto no es válido."))
+	}
+	player, found := service.findPlayer(sender.Name())
+	if !found || service.effects == nil {
+		return sender.Reply(ctx, service.message("admin.command.effect.unavailable", "No se pudo resolver tu sesión o el sistema de efectos."))
+	}
+	if err := service.effects.Enable(ctx, player.ID(), effectID); err != nil {
+		if errors.Is(err, playereffect.ErrEffectNotFound) {
+			return sender.Reply(ctx, service.message("admin.command.effect.not_owned", "No tienes ese efecto disponible."))
+		}
+		return service.replyFailure(ctx, sender, err)
+	}
+	service.log.Info("avatar effect command used", zap.Int64("player_id", player.ID()), zap.String("player_name", player.Username()), zap.Int32("effect_id", effectID), zap.Bool("permission", permitted))
+	if effectID == 0 {
+		return sender.Reply(ctx, service.message("admin.command.effect.cleared", "Efecto desactivado."))
+	}
+
+	return sender.Reply(ctx, service.message("admin.command.effect.selected", "Efecto {effect} activado.", i18n.Params{"effect": strconv.FormatInt(int64(effectID), 10)}))
+}
+
+// canUseEffectCommand exposes the root to staff or to self-clear compatibility.
+func (service *Service) canUseEffectCommand(ctx context.Context) bool {
+	sender, found := sdkcommand.SenderFrom(ctx)
+	return found && (sender.HasPermission(string(EffectPermission)) || service.config.AllowUnpermittedEffectClear)
 }
 
 // senderID resolves the connected sender id for audit logs.

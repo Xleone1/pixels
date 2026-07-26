@@ -24,6 +24,7 @@ Durations use Go duration syntax such as `250ms`, `5m`, `24h`, and `168h`. Empty
 | `PIXELS_PLUGIN_DIRECTORY` | `plugins` | Root containing one folder per native plugin |
 | `PIXELS_PLUGIN_CALLBACK_TIMEOUT` | `2s` | Deadline for plugin callbacks |
 | `PIXELS_COMMAND_PREFIX` | `:` | Room chat prefix for plugin commands |
+| `PIXELS_EFFECT_ALLOW_UNPERMITTED_CLEAR` | `true` | Let players without `admin.effect` clear their own active effect with `:effect 0` |
 
 ## PostgreSQL, Redis, SSO, and storage
 

@@ -1,6 +1,6 @@
 # Core Commands
 
-Pixels ships four first-party room-chat commands for hotel staff. They use `PIXELS_COMMAND_PREFIX`, which defaults to `:`, and are consumed before the text can appear as normal room chat. Every command has its own dotted permission node and follows the normal player, group, inheritance, wildcard, and deny resolution rules.
+Pixels ships five first-party room-chat commands. They use `PIXELS_COMMAND_PREFIX`, which defaults to `:`, and are consumed before the text can appear as normal room chat. Every administrative capability has its own dotted permission node and follows the normal player, group, inheritance, wildcard, and deny resolution rules.
 
 | Command | Permission | Purpose |
 |---|---|---|
@@ -8,8 +8,15 @@ Pixels ships four first-party room-chat commands for hotel staff. They use `PIXE
 | `:halert <reason>` | `admin.halert` | Send one popup to every currently connected player |
 | `:about` | `admin.about` | Show the running Pixels version, commit, and loaded plugins |
 | `:trace` | `admin.trace` | Toggle a bounded bidirectional packet trace for the issuing player |
+| `:effect <id>` | `admin.effect` | Select an owned avatar effect, or clear it with id `0` |
 
 The seeded `admin` group already inherits these nodes through its `*` grant. Production operators can grant or deny each node explicitly through the permission administration API.
+
+## Avatar effects
+
+`:effect <id>` selects an effect already present in the issuing player's inventory. It does not grant new effects. `:effect 0` clears the active effect immediately.
+
+When `PIXELS_EFFECT_ALLOW_UNPERMITTED_CLEAR=true`, a player without `admin.effect` may use only `:effect 0`. Nonzero values remain denied. Set the variable to `false` when even clearing an effect must require the dotted permission.
 
 ## Direct and hotel alerts
 

@@ -8,6 +8,7 @@ import (
 
 	plugincommand "github.com/niflaot/pixels/internal/plugin/command"
 	"github.com/niflaot/pixels/internal/plugin/loader"
+	playereffect "github.com/niflaot/pixels/internal/realm/player/effect"
 	"github.com/niflaot/pixels/networking/codec"
 	"github.com/niflaot/pixels/pkg/build"
 	sdkplayer "github.com/niflaot/pixels/sdk/player"
@@ -20,6 +21,43 @@ type commandPlayerAccess struct {
 	allowed bool
 	// message stores the latest feedback.
 	message string
+}
+
+// commandEffectManager records command-driven effect selections.
+type commandEffectManager struct {
+	// enabled stores requested player and effect ids.
+	enabled [][2]int64
+}
+
+// List returns no effects for command tests.
+func (*commandEffectManager) List(context.Context, int64) ([]playereffect.Effect, error) {
+	return nil, nil
+}
+
+// Grant returns an unused empty effect.
+func (*commandEffectManager) Grant(context.Context, int64, int32, int32, playereffect.Source) (playereffect.Effect, error) {
+	return playereffect.Effect{}, nil
+}
+
+// GrantEnabled returns an unused empty effect.
+func (*commandEffectManager) GrantEnabled(context.Context, int64, int32, int32, playereffect.Source) (playereffect.Effect, error) {
+	return playereffect.Effect{}, nil
+}
+
+// Enable records one selected effect.
+func (manager *commandEffectManager) Enable(_ context.Context, playerID int64, effectID int32) error {
+	manager.enabled = append(manager.enabled, [2]int64{playerID, int64(effectID)})
+	return nil
+}
+
+// Activate returns an unused empty effect.
+func (*commandEffectManager) Activate(context.Context, int64, int32) (playereffect.Effect, error) {
+	return playereffect.Effect{}, nil
+}
+
+// Revoke accepts an unused effect revocation.
+func (*commandEffectManager) Revoke(context.Context, int64, int32) error {
+	return nil
 }
 
 // TestRegisteredCommandsExecuteEveryCorePath verifies the complete command tree.
@@ -79,5 +117,51 @@ func TestRegisterCommandsExecutesPermissionGatedAbout(t *testing.T) {
 	handled, err = tree.Execute(context.Background(), player, ":about")
 	if err != nil || !handled || !strings.Contains(players.message, "v0.0.3") {
 		t.Fatalf("allowed handled=%v message=%q err=%v", handled, players.message, err)
+	}
+}
+
+// TestEffectCommandAllowsStaffSelection verifies permitted owned-effect selection.
+func TestEffectCommandAllowsStaffSelection(t *testing.T) {
+	fixture := newServiceFixture()
+	effects := &commandEffectManager{}
+	fixture.service.effects = effects
+	packets := make([]codec.Packet, 0)
+	addServicePlayer(t, fixture, 7, "admin", nil, &packets)
+	players := &commandPlayerAccess{allowed: true}
+	tree := plugincommand.NewTree(":", time.Second, nil, zap.NewNop())
+	tree.SetPlayers(players)
+	if err := RegisterCommands(tree, fixture.service); err != nil {
+		t.Fatal(err)
+	}
+	handled, err := tree.Execute(context.Background(), sdkplayer.Player{ID: 7, Username: "admin", Online: true}, ":effect 90")
+	if err != nil || !handled || len(effects.enabled) != 1 || effects.enabled[0] != [2]int64{7, 90} {
+		t.Fatalf("handled=%v enabled=%v message=%q err=%v", handled, effects.enabled, players.message, err)
+	}
+}
+
+// TestEffectCommandLimitsUnpermittedPlayersToClear verifies the environment exception.
+func TestEffectCommandLimitsUnpermittedPlayersToClear(t *testing.T) {
+	fixture := newServiceFixture()
+	fixture.service.config.AllowUnpermittedEffectClear = true
+	effects := &commandEffectManager{}
+	fixture.service.effects = effects
+	packets := make([]codec.Packet, 0)
+	addServicePlayer(t, fixture, 7, "member", nil, &packets)
+	players := &commandPlayerAccess{}
+	tree := plugincommand.NewTree(":", time.Second, nil, zap.NewNop())
+	tree.SetPlayers(players)
+	if err := RegisterCommands(tree, fixture.service); err != nil {
+		t.Fatal(err)
+	}
+	player := sdkplayer.Player{ID: 7, Username: "member", Online: true}
+	if handled, err := tree.Execute(context.Background(), player, ":effect 90"); err != nil || !handled || len(effects.enabled) != 0 || !strings.Contains(players.message, "permiso") {
+		t.Fatalf("nonzero handled=%v enabled=%v message=%q err=%v", handled, effects.enabled, players.message, err)
+	}
+	if handled, err := tree.Execute(context.Background(), player, ":effect 0"); err != nil || !handled || len(effects.enabled) != 1 || effects.enabled[0] != [2]int64{7, 0} {
+		t.Fatalf("clear handled=%v enabled=%v message=%q err=%v", handled, effects.enabled, players.message, err)
+	}
+	fixture.service.config.AllowUnpermittedEffectClear = false
+	if handled, err := tree.Execute(context.Background(), player, ":effect 0"); err != nil || !handled || len(effects.enabled) != 1 || !strings.Contains(players.message, "permiso") {
+		t.Fatalf("disabled clear handled=%v enabled=%v message=%q err=%v", handled, effects.enabled, players.message, err)
 	}
 }

@@ -138,9 +138,14 @@ minimum manual checks expected when touching it.
 
 - Owns `internal/realm/admin`, the bidirectional connection observer,
   Redis list/set helpers, and TOON line formatting.
-- Provides permission-gated `:alert`, `:halert`, `:about`, and `:trace`
+- Provides permission-gated `:alert`, `:halert`, `:about`, `:trace`, and
+  `:effect`
   commands through the shared Brigodier tree without using the public plugin
   SDK.
+- `:effect` selects only effects already owned by the issuer. Effect zero
+  clears the current selection, and
+  `PIXELS_EFFECT_ALLOW_UNPERMITTED_CLEAR=true` optionally exposes only that
+  self-clear operation without `admin.effect`.
 - Direct alerts reject the issuer, hotel alerts exclude the issuer, and popup
   payloads contain only the requested message.
 - Packet traces follow player ids across reconnects, capture successful inbound
@@ -153,6 +158,9 @@ minimum manual checks expected when touching it.
   - Verify the inactive observer path remains at zero allocations.
   - Run every command with and without its permission; disconnect one target
     during `:halert` and verify later targets still receive it.
+  - Select an owned effect with `:effect`, clear it with `:effect 0`, and verify
+    an unpermitted player can only clear when the compatibility variable is
+    enabled.
   - Start a trace, reconnect Nitro, finalize it, and verify both `in` and `out`
     entries plus the durable URL.
   - Restart Pixels during a trace and verify startup reconciliation uploads it

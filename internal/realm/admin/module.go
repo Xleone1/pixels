@@ -13,7 +13,7 @@ var coreScope = pluginruntime.NewScope("core")
 // Module provides first-party administrative chat commands.
 var Module = fx.Module(
 	"realm-admin",
-	fx.Provide(admintrace.New, New),
+	fx.Provide(LoadConfig, admintrace.New, New),
 	fx.Invoke(admintrace.Register, RegisterCommands),
 )
 
@@ -29,6 +29,9 @@ func RegisterCommands(tree *plugincommand.Tree, service *Service) error {
 	if err := access.Register(aboutCommand(service)); err != nil {
 		return err
 	}
+	if err := access.Register(traceCommand(service)); err != nil {
+		return err
+	}
 
-	return access.Register(traceCommand(service))
+	return access.Register(effectCommand(service))
 }

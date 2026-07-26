@@ -46,6 +46,18 @@ Specificity is the number of fixed segments. Exact nodes therefore beat broader 
 
 Realms register concrete nodes in code at startup. This produces a catalog with the declaring package, optional Nitro perk name, and plugin descriptions. Persistence may store wildcards, but checks always ask for a concrete registered capability.
 
+### Core command nodes
+
+| Node | Capability |
+|---|---|
+| `admin.alert` | Send a direct player alert with `:alert` |
+| `admin.halert` | Broadcast a hotel alert with `:halert` |
+| `admin.about` | Read private build and plugin metadata with `:about` |
+| `admin.trace` | Capture the issuing player's packet traffic with `:trace` |
+| `admin.effect` | Select or clear the issuing player's owned avatar effect with `:effect` |
+
+`PIXELS_EFFECT_ALLOW_UNPERMITTED_CLEAR=true` provides one narrow exception: a player without `admin.effect` may execute `:effect 0` to clear their own active effect. It never permits selecting a nonzero effect.
+
 ## Grants and denies
 
 Both permission groups and individual players may store a node with `allowed=true` or `allowed=false`. A false grant is an explicit deny. Removing a grant is different from denying it: removal lets the resolver continue to another source, while a deny is a decision.
