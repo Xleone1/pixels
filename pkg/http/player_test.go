@@ -130,8 +130,7 @@ func testRecord(id int64) playerservice.Record {
 			PlayerID:        id,
 			Look:            "hd-180-1",
 			Gender:          playermodel.GenderMale,
-			Motto:           "Test fixture.",
-			AllowNameChange: true,
+			Motto:    "Test fixture.",
 		},
 	}
 }

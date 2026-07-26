@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	playermodel "github.com/niflaot/pixels/internal/realm/player/model"
@@ -14,8 +15,8 @@ import (
 
 // identityFinder stores exact usernames and rename policy for focused tests.
 type identityFinder struct {
-	// available reports whether the actor can rename.
-	available bool
+	// cooldown reports whether the actor recently changed names.
+	cooldown bool
 	// taken stores case-insensitive existing names.
 	taken map[string]bool
 	// playerID identifies the returned player.
@@ -33,7 +34,7 @@ func TestCheckReusesTheSamePlayersReservation(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 	service := New(
 		&renameStore{},
-		identityFinder{available: true, taken: map[string]bool{}},
+		identityFinder{taken: map[string]bool{}},
 		client,
 	)
 	for attempt := 0; attempt < 2; attempt++ {
@@ -49,7 +50,12 @@ func (finder identityFinder) FindByID(_ context.Context, playerID int64) (player
 	if finder.playerID == 0 {
 		finder.playerID = playerID
 	}
-	return playerservice.Record{Player: playermodel.Player{Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: finder.playerID}}, Username: finder.username}, Profile: playermodel.Profile{AllowNameChange: finder.available}}, true, nil
+	var lastChangedAt *time.Time
+	if finder.cooldown {
+		value := time.Now().UTC()
+		lastChangedAt = &value
+	}
+	return playerservice.Record{Player: playermodel.Player{Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: finder.playerID}}, Username: finder.username}, Profile: playermodel.Profile{LastNameChangeAt: lastChangedAt}}, true, nil
 }
 
 // FindByUsername reports configured collisions.
@@ -76,17 +82,17 @@ type identityFilter struct{}
 func (identityFilter) Censor(value string) (string, bool) { return value, value == "blocked" }
 
 // Rename stores one candidate.
-func (store *renameStore) Rename(_ context.Context, _ int64, candidate string) (RenameResult, error) {
+func (store *renameStore) Rename(_ context.Context, _ int64, candidate string, changedAt time.Time, cooldown time.Duration) (RenameResult, error) {
 	store.candidate = candidate
-	return RenameResult{OldUsername: "old", NewUsername: candidate}, nil
+	return RenameResult{OldUsername: "old", NewUsername: candidate, ChangedAt: changedAt, AvailableAt: changedAt.Add(cooldown)}, nil
 }
 
 // RenameAdmin stores one attributed candidate.
-func (store *renameStore) RenameAdmin(_ context.Context, _ int64, candidate string, actorPlayerID int64, reason string) (RenameResult, error) {
+func (store *renameStore) RenameAdmin(_ context.Context, _ int64, candidate string, actorPlayerID int64, reason string, changedAt time.Time, cooldown time.Duration) (RenameResult, error) {
 	store.candidate = candidate
 	store.actorPlayerID = actorPlayerID
 	store.reason = reason
-	return RenameResult{OldUsername: "old", NewUsername: candidate}, nil
+	return RenameResult{OldUsername: "old", NewUsername: candidate, ChangedAt: changedAt, AvailableAt: changedAt.Add(cooldown)}, nil
 }
 
 // NameChanges returns no configured history.
@@ -95,16 +101,9 @@ func (store *renameStore) NameChanges(_ context.Context, _ int64, limit int) ([]
 	return []NameChange{{ID: 1}}, nil
 }
 
-// SetAuthorization stores administrative attribution.
-func (store *renameStore) SetAuthorization(_ context.Context, _ int64, _ bool, actorPlayerID int64, reason string) error {
-	store.actorPlayerID = actorPlayerID
-	store.reason = reason
-	return nil
-}
-
 // TestCheckRejectsReservedAndFilteredNames verifies server-owned name policy.
 func TestCheckRejectsReservedAndFilteredNames(t *testing.T) {
-	service := NewConfigured(&renameStore{}, identityFinder{available: true, taken: map[string]bool{}}, nil, identityFilter{}, DefaultConfig())
+	service := NewConfigured(&renameStore{}, identityFinder{taken: map[string]bool{}}, nil, identityFilter{}, DefaultConfig())
 	for _, candidate := range []string{"admin", "blocked"} {
 		result, err := service.Check(context.Background(), 1, candidate)
 		if err != nil || result.Code != ResultInvalid {
@@ -126,12 +125,12 @@ func TestValidateUsernameCodes(t *testing.T) {
 
 // TestCheckHonorsPolicyAndProducesDeterministicSuggestions verifies availability behavior.
 func TestCheckHonorsPolicyAndProducesDeterministicSuggestions(t *testing.T) {
-	service := New(&renameStore{}, identityFinder{available: false, taken: map[string]bool{}}, nil)
+	service := New(&renameStore{}, identityFinder{cooldown: true, taken: map[string]bool{}}, nil)
 	result, err := service.Check(context.Background(), 1, "Valid")
-	if err != nil || result.Code != ResultDisabled {
+	if err != nil || result.Code != ResultCooldown || result.AvailableAt == nil {
 		t.Fatalf("result=%#v err=%v", result, err)
 	}
-	service = New(&renameStore{}, identityFinder{available: true, taken: map[string]bool{"Valid": true}}, nil)
+	service = New(&renameStore{}, identityFinder{taken: map[string]bool{"Valid": true}}, nil)
 	result, err = service.Check(context.Background(), 1, "Valid")
 	if err != nil || result.Code != ResultTaken || len(result.Suggestions) != 4 || result.Suggestions[0] != "Valid1" {
 		t.Fatalf("result=%#v err=%v", result, err)
@@ -141,7 +140,7 @@ func TestCheckHonorsPolicyAndProducesDeterministicSuggestions(t *testing.T) {
 // TestRenameValidatesAndCommits verifies the cold-path rename boundary.
 func TestRenameValidatesAndCommits(t *testing.T) {
 	store := &renameStore{}
-	service := New(store, identityFinder{available: true, taken: map[string]bool{}}, nil)
+	service := New(store, identityFinder{taken: map[string]bool{}}, nil)
 	if _, err := service.Rename(context.Background(), 1, "bad name"); !errors.Is(err, ErrReservationMissing) {
 		t.Fatalf("expected invalid rename, got %v", err)
 	}
@@ -157,18 +156,17 @@ func TestRenameValidatesAndCommits(t *testing.T) {
 	}
 }
 
-// TestRenameAllowsKeepingCurrentName verifies the initial tutorial choice needs no prior reservation.
-func TestRenameAllowsKeepingCurrentName(t *testing.T) {
+// TestRenameRejectsKeepingCurrentName verifies no-op changes do not consume cooldown.
+func TestRenameRejectsKeepingCurrentName(t *testing.T) {
 	store := &renameStore{}
-	finder := identityFinder{available: true, username: "Current", taken: map[string]bool{"Current": true}, takenID: 1}
+	finder := identityFinder{username: "Current", taken: map[string]bool{"Current": true}, takenID: 1}
 	service := New(store, finder, nil)
 	check, err := service.Check(context.Background(), 1, "Current")
 	if err != nil || check.Code != ResultAvailable {
 		t.Fatalf("check=%#v err=%v", check, err)
 	}
-	result, err := service.Rename(context.Background(), 1, "Current")
-	if err != nil || result.NewUsername != "Current" {
-		t.Fatalf("result=%#v err=%v", result, err)
+	if _, err = service.Rename(context.Background(), 1, "Current"); !errors.Is(err, ErrUsernameTaken) {
+		t.Fatalf("expected current-name rejection, got %v", err)
 	}
 }
 
@@ -187,8 +185,24 @@ func TestAdministrativeRenameAndHistory(t *testing.T) {
 	if _, err = service.RenameAdmin(context.Background(), 1, "Renamed", 0, ""); !errors.Is(err, ErrInvalidAttribution) {
 		t.Fatalf("expected invalid attribution, got %v", err)
 	}
-	if err = service.SetAuthorization(context.Background(), 1, true, 9, "approved"); err != nil || store.reason != "approved" {
-		t.Fatalf("authorization store=%#v err=%v", store, err)
+}
+
+// TestStatusUsesConfiguredCooldown verifies exact automatic eligibility.
+func TestStatusUsesConfiguredCooldown(t *testing.T) {
+	changedAt := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	finder := identityFinder{taken: map[string]bool{}}
+	service := NewConfigured(&renameStore{}, finder, nil, nil, Config{
+		MinimumLength: 3, MaximumLength: 15, AllowedSymbols: "_",
+		ReservationTTL: time.Minute, ChangeCooldownDays: 30,
+	})
+	service.now = func() time.Time { return changedAt.Add(29 * 24 * time.Hour) }
+	status := service.status(&changedAt, service.now())
+	if status.Available || status.AvailableAt == nil || status.RemainingSeconds != 24*60*60 {
+		t.Fatalf("status=%#v", status)
+	}
+	service.now = func() time.Time { return changedAt.Add(30 * 24 * time.Hour) }
+	if status = service.status(&changedAt, service.now()); !status.Available || status.AvailableAt != nil {
+		t.Fatalf("status=%#v", status)
 	}
 }
 
@@ -199,8 +213,9 @@ func TestConfiguredPolicyFallsBackAndLoadsEnvironment(t *testing.T) {
 		t.Fatalf("config=%#v", service.config)
 	}
 	t.Setenv("PIXELS_PLAYER_USERNAME_MIN_LENGTH", "4")
+	t.Setenv("PIXELS_PLAYER_USERNAME_CHANGE_COOLDOWN_DAYS", "45")
 	config, err := LoadConfig()
-	if err != nil || config.MinimumLength != 4 {
+	if err != nil || config.MinimumLength != 4 || config.ChangeCooldownDays != 45 {
 		t.Fatalf("config=%#v err=%v", config, err)
 	}
 }

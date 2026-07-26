@@ -11,68 +11,6 @@ import (
 	outroomname "github.com/niflaot/pixels/networking/outbound/user/room/name"
 )
 
-// allowNameChange enables one self-service username change.
-func allowNameChange(dependencies RemainingDependencies) fiber.Handler {
-	return nameChangeAuthorization(dependencies, true)
-}
-
-// revokeNameChange disables one self-service username change.
-func revokeNameChange(dependencies RemainingDependencies) fiber.Handler {
-	return nameChangeAuthorization(dependencies, false)
-}
-
-// setNameChangeAuthorization replaces one self-service username policy.
-func setNameChangeAuthorization(dependencies RemainingDependencies) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		var request NameChangeAuthorizationRequest
-		if err := ctx.BodyParser(&request); err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, "invalid name-change authorization request")
-		}
-		return applyNameChangeAuthorization(ctx, dependencies, request)
-	}
-}
-
-// nameChangeAuthorization creates one fixed policy handler.
-func nameChangeAuthorization(dependencies RemainingDependencies, allowed bool) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		var request NameChangeAuthorizationRequest
-		if err := ctx.BodyParser(&request); err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, "invalid name-change authorization request")
-		}
-		request.Allowed = allowed
-		return applyNameChangeAuthorization(ctx, dependencies, request)
-	}
-}
-
-// applyNameChangeAuthorization persists and projects one policy mutation.
-func applyNameChangeAuthorization(ctx *fiber.Ctx, dependencies RemainingDependencies, request NameChangeAuthorizationRequest) error {
-	id, err := remainingPlayerID(ctx)
-	if err != nil {
-		return err
-	}
-	if !attributed(request.ActorPlayerID, request.Reason) {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid name-change authorization request")
-	}
-	if dependencies.Identity == nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "name-change identity service unavailable")
-	}
-	err = dependencies.Identity.SetAuthorization(ctx.Context(), id, request.Allowed, request.ActorPlayerID, request.Reason)
-	if err != nil {
-		return identityError(err)
-	}
-	record, found, err := dependencies.Players.FindByID(ctx.Context(), id)
-	if err != nil {
-		return playerError(err)
-	}
-	if !found {
-		return fiber.NewError(fiber.StatusNotFound, "player not found")
-	}
-	if err = projectIdentity(ctx.Context(), dependencies, record); err != nil {
-		return err
-	}
-	return ctx.JSON(playerResponse(record))
-}
-
 // changeName commits and projects one attributed administrative rename.
 func changeName(dependencies RemainingDependencies) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
@@ -128,6 +66,24 @@ func readNameChanges(dependencies RemainingDependencies) fiber.Handler {
 	}
 }
 
+// readNameChangeStatus returns the automatic cooldown for one player.
+func readNameChangeStatus(dependencies RemainingDependencies) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		id, err := remainingPlayerID(ctx)
+		if err != nil {
+			return err
+		}
+		if dependencies.Identity == nil {
+			return fiber.NewError(fiber.StatusInternalServerError, "name-change identity service unavailable")
+		}
+		status, err := dependencies.Identity.Status(ctx.Context(), id)
+		if err != nil {
+			return identityError(err)
+		}
+		return ctx.JSON(nameChangeStatusResponse(status))
+	}
+}
+
 // projectIdentity replaces and sends one online durable snapshot.
 func projectIdentity(ctx context.Context, dependencies RemainingDependencies, record playerservice.Record) error {
 	if dependencies.Live == nil {
@@ -138,6 +94,9 @@ func projectIdentity(ctx context.Context, dependencies RemainingDependencies, re
 		return nil
 	}
 	snapshot := playerlive.SnapshotFromRecord(record)
+	if dependencies.Identity != nil {
+		snapshot.AllowNameChange = dependencies.Identity.Available(record.Profile.LastNameChangeAt)
+	}
 	if err := player.ReplaceSnapshot(snapshot); err != nil {
 		return err
 	}

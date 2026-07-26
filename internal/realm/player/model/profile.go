@@ -39,8 +39,8 @@ type Profile struct {
 	// HomeRoomID is the optional default home room identifier.
 	HomeRoomID *int64
 
-	// AllowNameChange reports whether the player can change username.
-	AllowNameChange bool
+	// LastNameChangeAt stores the latest committed username replacement.
+	LastNameChangeAt *time.Time
 
 	// BubbleStyle stores the validated Nitro chat bubble style.
 	BubbleStyle int32

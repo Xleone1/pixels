@@ -16,8 +16,6 @@ type adminStoreForTest struct {
 	conflict bool
 	// deleted reports that soft deletion was requested.
 	deleted bool
-	// playerUpdateErr fails identity writes.
-	playerUpdateErr error
 	// profileUpdateErr fails profile writes.
 	profileUpdateErr error
 	// deleteErr fails soft deletion.
@@ -26,9 +24,6 @@ type adminStoreForTest struct {
 
 // UpdatePlayer updates the fixture identity.
 func (store *adminStoreForTest) UpdatePlayer(_ context.Context, params repository.UpdatePlayerParams) (playermodel.Player, bool, error) {
-	if store.playerUpdateErr != nil {
-		return playermodel.Player{}, false, store.playerUpdateErr
-	}
 	if store.conflict {
 		return playermodel.Player{}, false, nil
 	}
@@ -49,7 +44,6 @@ func (store *adminStoreForTest) UpdateProfile(_ context.Context, params reposito
 	store.profile.Gender = params.Gender
 	store.profile.Motto = params.Motto
 	store.profile.HomeRoomID = params.HomeRoomID
-	store.profile.AllowNameChange = params.AllowNameChange
 	store.profile.BubbleStyle = params.BubbleStyle
 	store.profile.BlockFriendRequests = params.BlockFriendRequests
 	store.profile.BlockRoomInvites = params.BlockRoomInvites
@@ -70,19 +64,18 @@ func (store *adminStoreForTest) SoftDeletePlayer(context.Context, int64, int64) 
 	return true, nil
 }
 
-// TestUpdateAppliesIdentityAndProfileChanges verifies complete admin coordination.
-func TestUpdateAppliesIdentityAndProfileChanges(t *testing.T) {
+// TestUpdateAppliesProfileChanges verifies complete admin coordination.
+func TestUpdateAppliesProfileChanges(t *testing.T) {
 	store := &adminStoreForTest{fakeStore: newFakeStore()}
-	username := "renamed"
 	motto := "new motto"
 	bubble := int32(4)
 	record, err := New(store).Update(context.Background(), 7, UpdateParams{
-		Username: &username, Motto: &motto, BubbleStyle: &bubble,
+		Motto: &motto, BubbleStyle: &bubble,
 	})
 	if err != nil {
 		t.Fatalf("update player: %v", err)
 	}
-	if record.Player.Username != username || record.Profile.Motto != motto || record.Profile.BubbleStyle != bubble {
+	if record.Player.Username != "ian" || record.Profile.Motto != motto || record.Profile.BubbleStyle != bubble {
 		t.Fatalf("unexpected record %#v", record)
 	}
 }
@@ -90,8 +83,8 @@ func TestUpdateAppliesIdentityAndProfileChanges(t *testing.T) {
 // TestUpdateRejectsOptimisticConflict verifies stale writes are explicit.
 func TestUpdateRejectsOptimisticConflict(t *testing.T) {
 	store := &adminStoreForTest{fakeStore: newFakeStore(), conflict: true}
-	username := "renamed"
-	_, err := New(store).Update(context.Background(), 7, UpdateParams{Username: &username})
+	motto := "renamed"
+	_, err := New(store).Update(context.Background(), 7, UpdateParams{Motto: &motto})
 	if !errors.Is(err, ErrConflict) {
 		t.Fatalf("expected conflict, got %v", err)
 	}
@@ -110,7 +103,6 @@ func TestSoftDeleteMarksActivePlayer(t *testing.T) {
 
 // TestUpdateRejectsInvalidChanges verifies partial mutations use creation constraints.
 func TestUpdateRejectsInvalidChanges(t *testing.T) {
-	emptyUsername := " "
 	negativeBubble := int32(-1)
 	invalidHomeRoom := int64(0)
 	homeRoom := &invalidHomeRoom
@@ -119,7 +111,6 @@ func TestUpdateRejectsInvalidChanges(t *testing.T) {
 		params   UpdateParams
 		expected error
 	}{
-		{name: "username", params: UpdateParams{Username: &emptyUsername}, expected: ErrInvalidUsername},
 		{name: "bubble", params: UpdateParams{BubbleStyle: &negativeBubble}, expected: ErrInvalidBubbleStyle},
 		{name: "home room", params: UpdateParams{HomeRoomID: &homeRoom}, expected: ErrInvalidHomeRoomID},
 	}
@@ -136,7 +127,7 @@ func TestUpdateRejectsInvalidChanges(t *testing.T) {
 
 // TestUpdateHandlesAdministrativeStoreOutcomes verifies expected service mappings.
 func TestUpdateHandlesAdministrativeStoreOutcomes(t *testing.T) {
-	username := "renamed"
+	motto := "renamed"
 	t.Run("no changes", func(t *testing.T) {
 		record, err := New(&adminStoreForTest{fakeStore: newFakeStore()}).Update(context.Background(), 7, UpdateParams{})
 		if err != nil || record.Player.Username != "ian" {
@@ -144,7 +135,7 @@ func TestUpdateHandlesAdministrativeStoreOutcomes(t *testing.T) {
 		}
 	})
 	t.Run("writer unavailable", func(t *testing.T) {
-		_, err := New(newFakeStore()).Update(context.Background(), 7, UpdateParams{Username: &username})
+		_, err := New(newFakeStore()).Update(context.Background(), 7, UpdateParams{Motto: &motto})
 		if !errors.Is(err, ErrAdminWriterUnavailable) {
 			t.Fatalf("expected unavailable writer, got %v", err)
 		}
@@ -152,16 +143,17 @@ func TestUpdateHandlesAdministrativeStoreOutcomes(t *testing.T) {
 	t.Run("missing player", func(t *testing.T) {
 		store := &adminStoreForTest{fakeStore: newFakeStore()}
 		store.playerFound = false
-		_, err := New(store).Update(context.Background(), 7, UpdateParams{Username: &username})
+		_, err := New(store).Update(context.Background(), 7, UpdateParams{Motto: &motto})
 		if !errors.Is(err, ErrPlayerNotFound) {
 			t.Fatalf("expected missing player, got %v", err)
 		}
 	})
-	t.Run("duplicate username", func(t *testing.T) {
-		store := &adminStoreForTest{fakeStore: newFakeStore(), playerUpdateErr: repository.ErrUsernameTaken}
-		_, err := New(store).Update(context.Background(), 7, UpdateParams{Username: &username})
-		if !errors.Is(err, ErrUsernameTaken) {
-			t.Fatalf("expected duplicate username, got %v", err)
+	t.Run("profile failure", func(t *testing.T) {
+		expected := errors.New("database failed")
+		store := &adminStoreForTest{fakeStore: newFakeStore(), profileUpdateErr: expected}
+		_, err := New(store).Update(context.Background(), 7, UpdateParams{Motto: &motto})
+		if !errors.Is(err, expected) {
+			t.Fatalf("expected profile failure, got %v", err)
 		}
 	})
 }

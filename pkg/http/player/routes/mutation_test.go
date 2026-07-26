@@ -81,16 +81,16 @@ func TestReadByUsernameFindsCaseInsensitivePlayer(t *testing.T) {
 // TestUpdateChangesPlayerProfile verifies partial administrative profile changes.
 func TestUpdateChangesPlayerProfile(t *testing.T) {
 	app, manager := testApplication(t)
-	response, err := app.Test(requestForTest(t, http.MethodPatch, "/api/admin/players/7", `{"username":"renamed","motto":"updated"}`))
+	response, err := app.Test(requestForTest(t, http.MethodPatch, "/api/admin/players/7", `{"username":"ignored","motto":"updated"}`))
 	if err != nil {
 		t.Fatalf("update player: %v", err)
 	}
 	body, _ := io.ReadAll(response.Body)
-	if response.StatusCode != fiber.StatusOK || !strings.Contains(string(body), `"username":"renamed"`) || !strings.Contains(string(body), `"motto":"updated"`) {
+	if response.StatusCode != fiber.StatusOK || !strings.Contains(string(body), `"username":"pixel"`) || !strings.Contains(string(body), `"motto":"updated"`) {
 		t.Fatalf("unexpected update status=%d body=%s", response.StatusCode, body)
 	}
-	if manager.record.Player.Username != "renamed" {
-		t.Fatalf("expected manager update, got %q", manager.record.Player.Username)
+	if manager.record.Player.Username != "pixel" {
+		t.Fatalf("expected focused identity route to retain username, got %q", manager.record.Player.Username)
 	}
 }
 
@@ -155,7 +155,7 @@ func TestRoutesMapMissingAndConflictOutcomes(t *testing.T) {
 
 	manager.missing = false
 	manager.operationErr = playerservice.ErrUsernameTaken
-	response, err := app.Test(requestForTest(t, http.MethodPatch, "/api/admin/players/7", `{"username":"duplicate"}`))
+	response, err := app.Test(requestForTest(t, http.MethodPatch, "/api/admin/players/7", `{"motto":"duplicate"}`))
 	if err != nil {
 		t.Fatalf("update duplicate player: %v", err)
 	}
@@ -175,15 +175,14 @@ func TestRoutesMapMissingAndConflictOutcomes(t *testing.T) {
 
 // TestUpdateParamsMapsOptionalFields verifies the full patch contract.
 func TestUpdateParamsMapsOptionalFields(t *testing.T) {
-	username := "renamed"
 	look := "hd-190-1"
 	gender := "F"
 	motto := "updated"
 	homeRoomID := int64(9)
 	flag := true
 	bubble := int32(4)
-	params := updateParams(UpdateRequest{Username: &username, Look: &look, Gender: &gender, Motto: &motto,
-		HomeRoomID: &homeRoomID, AllowNameChange: &flag, BubbleStyle: &bubble,
+	params := updateParams(UpdateRequest{Look: &look, Gender: &gender, Motto: &motto,
+		HomeRoomID: &homeRoomID, BubbleStyle: &bubble,
 		BlockFriendRequests: &flag, BlockRoomInvites: &flag, BlockFollowing: &flag})
 	if params.Gender == nil || string(*params.Gender) != gender || params.HomeRoomID == nil || *params.HomeRoomID == nil || **params.HomeRoomID != homeRoomID {
 		t.Fatalf("unexpected mapped params %#v", params)

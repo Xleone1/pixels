@@ -10,7 +10,7 @@ import (
 	netconn "github.com/niflaot/pixels/networking/connection"
 )
 
-// update applies one partial player identity and profile mutation.
+// update applies one partial player profile mutation.
 func (handler handler) update(ctx *fiber.Ctx) error {
 	id, err := playerID(ctx)
 	if err != nil {
@@ -51,8 +51,8 @@ func (handler handler) softDelete(ctx *fiber.Ctx) error {
 
 // updateParams maps the HTTP patch into service input.
 func updateParams(request UpdateRequest) playerservice.UpdateParams {
-	params := playerservice.UpdateParams{Username: request.Username, Look: request.Look, Motto: request.Motto,
-		AllowNameChange: request.AllowNameChange, BubbleStyle: request.BubbleStyle,
+	params := playerservice.UpdateParams{Look: request.Look, Motto: request.Motto,
+		BubbleStyle:         request.BubbleStyle,
 		BlockFriendRequests: request.BlockFriendRequests, BlockRoomInvites: request.BlockRoomInvites,
 		BlockFollowing: request.BlockFollowing}
 	if request.Gender != nil {

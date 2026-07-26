@@ -27,12 +27,12 @@ type failingRenameStore struct {
 }
 
 // Rename returns the configured failure.
-func (store failingRenameStore) Rename(context.Context, int64, string) (RenameResult, error) {
+func (store failingRenameStore) Rename(context.Context, int64, string, time.Time, time.Duration) (RenameResult, error) {
 	return RenameResult{}, store.err
 }
 
 // RenameAdmin returns the configured failure.
-func (store failingRenameStore) RenameAdmin(context.Context, int64, string, int64, string) (RenameResult, error) {
+func (store failingRenameStore) RenameAdmin(context.Context, int64, string, int64, string, time.Time, time.Duration) (RenameResult, error) {
 	return RenameResult{}, store.err
 }
 
@@ -41,15 +41,10 @@ func (store failingRenameStore) NameChanges(context.Context, int64, int) ([]Name
 	return nil, store.err
 }
 
-// SetAuthorization returns the configured failure.
-func (store failingRenameStore) SetAuthorization(context.Context, int64, bool, int64, string) error {
-	return store.err
-}
-
 // TestIdentityHandlersCheckAndRename verifies successful packet adaptation and live projection.
 func TestIdentityHandlersCheckAndRename(t *testing.T) {
 	store := &renameStore{}
-	service := New(store, identityFinder{available: true, taken: map[string]bool{}}, nil)
+	service := New(store, identityFinder{taken: map[string]bool{}}, nil)
 	handler, connection, packets, player := identityFixture(t, service)
 	checkPacket, err := codec.NewPacket(incheck.Header, incheck.Definition, codec.String("Valid"))
 	if err != nil {
@@ -75,7 +70,7 @@ func TestIdentityHandlersCheckAndRename(t *testing.T) {
 
 // TestIdentityHandlersMapFailuresAndMalformedPackets verifies stable client failures.
 func TestIdentityHandlersMapFailuresAndMalformedPackets(t *testing.T) {
-	handler, connection, packets, _ := identityFixture(t, New(failingRenameStore{err: ErrRenameDisabled}, identityFinder{available: true, taken: map[string]bool{}}, nil))
+	handler, connection, packets, _ := identityFixture(t, New(failingRenameStore{err: ErrRenameCooldown}, identityFinder{taken: map[string]bool{}}, nil))
 	packet, err := codec.NewPacket(inchange.Header, inchange.Definition, codec.String("Renamed"))
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +94,7 @@ func TestIdentityRegistrationAndErrorCodes(t *testing.T) {
 	if registry.Len() != 2 {
 		t.Fatalf("handlers=%d", registry.Len())
 	}
-	for err, expected := range map[error]int32{ErrRenameDisabled: ResultDisabled, ErrUsernameTaken: ResultTaken, ErrReservationMissing: ResultTaken, errors.New("other"): ResultInvalid} {
+	for err, expected := range map[error]int32{ErrRenameCooldown: ResultCooldown, ErrUsernameTaken: ResultTaken, ErrReservationMissing: ResultTaken, errors.New("other"): ResultInvalid} {
 		if actual := resultCode(err); actual != expected {
 			t.Fatalf("error=%v code=%d", err, actual)
 		}

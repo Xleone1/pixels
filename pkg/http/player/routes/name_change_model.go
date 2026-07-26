@@ -10,16 +10,6 @@ import (
 	playeridentity "github.com/niflaot/pixels/internal/realm/player/identity"
 )
 
-// NameChangeAuthorizationRequest contains one attributed policy mutation.
-type NameChangeAuthorizationRequest struct {
-	// Allowed reports whether one self-service rename is enabled.
-	Allowed bool `json:"allowed"`
-	// ActorPlayerID identifies the administrative actor.
-	ActorPlayerID int64 `json:"actorPlayerId"`
-	// Reason explains the policy mutation.
-	Reason string `json:"reason"`
-}
-
 // AdminNameChangeRequest contains one attributed direct rename.
 type AdminNameChangeRequest struct {
 	// Username stores the requested visible name.
@@ -44,6 +34,22 @@ type NameCheckResponse struct {
 	Username string `json:"username"`
 	// Suggestions stores bounded available alternatives.
 	Suggestions []string `json:"suggestions"`
+	// AvailableAt stores the next eligible instant when code six is returned.
+	AvailableAt *time.Time `json:"availableAt,omitempty"`
+}
+
+// NameChangeStatusResponse contains one automatic cooldown snapshot.
+type NameChangeStatusResponse struct {
+	// Available reports whether a self-service rename may start now.
+	Available bool `json:"available"`
+	// AvailableAt stores the next eligible instant when currently unavailable.
+	AvailableAt *time.Time `json:"availableAt,omitempty"`
+	// LastChangedAt stores the latest committed username replacement.
+	LastChangedAt *time.Time `json:"lastChangedAt,omitempty"`
+	// RemainingSeconds stores the rounded-up cooldown remainder.
+	RemainingSeconds int64 `json:"remainingSeconds"`
+	// CooldownDays stores the configured interval in full days.
+	CooldownDays int `json:"cooldownDays"`
 }
 
 // NameChangeResponse contains one durable identity audit entry.
@@ -95,13 +101,26 @@ func nameCheckResponse(result playeridentity.CheckResult) NameCheckResponse {
 		Code:        result.Code,
 		Username:    result.Username,
 		Suggestions: suggestions,
+		AvailableAt: result.AvailableAt,
+	}
+}
+
+// nameChangeStatusResponse maps one domain cooldown snapshot.
+func nameChangeStatusResponse(status playeridentity.NameChangeStatus) NameChangeStatusResponse {
+	return NameChangeStatusResponse{
+		Available:        status.Available,
+		AvailableAt:      status.AvailableAt,
+		LastChangedAt:    status.LastChangedAt,
+		RemainingSeconds: status.RemainingSeconds,
+		CooldownDays:     status.CooldownDays,
 	}
 }
 
 // identityError maps identity failures to stable HTTP errors.
 func identityError(err error) error {
 	switch {
-	case errors.Is(err, playeridentity.ErrReservationMissing), errors.Is(err, playeridentity.ErrInvalidAttribution):
+	case errors.Is(err, playeridentity.ErrReservationMissing), errors.Is(err, playeridentity.ErrInvalidAttribution),
+		errors.Is(err, playeridentity.ErrRenameCooldown):
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	case errors.Is(err, playeridentity.ErrUsernameTaken):
 		return fiber.NewError(fiber.StatusConflict, err.Error())

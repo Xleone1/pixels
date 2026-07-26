@@ -145,7 +145,7 @@ func bootstrapPackets(record playerservice.Record, snapshot live.Snapshot) []cod
 		Figure:               record.Profile.Look,
 		Gender:               string(record.Profile.Gender),
 		Motto:                record.Profile.Motto,
-		CanChangeName:        record.Profile.AllowNameChange,
+		CanChangeName:        snapshot.AllowNameChange,
 		SafetyLocked:         snapshot.SafetyLocked,
 		RespectsReceived:     snapshot.RespectsReceived,
 		RespectsRemaining:    snapshot.RespectsRemaining,

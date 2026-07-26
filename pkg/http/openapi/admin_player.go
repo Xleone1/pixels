@@ -79,15 +79,11 @@ type AdminPlayerCreateRequest struct {
 	Motto string `json:"motto,omitempty" maxLength:"38"`
 	// HomeRoomID is the optional initial home room identifier.
 	HomeRoomID *int64 `json:"homeRoomId,omitempty" minimum:"1"`
-	// AllowNameChange reports whether the player may change username.
-	AllowNameChange bool `json:"allowNameChange,omitempty"`
 }
 
-// AdminPlayerUpdateRequest documents optional identity and profile changes.
+// AdminPlayerUpdateRequest documents optional profile changes.
 type AdminPlayerUpdateRequest struct {
 	AdminPlayerPathRequest
-	// Username replaces the visible player name.
-	Username *string `json:"username,omitempty" minLength:"3" maxLength:"15"`
 	// Look replaces the Nitro avatar figure string.
 	Look *string `json:"look,omitempty" maxLength:"512"`
 	// Gender replaces the Nitro avatar gender code.
@@ -98,8 +94,6 @@ type AdminPlayerUpdateRequest struct {
 	HomeRoomID *int64 `json:"homeRoomId,omitempty" minimum:"1"`
 	// ClearHomeRoom removes the current home room identifier.
 	ClearHomeRoom bool `json:"clearHomeRoom,omitempty"`
-	// AllowNameChange replaces the username-change flag.
-	AllowNameChange *bool `json:"allowNameChange,omitempty"`
 	// BubbleStyle replaces the selected Nitro chat bubble style.
 	BubbleStyle *int32 `json:"bubbleStyle,omitempty" minimum:"0"`
 	// BlockFriendRequests replaces the friend-request privacy flag.
@@ -124,8 +118,8 @@ type AdminPlayerResponse struct {
 	Motto string `json:"motto" required:"true"`
 	// HomeRoomID is the optional home room identifier.
 	HomeRoomID *int64 `json:"homeRoomId,omitempty"`
-	// AllowNameChange reports whether username changes are enabled.
-	AllowNameChange bool `json:"allowNameChange" required:"true"`
+	// LastNameChangeAt stores the latest committed username replacement.
+	LastNameChangeAt *time.Time `json:"lastNameChangeAt,omitempty"`
 	// BubbleStyle stores the selected chat bubble style.
 	BubbleStyle int32 `json:"bubbleStyle" required:"true"`
 	// BlockFriendRequests stores friend-request privacy.
@@ -170,9 +164,7 @@ func adminPlayerOperations() []operation {
 		adminPlayer(http.MethodPatch, "/api/admin/players/{id}/settings", "Update player client settings", &AdminPlayerSettingsRequest{}, &AdminPlayerSettingsResponse{}, http.StatusOK),
 		adminPlayer(http.MethodPut, "/api/admin/players/{id}/profile/tags", "Replace player profile tags", &AdminPlayerTagsRequest{}, &AdminPlayerTagsResponse{}, http.StatusOK),
 		adminPlayer(http.MethodGet, "/api/admin/players/{id}/wardrobe", "Read player wardrobe", &AdminPlayerPathRequest{}, &AdminPlayerWardrobeResponse{}, http.StatusOK),
-		adminPlayer(http.MethodPost, "/api/admin/players/{id}/name-change/allow", "Allow one player name change", &AdminPlayerAttributedRequest{}, &AdminPlayerResponse{}, http.StatusOK),
-		adminPlayer(http.MethodDelete, "/api/admin/players/{id}/name-change/allow", "Revoke one player name change", &AdminPlayerAttributedRequest{}, &AdminPlayerResponse{}, http.StatusOK),
-		adminPlayer(http.MethodPut, "/api/admin/players/{id}/name-change/authorization", "Replace player name-change authorization", &AdminPlayerNameAuthorizationRequest{}, &AdminPlayerResponse{}, http.StatusOK),
+		adminPlayer(http.MethodGet, "/api/admin/players/{id}/name-change/status", "Read player name-change cooldown", &AdminPlayerPathRequest{}, &AdminPlayerNameChangeStatusResponse{}, http.StatusOK),
 		adminPlayer(http.MethodPost, "/api/admin/players/{id}/name-change/check", "Check and reserve a self-service username", &AdminPlayerSelfNameChangeRequest{}, &AdminPlayerNameCheckResponse{}, http.StatusOK),
 		adminPlayer(http.MethodPost, "/api/admin/players/{id}/name-change/confirm", "Confirm a reserved self-service username", &AdminPlayerSelfNameChangeRequest{}, &AdminPlayerNameCheckResponse{}, http.StatusOK),
 		adminPlayer(http.MethodPost, "/api/admin/players/{id}/name-change", "Change player username administratively", &AdminPlayerNameChangeRequest{}, &AdminPlayerResponse{}, http.StatusOK),

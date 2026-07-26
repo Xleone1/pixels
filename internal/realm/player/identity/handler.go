@@ -136,8 +136,8 @@ func (handler Handler) player(connection netconn.Context) (*playerlive.Player, i
 
 // resultCode maps domain failures to stable Nitro result codes.
 func resultCode(err error) int32 {
-	if errors.Is(err, ErrRenameDisabled) {
-		return ResultDisabled
+	if errors.Is(err, ErrRenameCooldown) {
+		return ResultCooldown
 	}
 	if errors.Is(err, ErrUsernameTaken) || errors.Is(err, ErrReservationMissing) {
 		return ResultTaken

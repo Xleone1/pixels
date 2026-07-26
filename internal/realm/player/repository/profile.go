@@ -13,13 +13,13 @@ import (
 const (
 	// createProfileSQL inserts a player profile record.
 	createProfileSQL = `
-insert into player_profiles (player_id, look, gender, motto, home_room_id, allow_name_change)
-values ($1, $2, $3, $4, $5, $6)
-returning player_id, look, gender, motto, home_room_id, allow_name_change, bubble_style, block_friend_requests, block_room_invites, block_following, created_at, updated_at, version`
+	insert into player_profiles (player_id, look, gender, motto, home_room_id)
+	values ($1, $2, $3, $4, $5)
+	returning player_id, look, gender, motto, home_room_id, last_name_change_at, bubble_style, block_friend_requests, block_room_invites, block_following, created_at, updated_at, version`
 
 	// findProfileByPlayerIDSQL reads one player profile by player id.
 	findProfileByPlayerIDSQL = `
-select player_id, look, gender, motto, home_room_id, allow_name_change, bubble_style, block_friend_requests, block_room_invites, block_following, created_at, updated_at, version
+	select player_id, look, gender, motto, home_room_id, last_name_change_at, bubble_style, block_friend_requests, block_room_invites, block_following, created_at, updated_at, version
 from player_profiles
 where player_id = $1`
 
@@ -27,21 +27,21 @@ where player_id = $1`
 	updateBubbleStyleSQL = `
 update player_profiles set bubble_style=$2, updated_at=now(), version=version+1
 where player_id=$1
-returning player_id, look, gender, motto, home_room_id, allow_name_change, bubble_style, block_friend_requests, block_room_invites, block_following, created_at, updated_at, version`
+	returning player_id, look, gender, motto, home_room_id, last_name_change_at, bubble_style, block_friend_requests, block_room_invites, block_following, created_at, updated_at, version`
 
 	// updatePrivacySQL persists all messenger privacy fields.
 	updatePrivacySQL = `
 update player_profiles set block_friend_requests=$2, block_room_invites=$3, block_following=$4, updated_at=now(), version=version+1
 where player_id=$1
-returning player_id, look, gender, motto, home_room_id, allow_name_change, bubble_style, block_friend_requests, block_room_invites, block_following, created_at, updated_at, version`
+	returning player_id, look, gender, motto, home_room_id, last_name_change_at, bubble_style, block_friend_requests, block_room_invites, block_following, created_at, updated_at, version`
 
 	// updateProfileSQL replaces one complete profile using optimistic locking.
 	updateProfileSQL = `
-update player_profiles set look=$2, gender=$3, motto=$4, home_room_id=$5, allow_name_change=$6,
-    bubble_style=$7, block_friend_requests=$8, block_room_invites=$9, block_following=$10,
-    updated_at=now(), version=version+1
-where player_id=$1 and version=$11
-returning player_id, look, gender, motto, home_room_id, allow_name_change, bubble_style, block_friend_requests, block_room_invites, block_following, created_at, updated_at, version`
+	update player_profiles set look=$2, gender=$3, motto=$4, home_room_id=$5,
+	    bubble_style=$6, block_friend_requests=$7, block_room_invites=$8, block_following=$9,
+	    updated_at=now(), version=version+1
+	where player_id=$1 and version=$10
+	returning player_id, look, gender, motto, home_room_id, last_name_change_at, bubble_style, block_friend_requests, block_room_invites, block_following, created_at, updated_at, version`
 )
 
 // PrivacyParams stores a complete messenger privacy replacement.
@@ -70,9 +70,6 @@ type CreateProfileParams struct {
 
 	// HomeRoomID is the optional default home room identifier.
 	HomeRoomID *int64
-
-	// AllowNameChange reports whether the player can change username.
-	AllowNameChange bool
 }
 
 // UpdateProfileParams contains one complete administrative profile replacement.
@@ -117,7 +114,7 @@ func (repository *Repository) UpdateProfile(ctx context.Context, params UpdatePr
 	}
 	profile, err := scanProfile(postgres.ExecutorFor(ctx, repository.executor).QueryRow(ctx, updateProfileSQL,
 		params.PlayerID, params.Look, string(params.Gender), params.Motto, params.HomeRoomID,
-		params.AllowNameChange, params.BubbleStyle, params.BlockFriendRequests, params.BlockRoomInvites,
+		params.BubbleStyle, params.BlockFriendRequests, params.BlockRoomInvites,
 		params.BlockFollowing, params.ExpectedVersion))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return playermodel.Profile{}, false, nil
@@ -135,7 +132,7 @@ func (repository *Repository) CreateProfile(ctx context.Context, params CreatePr
 		return playermodel.Profile{}, ErrInvalidGender
 	}
 
-	profile, err := scanProfile(postgres.ExecutorFor(ctx, repository.executor).QueryRow(ctx, createProfileSQL, params.PlayerID, params.Look, string(params.Gender), params.Motto, params.HomeRoomID, params.AllowNameChange))
+	profile, err := scanProfile(postgres.ExecutorFor(ctx, repository.executor).QueryRow(ctx, createProfileSQL, params.PlayerID, params.Look, string(params.Gender), params.Motto, params.HomeRoomID))
 	if err != nil {
 		return playermodel.Profile{}, fmt.Errorf("create player profile: %w", err)
 	}

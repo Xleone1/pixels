@@ -134,6 +134,7 @@ Durations use Go duration syntax such as `250ms`, `5m`, `24h`, and `168h`. Empty
 | `PIXELS_PLAYER_USERNAME_ALLOWED_SYMBOLS` | `_-=!?@:,.\'` | Extra username symbols |
 | `PIXELS_PLAYER_USERNAME_RESERVATION_TTL` | `2m` | Rename reservation lifetime |
 | `PIXELS_PLAYER_USERNAME_RESERVED` | `admin,moderator,staff,system` | Reserved usernames |
+| `PIXELS_PLAYER_USERNAME_CHANGE_COOLDOWN_DAYS` | `30` | Full days required between committed username changes |
 | `PIXELS_PLAYER_MOTTO_MAX_RUNES` | `38` | Maximum motto length |
 | `PIXELS_PLAYER_TAG_MAX_COUNT` | `5` | Maximum profile tags |
 | `PIXELS_PLAYER_TAG_MAX_RUNES` | `32` | Maximum runes per tag |

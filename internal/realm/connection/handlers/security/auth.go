@@ -47,6 +47,8 @@ type Authenticator struct {
 	settings SettingsLoader
 	// respects loads durable respect counters before bootstrap.
 	respects RespectLoader
+	// nameChanges evaluates the automatic username cooldown.
+	nameChanges NameChangePolicy
 	// translations resolves login rejection messages.
 	translations i18n.Translator
 }
@@ -61,6 +63,12 @@ type SettingsLoader interface {
 type RespectLoader interface {
 	// RespectState returns current user and pet allowances.
 	RespectState(context.Context, int64) (playerprofile.RespectState, error)
+}
+
+// NameChangePolicy evaluates one durable cooldown timestamp.
+type NameChangePolicy interface {
+	// Available reports whether a username change is currently permitted.
+	Available(*time.Time) bool
 }
 
 // SanctionGate reports whether a player is currently banned.
@@ -82,6 +90,11 @@ func (authenticator *Authenticator) SetSettingsLoader(loader SettingsLoader) {
 // SetRespectLoader installs durable respect hydration.
 func (authenticator *Authenticator) SetRespectLoader(loader RespectLoader) {
 	authenticator.respects = loader
+}
+
+// SetNameChangePolicy installs automatic username cooldown evaluation.
+func (authenticator *Authenticator) SetNameChangePolicy(policy NameChangePolicy) {
+	authenticator.nameChanges = policy
 }
 
 // SetTranslations installs localized login rejection messages.
@@ -157,6 +170,9 @@ func (authenticator *Authenticator) Bind(ctx context.Context, handler netconn.Co
 	player, err := live.NewPlayer(live.SnapshotFromRecord(record), peer)
 	if err != nil {
 		return err
+	}
+	if authenticator.nameChanges != nil {
+		player.SetUsername(record.Player.Username, authenticator.nameChanges.Available(record.Profile.LastNameChangeAt))
 	}
 	if authenticator.settings != nil {
 		settings, settingsErr := authenticator.settings.Find(ctx, record.Player.ID)

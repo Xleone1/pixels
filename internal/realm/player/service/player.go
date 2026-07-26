@@ -31,9 +31,6 @@ type CreateProfileParams struct {
 
 	// HomeRoomID is the optional default home room identifier.
 	HomeRoomID *int64
-
-	// AllowNameChange reports whether the player can change username.
-	AllowNameChange bool
 }
 
 // Create creates a player with a profile.
@@ -157,11 +154,10 @@ func (service *Service) record(ctx context.Context, player playermodel.Player) (
 // profileParams maps service profile input to repository input.
 func profileParams(playerID int64, params CreateProfileParams) repository.CreateProfileParams {
 	return repository.CreateProfileParams{
-		PlayerID:        playerID,
-		Look:            params.Look,
-		Gender:          params.Gender,
-		Motto:           params.Motto,
-		HomeRoomID:      params.HomeRoomID,
-		AllowNameChange: params.AllowNameChange,
+		PlayerID:   playerID,
+		Look:       params.Look,
+		Gender:     params.Gender,
+		Motto:      params.Motto,
+		HomeRoomID: params.HomeRoomID,
 	}
 }

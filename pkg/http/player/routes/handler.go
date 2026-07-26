@@ -98,7 +98,7 @@ func createParams(request CreateRequest) playerservice.CreateParams {
 		Username: request.Username,
 		Profile: playerservice.CreateProfileParams{
 			Look: request.Look, Gender: playermodel.Gender(request.Gender), Motto: request.Motto,
-			HomeRoomID: request.HomeRoomID, AllowNameChange: request.AllowNameChange,
+			HomeRoomID: request.HomeRoomID,
 		},
 	}
 }
@@ -108,7 +108,7 @@ func playerResponse(record playerservice.Record) Response {
 	return Response{
 		ID: record.Player.ID, Username: record.Player.Username, Look: record.Profile.Look,
 		Gender: string(record.Profile.Gender), Motto: record.Profile.Motto,
-		HomeRoomID: record.Profile.HomeRoomID, AllowNameChange: record.Profile.AllowNameChange,
+		HomeRoomID: record.Profile.HomeRoomID, LastNameChangeAt: record.Profile.LastNameChangeAt,
 		BubbleStyle: record.Profile.BubbleStyle, BlockFriendRequests: record.Profile.BlockFriendRequests,
 		BlockRoomInvites: record.Profile.BlockRoomInvites, BlockFollowing: record.Profile.BlockFollowing,
 		ClubLevel: int16(record.Player.Club.Level), ClubExpiresAt: record.Player.Club.ExpiresAt,

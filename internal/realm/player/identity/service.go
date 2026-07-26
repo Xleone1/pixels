@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	playerservice "github.com/niflaot/pixels/internal/realm/player/service"
@@ -22,6 +23,8 @@ type Service struct {
 	config Config
 	// filter applies the immutable hotel word dictionary.
 	filter WordFilter
+	// now returns the current instant for cooldown decisions.
+	now func() time.Time
 }
 
 // WordFilter applies the immutable hotel dictionary to one candidate.
@@ -37,10 +40,10 @@ func New(store Store, players playerservice.Finder, reservations *redis.Client) 
 
 // NewConfigured creates identity behavior with explicit policy.
 func NewConfigured(store Store, players playerservice.Finder, reservations *redis.Client, filter WordFilter, config Config) *Service {
-	if config.MinimumLength <= 0 || config.MaximumLength < config.MinimumLength || config.ReservationTTL <= 0 {
+	if config.MinimumLength <= 0 || config.MaximumLength < config.MinimumLength || config.ReservationTTL <= 0 || config.ChangeCooldownDays <= 0 {
 		config = DefaultConfig()
 	}
-	return &Service{store: store, players: players, reservations: reservations, config: config, filter: filter}
+	return &Service{store: store, players: players, reservations: reservations, config: config, filter: filter, now: time.Now}
 }
 
 // Check validates availability and reserves an available candidate for one player.
@@ -58,8 +61,14 @@ func (service *Service) Check(ctx context.Context, playerID int64, candidate str
 	if err != nil {
 		return CheckResult{}, err
 	}
-	if !found || !record.Profile.AllowNameChange {
-		result.Code = ResultDisabled
+	if !found {
+		result.Code = ResultCooldown
+		return result, nil
+	}
+	status := service.status(record.Profile.LastNameChangeAt, service.now())
+	if !status.Available {
+		result.Code = ResultCooldown
+		result.AvailableAt = status.AvailableAt
 		return result, nil
 	}
 	existing, taken, err := service.players.FindByUsername(ctx, result.Username)
@@ -121,8 +130,12 @@ func (service *Service) Rename(ctx context.Context, playerID int64, candidate st
 	if !found {
 		return RenameResult{}, ErrPlayerNotFound
 	}
+	status := service.status(record.Profile.LastNameChangeAt, service.now())
+	if !status.Available {
+		return RenameResult{}, ErrRenameCooldown
+	}
 	if strings.EqualFold(record.Player.Username, candidate) {
-		return service.store.Rename(ctx, playerID, candidate)
+		return RenameResult{}, ErrUsernameTaken
 	}
 	if service.reservations != nil {
 		value, reserved, err := service.reservations.Take(ctx, reservationKey(candidate))
@@ -133,7 +146,42 @@ func (service *Service) Rename(ctx context.Context, playerID int64, candidate st
 			return RenameResult{}, ErrReservationMissing
 		}
 	}
-	return service.store.Rename(ctx, playerID, candidate)
+	changedAt := service.now().UTC()
+	return service.store.Rename(ctx, playerID, candidate, changedAt, service.config.changeCooldown())
+}
+
+// Status returns the current automatic rename cooldown for one active player.
+func (service *Service) Status(ctx context.Context, playerID int64) (NameChangeStatus, error) {
+	record, found, err := service.players.FindByID(ctx, playerID)
+	if err != nil {
+		return NameChangeStatus{}, err
+	}
+	if !found {
+		return NameChangeStatus{}, ErrPlayerNotFound
+	}
+	return service.status(record.Profile.LastNameChangeAt, service.now()), nil
+}
+
+// Available reports whether a persisted cooldown permits a rename now.
+func (service *Service) Available(lastChangedAt *time.Time) bool {
+	return service.status(lastChangedAt, service.now()).Available
+}
+
+// status derives one cooldown snapshot at a stable instant.
+func (service *Service) status(lastChangedAt *time.Time, now time.Time) NameChangeStatus {
+	status := NameChangeStatus{Available: true, LastChangedAt: lastChangedAt, CooldownDays: service.config.ChangeCooldownDays}
+	if lastChangedAt == nil {
+		return status
+	}
+	availableAt := lastChangedAt.Add(service.config.changeCooldown())
+	if !now.Before(availableAt) {
+		return status
+	}
+	status.Available = false
+	status.AvailableAt = &availableAt
+	remaining := availableAt.Sub(now)
+	status.RemainingSeconds = int64((remaining + time.Second - 1) / time.Second)
+	return status
 }
 
 // suggestions returns at most four verified deterministic alternatives.

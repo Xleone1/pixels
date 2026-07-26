@@ -41,15 +41,17 @@ func scanPlayer(row pgx.Row) (playermodel.Player, error) {
 func scanProfile(row pgx.Row) (playermodel.Profile, error) {
 	var profile playermodel.Profile
 	var homeRoomID pgtype.Int8
+	var lastNameChangeAt pgtype.Timestamptz
 	var gender string
 
-	err := row.Scan(&profile.PlayerID, &profile.Look, &gender, &profile.Motto, &homeRoomID, &profile.AllowNameChange, &profile.BubbleStyle, &profile.BlockFriendRequests, &profile.BlockRoomInvites, &profile.BlockFollowing, &profile.CreatedAt, &profile.UpdatedAt, &profile.Version.Version)
+	err := row.Scan(&profile.PlayerID, &profile.Look, &gender, &profile.Motto, &homeRoomID, &lastNameChangeAt, &profile.BubbleStyle, &profile.BlockFriendRequests, &profile.BlockRoomInvites, &profile.BlockFollowing, &profile.CreatedAt, &profile.UpdatedAt, &profile.Version.Version)
 	if err != nil {
 		return playermodel.Profile{}, err
 	}
 
 	profile.Gender = playermodel.Gender(gender)
 	profile.HomeRoomID = int64Pointer(homeRoomID)
+	profile.LastNameChangeAt = timePointer(lastNameChangeAt)
 
 	return profile, nil
 }

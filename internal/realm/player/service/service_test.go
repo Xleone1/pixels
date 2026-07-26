@@ -226,7 +226,6 @@ func (store *fakeStore) CreateProfile(_ context.Context, params repository.Creat
 	store.profile.Gender = params.Gender
 	store.profile.Motto = params.Motto
 	store.profile.HomeRoomID = params.HomeRoomID
-	store.profile.AllowNameChange = params.AllowNameChange
 
 	return store.profile, store.profileErr
 }

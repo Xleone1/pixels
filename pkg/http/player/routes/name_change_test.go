@@ -26,13 +26,13 @@ type routeIdentityStore struct {
 }
 
 // Rename applies one self-service fixture rename.
-func (store *routeIdentityStore) Rename(_ context.Context, playerID int64, username string) (playeridentity.RenameResult, error) {
-	return store.rename(playerID, username, playerID, "self-service", "client"), nil
+func (store *routeIdentityStore) Rename(_ context.Context, playerID int64, username string, changedAt time.Time, cooldown time.Duration) (playeridentity.RenameResult, error) {
+	return store.rename(playerID, username, playerID, "self-service", "client", changedAt, cooldown), nil
 }
 
 // RenameAdmin applies one attributed fixture rename.
-func (store *routeIdentityStore) RenameAdmin(_ context.Context, playerID int64, username string, actorPlayerID int64, reason string) (playeridentity.RenameResult, error) {
-	return store.rename(playerID, username, actorPlayerID, reason, "api"), nil
+func (store *routeIdentityStore) RenameAdmin(_ context.Context, playerID int64, username string, actorPlayerID int64, reason string, changedAt time.Time, cooldown time.Duration) (playeridentity.RenameResult, error) {
+	return store.rename(playerID, username, actorPlayerID, reason, "api", changedAt, cooldown), nil
 }
 
 // NameChanges returns bounded fixture history.
@@ -43,52 +43,48 @@ func (store *routeIdentityStore) NameChanges(_ context.Context, _ int64, limit i
 	return store.changes, nil
 }
 
-// SetAuthorization replaces the fixture self-service rename policy.
-func (store *routeIdentityStore) SetAuthorization(_ context.Context, _ int64, allowed bool, _ int64, _ string) error {
-	store.manager.record.Profile.AllowNameChange = allowed
-	return nil
-}
-
 // rename mutates the fixture and appends one audit entry.
-func (store *routeIdentityStore) rename(playerID int64, username string, actorPlayerID int64, reason string, source string) playeridentity.RenameResult {
+func (store *routeIdentityStore) rename(playerID int64, username string, actorPlayerID int64, reason string, source string, changedAt time.Time, cooldown time.Duration) playeridentity.RenameResult {
 	oldUsername := store.manager.record.Player.Username
 	store.manager.record.Player.Username = username
-	store.manager.record.Profile.AllowNameChange = false
+	store.manager.record.Profile.LastNameChangeAt = &changedAt
 	change := playeridentity.NameChange{ID: int64(len(store.changes) + 1), PlayerID: playerID,
 		OldUsername: oldUsername, NewUsername: username, ActorPlayerID: actorPlayerID,
-		Reason: reason, Source: source, ChangedAt: time.Now().UTC()}
+		Reason: reason, Source: source, ChangedAt: changedAt}
 	store.changes = append([]playeridentity.NameChange{change}, store.changes...)
-	return playeridentity.RenameResult{OldUsername: oldUsername, NewUsername: username}
+	return playeridentity.RenameResult{OldUsername: oldUsername, NewUsername: username, ChangedAt: changedAt, AvailableAt: changedAt.Add(cooldown)}
 }
 
-// TestNameChangeAdministrationManagesPolicyRenameAndHistory verifies the complete HTTP workflow.
-func TestNameChangeAdministrationManagesPolicyRenameAndHistory(t *testing.T) {
+// TestNameChangeAdministrationReportsCooldownRenameAndHistory verifies the complete HTTP workflow.
+func TestNameChangeAdministrationReportsCooldownRenameAndHistory(t *testing.T) {
 	app, manager, _ := nameChangeApplication(t, false)
-	response := nameChangeRequest(t, app, http.MethodPost, "/api/admin/players/7/name-change/allow", `{"actorPlayerId":7,"reason":"onboarding"}`)
-	if response.StatusCode != fiber.StatusOK || !manager.record.Profile.AllowNameChange {
-		t.Fatalf("allow status=%d allowed=%t", response.StatusCode, manager.record.Profile.AllowNameChange)
-	}
-	response = nameChangeRequest(t, app, http.MethodPut, "/api/admin/players/7/name-change/authorization", `{"allowed":false,"actorPlayerId":7,"reason":"revoked"}`)
-	if response.StatusCode != fiber.StatusOK || manager.record.Profile.AllowNameChange {
-		t.Fatalf("revoke status=%d allowed=%t", response.StatusCode, manager.record.Profile.AllowNameChange)
+	response := nameChangeRequest(t, app, http.MethodGet, "/api/admin/players/7/name-change/status", "")
+	body, _ := io.ReadAll(response.Body)
+	if response.StatusCode != fiber.StatusOK || !strings.Contains(string(body), `"available":true`) {
+		t.Fatalf("initial status=%d body=%s", response.StatusCode, body)
 	}
 	response = nameChangeRequest(t, app, http.MethodPost, "/api/admin/players/7/name-change", `{"username":"renamed","actorPlayerId":7,"reason":"support"}`)
 	if response.StatusCode != fiber.StatusOK || manager.record.Player.Username != "renamed" {
 		t.Fatalf("rename status=%d username=%q", response.StatusCode, manager.record.Player.Username)
 	}
 	response = nameChangeRequest(t, app, http.MethodGet, "/api/admin/players/7/name-changes?limit=10", "")
-	body, _ := io.ReadAll(response.Body)
+	body, _ = io.ReadAll(response.Body)
 	if response.StatusCode != fiber.StatusOK || !strings.Contains(string(body), `"newUsername":"renamed"`) || !strings.Contains(string(body), `"source":"api"`) {
 		t.Fatalf("history status=%d body=%s", response.StatusCode, body)
 	}
+	response = nameChangeRequest(t, app, http.MethodGet, "/api/admin/players/7/name-change/status", "")
+	body, _ = io.ReadAll(response.Body)
+	if response.StatusCode != fiber.StatusOK || !strings.Contains(string(body), `"available":false`) || !strings.Contains(string(body), `"cooldownDays":30`) {
+		t.Fatalf("cooldown status=%d body=%s", response.StatusCode, body)
+	}
 }
 
-// TestNameChangeAuthorizationProjectsUserInfo verifies online clients update without reconnecting.
-func TestNameChangeAuthorizationProjectsUserInfo(t *testing.T) {
+// TestAdministrativeNameChangeProjectsUserInfo verifies online clients update without reconnecting.
+func TestAdministrativeNameChangeProjectsUserInfo(t *testing.T) {
 	app, manager, packets := nameChangeApplication(t, true)
-	response := nameChangeRequest(t, app, http.MethodPost, "/api/admin/players/7/name-change/allow", `{"actorPlayerId":7,"reason":"onboarding"}`)
-	if response.StatusCode != fiber.StatusOK || !manager.record.Profile.AllowNameChange {
-		t.Fatalf("status=%d allowed=%t", response.StatusCode, manager.record.Profile.AllowNameChange)
+	response := nameChangeRequest(t, app, http.MethodPost, "/api/admin/players/7/name-change", `{"username":"renamed","actorPlayerId":7,"reason":"support"}`)
+	if response.StatusCode != fiber.StatusOK || manager.record.Profile.LastNameChangeAt == nil {
+		t.Fatalf("status=%d record=%#v", response.StatusCode, manager.record)
 	}
 	if len(*packets) != 1 || (*packets)[0].Header != outinfo.Header {
 		t.Fatalf("packets=%#v", *packets)
@@ -100,7 +96,6 @@ func TestNameChangeRoutesRejectInvalidInput(t *testing.T) {
 	app, _, _ := nameChangeApplication(t, false)
 	for _, request := range []*http.Request{
 		requestForTest(t, http.MethodPost, "/api/admin/players/7/name-change", `{"username":"bad name","actorPlayerId":7,"reason":"support"}`),
-		requestForTest(t, http.MethodPost, "/api/admin/players/7/name-change/allow", `{"actorPlayerId":0,"reason":""}`),
 		requestForTest(t, http.MethodGet, "/api/admin/players/7/name-changes?limit=500", ""),
 	} {
 		response, err := app.Test(request)

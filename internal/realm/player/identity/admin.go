@@ -33,26 +33,8 @@ func (service *Service) RenameAdmin(ctx context.Context, playerID int64, candida
 	if taken && existing.Player.ID != playerID {
 		return RenameResult{}, ErrUsernameTaken
 	}
-	return service.store.RenameAdmin(ctx, playerID, candidate, actorPlayerID, reason)
-}
-
-// SetAuthorization replaces and audits one self-service rename authorization.
-func (service *Service) SetAuthorization(ctx context.Context, playerID int64, allowed bool, actorPlayerID int64, reason string) error {
-	reason = strings.TrimSpace(reason)
-	if playerID <= 0 || actorPlayerID <= 0 || reason == "" || utf8.RuneCountInString(reason) > 500 {
-		return ErrInvalidAttribution
-	}
-	_, found, err := service.players.FindByID(ctx, playerID)
-	if err != nil {
-		return err
-	}
-	if !found {
-		return ErrPlayerNotFound
-	}
-	if err = service.validateActor(ctx, playerID, actorPlayerID); err != nil {
-		return err
-	}
-	return service.store.SetAuthorization(ctx, playerID, allowed, actorPlayerID, reason)
+	changedAt := service.now().UTC()
+	return service.store.RenameAdmin(ctx, playerID, candidate, actorPlayerID, reason, changedAt, service.config.changeCooldown())
 }
 
 // NameChanges returns a bounded recent username history.

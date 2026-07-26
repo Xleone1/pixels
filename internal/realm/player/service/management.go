@@ -11,8 +11,6 @@ import (
 
 // UpdateParams contains optional administrative player changes.
 type UpdateParams struct {
-	// Username replaces the visible name when present.
-	Username *string
 	// Look replaces the Nitro avatar figure when present.
 	Look *string
 	// Gender replaces the Nitro avatar gender when present.
@@ -21,8 +19,6 @@ type UpdateParams struct {
 	Motto *string
 	// HomeRoomID replaces or clears the home room when present.
 	HomeRoomID **int64
-	// AllowNameChange replaces the username-change flag when present.
-	AllowNameChange *bool
 	// BubbleStyle replaces the selected Nitro bubble when present.
 	BubbleStyle *int32
 	// BlockFriendRequests replaces the friend-request privacy flag when present.
@@ -33,7 +29,7 @@ type UpdateParams struct {
 	BlockFollowing *bool
 }
 
-// Update applies one partial player identity and profile mutation atomically.
+// Update applies one partial player profile mutation atomically.
 func (service *Service) Update(ctx context.Context, playerID int64, params UpdateParams) (Record, error) {
 	if err := validatePlayerID(playerID); err != nil {
 		return Record{}, err
@@ -49,37 +45,23 @@ func (service *Service) Update(ctx context.Context, playerID int64, params Updat
 		return Record{}, ErrPlayerNotFound
 	}
 
-	identityChanged, profileChanged, err := applyUpdate(&record, params)
+	profileChanged, err := applyUpdate(&record, params)
 	if err != nil {
 		return Record{}, err
 	}
-	if !identityChanged && !profileChanged {
+	if !profileChanged {
 		return record, nil
 	}
 
 	err = service.store.WithinTransaction(ctx, func(txCtx context.Context) error {
-		if identityChanged {
-			updated, matched, updateErr := service.admin.UpdatePlayer(txCtx, repository.UpdatePlayerParams{
-				PlayerID: playerID, Username: record.Player.Username, ExpectedVersion: record.Player.Version.Version,
-			})
-			if updateErr != nil {
-				return updateErr
-			}
-			if !matched {
-				return ErrConflict
-			}
-			record.Player = updated
+		updated, matched, updateErr := service.admin.UpdateProfile(txCtx, updateProfileParams(record.Profile))
+		if updateErr != nil {
+			return updateErr
 		}
-		if profileChanged {
-			updated, matched, updateErr := service.admin.UpdateProfile(txCtx, updateProfileParams(record.Profile))
-			if updateErr != nil {
-				return updateErr
-			}
-			if !matched {
-				return ErrConflict
-			}
-			record.Profile = updated
+		if !matched {
+			return ErrConflict
 		}
+		record.Profile = updated
 		return nil
 	})
 	if errors.Is(err, repository.ErrUsernameTaken) {
@@ -119,23 +101,16 @@ func (service *Service) SoftDelete(ctx context.Context, playerID int64) error {
 }
 
 // applyUpdate applies and validates optional fields in memory.
-func applyUpdate(record *Record, params UpdateParams) (bool, bool, error) {
-	identityChanged := params.Username != nil
+func applyUpdate(record *Record, params UpdateParams) (bool, error) {
 	profileChanged := params.Look != nil || params.Gender != nil || params.Motto != nil || params.HomeRoomID != nil ||
-		params.AllowNameChange != nil || params.BubbleStyle != nil || params.BlockFriendRequests != nil ||
+		params.BubbleStyle != nil || params.BlockFriendRequests != nil ||
 		params.BlockRoomInvites != nil || params.BlockFollowing != nil
-	if params.Username != nil {
-		record.Player.Username = normalizeUsername(*params.Username)
-		if err := validateUsername(record.Player.Username); err != nil {
-			return false, false, err
-		}
-	}
 	applyProfileUpdate(&record.Profile, params)
 	if err := validateStoredProfile(record.Profile); err != nil {
-		return false, false, err
+		return false, err
 	}
 
-	return identityChanged, profileChanged, nil
+	return profileChanged, nil
 }
 
 // applyProfileUpdate replaces optional profile fields.
@@ -151,9 +126,6 @@ func applyProfileUpdate(profile *playermodel.Profile, params UpdateParams) {
 	}
 	if params.HomeRoomID != nil {
 		profile.HomeRoomID = *params.HomeRoomID
-	}
-	if params.AllowNameChange != nil {
-		profile.AllowNameChange = *params.AllowNameChange
 	}
 	if params.BubbleStyle != nil {
 		profile.BubbleStyle = *params.BubbleStyle
@@ -184,7 +156,7 @@ func validateStoredProfile(profile playermodel.Profile) error {
 func updateProfileParams(profile playermodel.Profile) repository.UpdateProfileParams {
 	return repository.UpdateProfileParams{CreateProfileParams: repository.CreateProfileParams{
 		PlayerID: profile.PlayerID, Look: profile.Look, Gender: profile.Gender, Motto: profile.Motto,
-		HomeRoomID: profile.HomeRoomID, AllowNameChange: profile.AllowNameChange,
+		HomeRoomID: profile.HomeRoomID,
 	}, BubbleStyle: profile.BubbleStyle, BlockFriendRequests: profile.BlockFriendRequests,
 		BlockRoomInvites: profile.BlockRoomInvites, BlockFollowing: profile.BlockFollowing,
 		ExpectedVersion: profile.Version.Version}

@@ -45,13 +45,6 @@ type AdminPlayerAttributedRequest struct {
 	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
 }
 
-// AdminPlayerNameAuthorizationRequest documents one reversible rename policy.
-type AdminPlayerNameAuthorizationRequest struct {
-	AdminPlayerAttributedRequest
-	// Allowed reports whether one self-service rename is enabled.
-	Allowed bool `json:"allowed" required:"true"`
-}
-
 // AdminPlayerNameChangeRequest documents one direct attributed rename.
 type AdminPlayerNameChangeRequest struct {
 	AdminPlayerAttributedRequest
@@ -74,6 +67,22 @@ type AdminPlayerNameCheckResponse struct {
 	Username string `json:"username" required:"true"`
 	// Suggestions stores bounded available alternatives.
 	Suggestions []string `json:"suggestions" required:"true" maxItems:"4"`
+	// AvailableAt stores the next eligible instant when code six is returned.
+	AvailableAt *time.Time `json:"availableAt,omitempty"`
+}
+
+// AdminPlayerNameChangeStatusResponse documents one automatic cooldown snapshot.
+type AdminPlayerNameChangeStatusResponse struct {
+	// Available reports whether a self-service rename may start now.
+	Available bool `json:"available" required:"true"`
+	// AvailableAt stores the next eligible instant when currently unavailable.
+	AvailableAt *time.Time `json:"availableAt,omitempty"`
+	// LastChangedAt stores the latest committed username replacement.
+	LastChangedAt *time.Time `json:"lastChangedAt,omitempty"`
+	// RemainingSeconds stores the rounded-up cooldown remainder.
+	RemainingSeconds int64 `json:"remainingSeconds" required:"true" minimum:"0"`
+	// CooldownDays stores the configured interval in full days.
+	CooldownDays int `json:"cooldownDays" required:"true" minimum:"1"`
 }
 
 // AdminPlayerNameHistoryRequest documents one bounded audit query.

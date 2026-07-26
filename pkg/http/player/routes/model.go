@@ -15,14 +15,10 @@ type CreateRequest struct {
 	Motto string `json:"motto,omitempty"`
 	// HomeRoomID is the optional initial home room identifier.
 	HomeRoomID *int64 `json:"homeRoomId,omitempty"`
-	// AllowNameChange reports whether the player may change username.
-	AllowNameChange bool `json:"allowNameChange,omitempty"`
 }
 
-// UpdateRequest contains optional administrative identity and profile changes.
+// UpdateRequest contains optional administrative profile changes.
 type UpdateRequest struct {
-	// Username replaces the visible player name.
-	Username *string `json:"username,omitempty"`
 	// Look replaces the Nitro avatar figure string.
 	Look *string `json:"look,omitempty"`
 	// Gender replaces the Nitro avatar gender code.
@@ -33,8 +29,6 @@ type UpdateRequest struct {
 	HomeRoomID *int64 `json:"homeRoomId,omitempty"`
 	// ClearHomeRoom removes the current home room identifier.
 	ClearHomeRoom bool `json:"clearHomeRoom,omitempty"`
-	// AllowNameChange replaces the username-change flag.
-	AllowNameChange *bool `json:"allowNameChange,omitempty"`
 	// BubbleStyle replaces the selected Nitro chat bubble style.
 	BubbleStyle *int32 `json:"bubbleStyle,omitempty"`
 	// BlockFriendRequests replaces the friend-request privacy flag.
@@ -59,8 +53,8 @@ type Response struct {
 	Motto string `json:"motto"`
 	// HomeRoomID is the optional home room identifier.
 	HomeRoomID *int64 `json:"homeRoomId,omitempty"`
-	// AllowNameChange reports whether the player may change username.
-	AllowNameChange bool `json:"allowNameChange"`
+	// LastNameChangeAt stores the latest committed username replacement.
+	LastNameChangeAt *time.Time `json:"lastNameChangeAt,omitempty"`
 	// BubbleStyle stores the selected Nitro chat bubble style.
 	BubbleStyle int32 `json:"bubbleStyle"`
 	// BlockFriendRequests reports whether incoming friend requests are disabled.

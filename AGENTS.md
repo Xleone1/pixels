@@ -269,6 +269,10 @@ minimum manual checks expected when touching it.
   idempotent creation, exact case-insensitive username lookup, profile reads,
   optimistic partial updates, and soft deletion. Creation assigns the default
   permission group atomically; deletion closes an active player session.
+- Username changes use an automatic cooldown configured by
+  `PIXELS_PLAYER_USERNAME_CHANGE_COOLDOWN_DAYS`. Every committed self-service
+  or administrative rename resets the durable cooldown, and player creation
+  plus general profile patches must not bypass the focused identity workflow.
 - Test after changes:
   - `go test ./internal/realm/player/...`
   - `go test ./pkg/http/player/routes ./pkg/http/openapi`
@@ -276,6 +280,8 @@ minimum manual checks expected when touching it.
   - Enter and leave a room and verify live player room presence updates.
   - Create, find, update, and soft-delete a player through `/api/admin/players`;
     verify a deleted player cannot be found or authenticate again.
+  - Change a username through the CMS and Nitro flows; verify both report the
+    same next eligible instant and reject another change until the cooldown.
 
 ### FEATURE: Club Entitlements
 

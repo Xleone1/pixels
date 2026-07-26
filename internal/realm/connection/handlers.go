@@ -115,6 +115,9 @@ func RegisterPlayerIdentityHandlers(handlers *Handlers, identities *playeridenti
 	playeridentity.RegisterHandlers(handlers.Inbound, playeridentity.Handler{
 		Service: identities, Bindings: bindings, Players: players, Rooms: rooms, Connections: connections, Events: handlers.events,
 	})
+	if handlers.authenticator != nil {
+		handlers.authenticator.SetNameChangePolicy(identities)
+	}
 }
 
 // Handlers contains connection-realm handler registries.

@@ -17,10 +17,8 @@ values
 (2,1,'hr-515-45.hd-600-1.ch-665-92.lg-700-64.sh-735-68','F')
 on conflict(player_id,slot_id) do update set figure=excluded.figure,gender=excluded.gender,updated_at=now();
 
-update player_profiles set allow_name_change=(player_id=1) where player_id in (1,2,3,4);
-
 insert into player_respect_grants(actor_player_id,target_player_id,grant_date,source)
 values (4,1,current_date,'seed'),(4,2,current_date,'seed'),(4,3,current_date,'seed')
 on conflict do nothing;
 
---rollback delete from player_respect_grants where actor_player_id=4 and grant_date=current_date and source='seed'; delete from player_wardrobe_outfits where player_id in (1,2); delete from player_profile_tags where player_id in (1,2); delete from player_settings where player_id in (1,2,3,4); update player_profiles set allow_name_change=false where player_id in (1,2,3,4);
+--rollback delete from player_respect_grants where actor_player_id=4 and grant_date=current_date and source='seed'; delete from player_wardrobe_outfits where player_id in (1,2); delete from player_profile_tags where player_id in (1,2); delete from player_settings where player_id in (1,2,3,4);

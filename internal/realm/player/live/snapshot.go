@@ -203,7 +203,6 @@ func SnapshotFromRecord(record playerservice.Record) Snapshot {
 		Gender:              record.Profile.Gender,
 		Motto:               record.Profile.Motto,
 		HomeRoomID:          record.Profile.HomeRoomID,
-		AllowNameChange:     record.Profile.AllowNameChange,
 		BubbleStyle:         record.Profile.BubbleStyle,
 		VolumeSystem:        100,
 		VolumeFurniture:     100,

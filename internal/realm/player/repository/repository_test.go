@@ -94,7 +94,7 @@ func TestCreateProfileScansRecord(t *testing.T) {
 		"M",
 		"hello",
 		pgtype.Int8{Int64: homeRoomID, Valid: true},
-		true,
+		pgtype.Timestamptz{Time: now, Valid: true},
 		int32(3),
 		false,
 		false,
@@ -105,12 +105,11 @@ func TestCreateProfileScansRecord(t *testing.T) {
 	}}}
 
 	profile, err := New(executor).CreateProfile(context.Background(), CreateProfileParams{
-		PlayerID:        7,
-		Look:            "hd-180-1",
-		Gender:          playermodel.GenderMale,
-		Motto:           "hello",
-		HomeRoomID:      &homeRoomID,
-		AllowNameChange: true,
+		PlayerID:   7,
+		Look:       "hd-180-1",
+		Gender:     playermodel.GenderMale,
+		Motto:      "hello",
+		HomeRoomID: &homeRoomID,
 	})
 	if err != nil {
 		t.Fatalf("create profile: %v", err)
@@ -118,6 +117,9 @@ func TestCreateProfileScansRecord(t *testing.T) {
 
 	if profile.HomeRoomID == nil || *profile.HomeRoomID != homeRoomID {
 		t.Fatal("expected home room id")
+	}
+	if profile.LastNameChangeAt == nil || !profile.LastNameChangeAt.Equal(now) {
+		t.Fatal("expected last name change timestamp")
 	}
 }
 

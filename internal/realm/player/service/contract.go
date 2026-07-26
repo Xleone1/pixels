@@ -38,7 +38,7 @@ type Manager interface {
 // AdminManager exposes complete protected player administration behavior.
 type AdminManager interface {
 	Manager
-	// Update applies one partial player identity and profile mutation.
+	// Update applies one partial player profile mutation.
 	Update(ctx context.Context, playerID int64, params UpdateParams) (Record, error)
 	// SoftDelete marks one player deleted so active lookups and future logins reject it.
 	SoftDelete(ctx context.Context, playerID int64) error

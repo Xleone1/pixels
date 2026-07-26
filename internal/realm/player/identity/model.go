@@ -17,15 +17,15 @@ const (
 	ResultInvalid int32 = 4
 	// ResultTaken reports a reserved or existing username.
 	ResultTaken int32 = 5
-	// ResultDisabled reports that the actor cannot rename.
-	ResultDisabled int32 = 6
+	// ResultCooldown reports that the username cooldown is still active.
+	ResultCooldown int32 = 6
 )
 
 var (
 	// ErrReservationMissing reports a commit without a matching short reservation.
 	ErrReservationMissing = errors.New("username reservation missing")
-	// ErrRenameDisabled reports a durable rename policy rejection.
-	ErrRenameDisabled = errors.New("username change disabled")
+	// ErrRenameCooldown reports that the durable rename cooldown is active.
+	ErrRenameCooldown = errors.New("username change cooldown active")
 	// ErrUsernameTaken reports a database uniqueness conflict.
 	ErrUsernameTaken = errors.New("username taken")
 	// ErrPlayerNotFound reports a missing active target player.
@@ -42,6 +42,8 @@ type CheckResult struct {
 	Username string
 	// Suggestions stores bounded available alternatives.
 	Suggestions []string
+	// AvailableAt stores the next eligible instant when the cooldown is active.
+	AvailableAt *time.Time
 }
 
 // RenameResult contains one committed identity replacement.
@@ -50,6 +52,24 @@ type RenameResult struct {
 	OldUsername string
 	// NewUsername stores the committed visible name.
 	NewUsername string
+	// ChangedAt stores the committed mutation instant.
+	ChangedAt time.Time
+	// AvailableAt stores the next self-service eligibility instant.
+	AvailableAt time.Time
+}
+
+// NameChangeStatus describes the current automatic cooldown.
+type NameChangeStatus struct {
+	// Available reports whether a self-service rename may start now.
+	Available bool
+	// AvailableAt stores the next eligible instant when currently unavailable.
+	AvailableAt *time.Time
+	// LastChangedAt stores the latest committed username replacement.
+	LastChangedAt *time.Time
+	// RemainingSeconds stores the rounded-up cooldown remainder.
+	RemainingSeconds int64
+	// CooldownDays stores the configured interval in full days.
+	CooldownDays int
 }
 
 // NameChange contains one durable username audit entry.

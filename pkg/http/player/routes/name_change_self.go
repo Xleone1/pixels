@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	playeridentity "github.com/niflaot/pixels/internal/realm/player/identity"
@@ -45,6 +47,7 @@ func confirmOwnNameChange(dependencies RemainingDependencies) fiber.Handler {
 					Code:        code,
 					Username:    strings.TrimSpace(request.Username),
 					Suggestions: []string{},
+					AvailableAt: cooldownAvailableAt(ctx.Context(), dependencies, id),
 				})
 			}
 			return err
@@ -71,6 +74,7 @@ func confirmOwnNameChange(dependencies RemainingDependencies) fiber.Handler {
 			Code:        playeridentity.ResultAvailable,
 			Username:    result.NewUsername,
 			Suggestions: []string{},
+			AvailableAt: &result.AvailableAt,
 		})
 	}
 }
@@ -97,12 +101,24 @@ func selfNameChangeRequest(
 // selfNameChangeErrorCode maps expected commit failures to protocol decisions.
 func selfNameChangeErrorCode(err error) (int32, bool) {
 	switch {
-	case errors.Is(err, playeridentity.ErrRenameDisabled):
-		return playeridentity.ResultDisabled, true
+	case errors.Is(err, playeridentity.ErrRenameCooldown):
+		return playeridentity.ResultCooldown, true
 	case errors.Is(err, playeridentity.ErrUsernameTaken),
 		errors.Is(err, playeridentity.ErrReservationMissing):
 		return playeridentity.ResultTaken, true
 	default:
 		return playeridentity.ResultInvalid, false
 	}
+}
+
+// cooldownAvailableAt resolves the authoritative next eligible instant.
+func cooldownAvailableAt(ctx context.Context, dependencies RemainingDependencies, playerID int64) *time.Time {
+	if dependencies.Identity == nil {
+		return nil
+	}
+	status, err := dependencies.Identity.Status(ctx, playerID)
+	if err != nil {
+		return nil
+	}
+	return status.AvailableAt
 }

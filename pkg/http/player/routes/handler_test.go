@@ -216,14 +216,8 @@ func (manager *fakeManager) Update(_ context.Context, _ int64, params playerserv
 	if manager.operationErr != nil {
 		return playerservice.Record{}, manager.operationErr
 	}
-	if params.Username != nil {
-		manager.record.Player.Username = *params.Username
-	}
 	if params.Motto != nil {
 		manager.record.Profile.Motto = *params.Motto
-	}
-	if params.AllowNameChange != nil {
-		manager.record.Profile.AllowNameChange = *params.AllowNameChange
 	}
 
 	return manager.record, nil

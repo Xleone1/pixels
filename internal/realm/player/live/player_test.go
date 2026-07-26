@@ -17,12 +17,11 @@ func TestSnapshotFromRecordMapsPersistentData(t *testing.T) {
 	record := playerservice.Record{
 		Player: playermodel.Player{Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: 7}}, Username: "ian"},
 		Profile: playermodel.Profile{
-			PlayerID:        7,
-			Look:            "hd-180-1",
-			Gender:          playermodel.GenderMale,
-			Motto:           "hello",
-			HomeRoomID:      &homeRoomID,
-			AllowNameChange: true,
+			PlayerID:   7,
+			Look:       "hd-180-1",
+			Gender:     playermodel.GenderMale,
+			Motto:      "hello",
+			HomeRoomID: &homeRoomID,
 		},
 	}
 
