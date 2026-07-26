@@ -27,6 +27,8 @@ func TestCatalogAllowed(t *testing.T) {
 		{name: "sellable missing", figure: "ha-400-1", gender: playermodel.GenderMale},
 		{name: "sellable owned", figure: "ha-400-1", gender: playermodel.GenderMale, unlocked: []int32{400}, allowed: true},
 		{name: "color", figure: "hd-180-9", gender: playermodel.GenderMale},
+		{name: "club color missing", figure: "hd-180-2", gender: playermodel.GenderMale},
+		{name: "club color with hc", figure: "hd-180-2", gender: playermodel.GenderMale, club: playermodel.ClubLevelHC, allowed: true},
 	}
 	for _, test := range tests {
 		if actual := catalog.Allowed(test.figure, test.gender, test.club, test.unlocked); actual != test.allowed {
@@ -85,7 +87,7 @@ func BenchmarkCatalogAllowed(benchmark *testing.B) {
 func testCatalog(testingObject testing.TB) *Catalog {
 	testingObject.Helper()
 	path := filepath.Join(testingObject.TempDir(), "figuredata.xml")
-	data := []byte(`<figuredata><colors><palette id="1"><color id="1" club="0" selectable="1"/></palette></colors><sets><settype type="hd" paletteid="1"><set id="180" gender="U" club="0" selectable="1"/></settype><settype type="hr" paletteid="1"><set id="200" gender="M" club="0" selectable="1"/></settype><settype type="ch" paletteid="1"><set id="300" gender="U" club="1" selectable="1"/></settype><settype type="ha" paletteid="1"><set id="400" gender="U" club="0" selectable="1" sellable="1"/></settype></sets></figuredata>`)
+	data := []byte(`<figuredata><colors><palette id="1"><color id="1" club="0" selectable="1"/><color id="2" club="2" selectable="1"/></palette></colors><sets><settype type="hd" paletteid="1"><set id="180" gender="U" club="0" selectable="1"/></settype><settype type="hr" paletteid="1"><set id="200" gender="M" club="0" selectable="1"/></settype><settype type="ch" paletteid="1"><set id="300" gender="U" club="1" selectable="1"/></settype><settype type="ha" paletteid="1"><set id="400" gender="U" club="0" selectable="1" sellable="1"/></settype></sets></figuredata>`)
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		testingObject.Fatalf("write figure catalog: %v", err)
 	}

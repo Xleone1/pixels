@@ -123,11 +123,16 @@ func (catalog *Catalog) partAllowed(part part, gender playermodel.Gender, club p
 	}
 	for colorIndex := 0; colorIndex < part.colorCount; colorIndex++ {
 		color, colorFound := catalog.colors[colorKey{paletteID: rule.paletteID, id: part.colors[colorIndex]}]
-		if !colorFound || !color.selectable || int16(club) < color.club {
+		if !colorFound || !color.selectable || !clubColorAllowed(color.club, club) {
 			return false
 		}
 	}
 	return true
+}
+
+// clubColorAllowed requires active membership for every club-marked palette color.
+func clubColorAllowed(required int16, actual playermodel.ClubLevel) bool {
+	return required <= 0 || actual > playermodel.ClubLevelNone
 }
 
 // containsPart reports whether an exact normalized figure part was already present.
