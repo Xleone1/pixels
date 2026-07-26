@@ -25,4 +25,8 @@ var (
 	CMSPermissionGroupNodesManage = RegisterNode("cms.permissions.groups.nodes.manage", "")
 	// CMSPermissionGroupMembersManage allows changing direct group memberships.
 	CMSPermissionGroupMembersManage = RegisterNode("cms.permissions.groups.members.manage", "")
+	// CMSUsersView allows reading user administration.
+	CMSUsersView = RegisterNode("cms.users.view", "")
+	// CMSUsersUpdate allows editing user profiles from the CMS.
+	CMSUsersUpdate = RegisterNode("cms.users.update", "")
 )

@@ -18,4 +18,5 @@
     <include file="migrations/0011_name_change_authorizations.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0012_sync_player_identity.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0013_name_change_cooldown.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0014_add_username_prefix_index.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

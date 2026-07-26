@@ -86,6 +86,8 @@ updated in the same change.
 | `cms.store.packages.manage` | Manage CMS store packages |
 | `cms.store.transactions.authorize` | Authorize CMS store transactions |
 | `cms.store.transactions.view` | View CMS store transactions |
+| `cms.users.update` | Update player profiles from the CMS |
+| `cms.users.view` | View player administration and durable account details |
 | `moderation.chatlog.read` | Read moderation chat logs |
 | `moderation.guardian.duty` | Perform Guardian duty flows |
 | `moderation.guide.duty` | Perform Guide duty flows |
