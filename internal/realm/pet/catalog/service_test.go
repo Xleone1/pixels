@@ -45,12 +45,22 @@ func (store *catalogStore) Grant(_ context.Context, params petrecord.GrantParams
 // TestParsePurchaseDataValidatesExactNitroShape verifies catalog anti-cheat parsing.
 func TestParsePurchaseDataValidatesExactNitroShape(t *testing.T) {
 	name, paletteID, color, err := parsePurchaseData("Pixel\n2\n#aabbcc")
-	if err != nil || name != "Pixel" || paletteID != 2 || color != "AABBCC" {
-		t.Fatalf("unexpected purchase data %q %d %q err=%v", name, paletteID, color, err)
+	if err != nil || name != "Pixel" || paletteID == nil || *paletteID != 2 || color != "AABBCC" {
+		t.Fatalf("unexpected purchase data %q %v %q err=%v", name, paletteID, color, err)
 	}
-	for _, value := range []string{"Pixel\n2", "Pixel\n-1\nFFFFFF", "Pixel\nx\nFFFFFF", "Pixel\n2\nXYZ"} {
+	for _, value := range []string{"Pixel\n2", "Pixel\n-1\nFFFFFF", "Pixel\nx\nFFFFFF", "Pixel\n2\nXYZ", "Pixel\n\nFFFFFF"} {
 		if _, _, _, parseErr := parsePurchaseData(value); parseErr == nil {
 			t.Fatalf("expected malformed data rejection for %q", value)
+		}
+	}
+}
+
+// TestParsePurchaseDataAcceptsLegacyMissingAppearance verifies incomplete clients can use trusted defaults.
+func TestParsePurchaseDataAcceptsLegacyMissingAppearance(t *testing.T) {
+	for _, value := range []string{"Pixel", "Pixel\n"} {
+		name, paletteID, color, err := parsePurchaseData(value)
+		if err != nil || name != "Pixel" || paletteID != nil || color != "" {
+			t.Fatalf("value=%q name=%q palette=%v color=%q err=%v", value, name, paletteID, color, err)
 		}
 	}
 }
@@ -104,6 +114,21 @@ func TestGrantCatalogValidatesAndPersistsTypedReward(t *testing.T) {
 	}
 }
 
+// TestGrantCatalogDefaultsMissingAppearance verifies the server selects trusted sellable metadata.
+func TestGrantCatalogDefaultsMissingAppearance(t *testing.T) {
+	store := &catalogStore{}
+	service := New(petpolicy.Config{Enabled: true}, store, catalogFixtureReferences(), nil, nil, nil, nil, nil, nil)
+	reward, err := service.GrantCatalog(context.Background(), catalogservice.PetGrantParams{
+		OwnerPlayerID: 7, TypeID: 0, ProductCode: "pet0", ExtraData: "Pixel\n", OperationKey: "catalog:legacy",
+	})
+	if err != nil || reward.ID != 81 {
+		t.Fatalf("reward=%+v err=%v", reward, err)
+	}
+	if store.params.BreedID != 3 || store.params.PaletteID != 2 || store.params.Color != "AABBCC" {
+		t.Fatalf("unexpected default appearance %+v", store.params)
+	}
+}
+
 // TestGrantCatalogRejectsForgedProductAndPalette verifies client data cannot select another species.
 func TestGrantCatalogRejectsForgedProductAndPalette(t *testing.T) {
 	store := &catalogStore{}
@@ -147,7 +172,7 @@ func TestGrantRejectsDisabledSpeciesAndUnmarketableBreed(t *testing.T) {
 // catalogFixtureReferences creates one enabled species and sellable palette.
 func catalogFixtureReferences() catalogReferences {
 	snapshot := &petreference.Snapshot{Breeds: map[petreference.BreedKey]petrecord.Breed{
-		{TypeID: 0, BreedID: 3, PaletteID: 2}: {TypeID: 0, BreedID: 3, PaletteID: 2, Enabled: true, Sellable: true},
+		{TypeID: 0, BreedID: 3, PaletteID: 2}: {TypeID: 0, BreedID: 3, PaletteID: 2, Color: "AABBCC", Enabled: true, Sellable: true},
 	}}
 	snapshot.SpeciesPresent[0] = true
 	snapshot.Species[0] = petrecord.Species{TypeID: 0, Enabled: true}

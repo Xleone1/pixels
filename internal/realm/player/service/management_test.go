@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	playermodel "github.com/niflaot/pixels/internal/realm/player/model"
@@ -106,6 +107,9 @@ func TestUpdateRejectsInvalidChanges(t *testing.T) {
 	negativeBubble := int32(-1)
 	invalidHomeRoom := int64(0)
 	homeRoom := &invalidHomeRoom
+	invalidGender := playermodel.Gender("X")
+	longLook := strings.Repeat("x", MaxLookLength+1)
+	longMotto := strings.Repeat("x", MaxMottoLength+1)
 	tests := []struct {
 		name     string
 		params   UpdateParams
@@ -113,6 +117,9 @@ func TestUpdateRejectsInvalidChanges(t *testing.T) {
 	}{
 		{name: "bubble", params: UpdateParams{BubbleStyle: &negativeBubble}, expected: ErrInvalidBubbleStyle},
 		{name: "home room", params: UpdateParams{HomeRoomID: &homeRoom}, expected: ErrInvalidHomeRoomID},
+		{name: "gender", params: UpdateParams{Gender: &invalidGender}, expected: ErrInvalidGender},
+		{name: "look", params: UpdateParams{Look: &longLook}, expected: ErrInvalidLook},
+		{name: "motto", params: UpdateParams{Motto: &longMotto}, expected: ErrInvalidMotto},
 	}
 
 	for _, test := range tests {
@@ -122,6 +129,17 @@ func TestUpdateRejectsInvalidChanges(t *testing.T) {
 				t.Fatalf("expected %v, got %v", test.expected, err)
 			}
 		})
+	}
+}
+
+// TestUpdateAllowsFigureChangeWithLegacyMotto verifies unrelated historical data cannot block a partial mutation.
+func TestUpdateAllowsFigureChangeWithLegacyMotto(t *testing.T) {
+	store := &adminStoreForTest{fakeStore: newFakeStore()}
+	store.profile.Motto = strings.Repeat("x", MaxMottoLength+1)
+	look := "hr-100.hd-180-1"
+	record, err := New(store).Update(context.Background(), 7, UpdateParams{Look: &look})
+	if err != nil || record.Profile.Look != look || record.Profile.Motto != store.profile.Motto {
+		t.Fatalf("record=%#v err=%v", record, err)
 	}
 }
 

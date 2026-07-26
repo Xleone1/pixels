@@ -3,9 +3,7 @@ package buy
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/niflaot/pixels/internal/command"
 	catalogsession "github.com/niflaot/pixels/internal/realm/catalog/commands/session"
@@ -13,19 +11,9 @@ import (
 	catalogprojection "github.com/niflaot/pixels/internal/realm/catalog/projection"
 	catalogservice "github.com/niflaot/pixels/internal/realm/catalog/service"
 	furnituremodel "github.com/niflaot/pixels/internal/realm/furniture/model"
-	currencyservice "github.com/niflaot/pixels/internal/realm/inventory/currency/service"
 	playerlive "github.com/niflaot/pixels/internal/realm/player/live"
-	roombundle "github.com/niflaot/pixels/internal/realm/room/record/bundle"
 	"github.com/niflaot/pixels/internal/realm/session/binding"
 	netconn "github.com/niflaot/pixels/networking/connection"
-	outsoldout "github.com/niflaot/pixels/networking/outbound/catalog/limited/soldout"
-	outfailed "github.com/niflaot/pixels/networking/outbound/catalog/purchase/failed"
-	outok "github.com/niflaot/pixels/networking/outbound/catalog/purchase/ok"
-	outunavailable "github.com/niflaot/pixels/networking/outbound/catalog/purchase/unavailable"
-	outrefresh "github.com/niflaot/pixels/networking/outbound/inventory/furniture/refresh"
-	outunseen "github.com/niflaot/pixels/networking/outbound/inventory/unseen"
-	outbadgeadd "github.com/niflaot/pixels/networking/outbound/progression/achievement/badgeadd"
-	"github.com/niflaot/pixels/networking/outbound/session/bubblealert"
 	"github.com/niflaot/pixels/pkg/i18n"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -134,69 +122,7 @@ func (handler Handler) Handle(ctx context.Context, envelope command.Envelope[Com
 	if err != nil {
 		return handler.sendError(ctx, envelope.Command.Connection, envelope.Command.OfferID, err)
 	}
-	if result.CreatedRoomID != nil {
-		packet, encodeErr := outok.Encode(mapped)
-		if encodeErr != nil {
-			return encodeErr
-		}
-		if err := envelope.Command.Connection.Send(ctx, packet); err != nil {
-			return err
-		}
-		message := "Room bundle purchased."
-		if handler.Translations != nil {
-			message = handler.Translations.Default("catalog.room_bundle.purchased", i18n.Params{"room": result.CreatedRoomName})
-		}
-		packet, encodeErr = bubblealert.Encode("catalog.room_bundle.purchased", message, bubblealert.WithDisplayBubble(), bubblealert.WithParam("roomId", strconv.FormatInt(*result.CreatedRoomID, 10)))
-		if encodeErr != nil {
-			return encodeErr
-		}
-		return envelope.Command.Connection.Send(ctx, packet)
-	}
-	if result.GrantedPet != nil {
-		packet, encodeErr := outok.Encode(mapped)
-		if encodeErr != nil {
-			return encodeErr
-		}
-		return envelope.Command.Connection.Send(ctx, packet)
-	}
-	if result.GrantedBadge != nil {
-		packet, encodeErr := outbadgeadd.Encode(int32(result.GrantedBadge.ID), result.GrantedBadge.Code)
-		if encodeErr != nil {
-			return encodeErr
-		}
-		if err := envelope.Command.Connection.Send(ctx, packet); err != nil {
-			return err
-		}
-		packet, encodeErr = outok.Encode(mapped)
-		if encodeErr != nil {
-			return encodeErr
-		}
-		return envelope.Command.Connection.Send(ctx, packet)
-	}
-	itemIDs := make([]int64, 0, len(result.GrantedItems))
-	for _, item := range result.GrantedItems {
-		itemIDs = append(itemIDs, item.ID)
-	}
-	packet, err := outunseen.EncodeOwned(itemIDs)
-	if err != nil {
-		return err
-	}
-	if err := envelope.Command.Connection.Send(ctx, packet); err != nil {
-		return err
-	}
-	packet, err = outok.Encode(mapped)
-	if err != nil {
-		return err
-	}
-	if err := envelope.Command.Connection.Send(ctx, packet); err != nil {
-		return err
-	}
-	refresh, err := outrefresh.Encode()
-	if err != nil {
-		return err
-	}
-
-	return envelope.Command.Connection.Send(ctx, refresh)
+	return handler.sendPurchase(ctx, envelope.Command.Connection, result, mapped)
 }
 
 // containsOffer reports whether a page response contains one offer id.
@@ -208,57 +134,4 @@ func containsOffer(items []catalogmodel.Item, offerID int64) bool {
 	}
 
 	return false
-}
-
-// sendError maps a catalog service failure to its protocol result.
-func (handler Handler) sendError(ctx context.Context, connection netconn.Context, offerID int64, err error) error {
-	if errors.Is(err, catalogservice.ErrLimitedSoldOut) {
-		packet, encodeErr := outsoldout.Encode()
-		if encodeErr != nil {
-			return encodeErr
-		}
-		return connection.Send(ctx, packet)
-	}
-	if errors.Is(err, roombundle.ErrRoomLimitReached) {
-		packet, encodeErr := outfailed.Encode(outfailed.CodeRoomLimit)
-		if encodeErr != nil {
-			return encodeErr
-		}
-		if sendErr := connection.Send(ctx, packet); sendErr != nil {
-			return sendErr
-		}
-		message := "You have reached the room limit."
-		if handler.Translations != nil {
-			message = handler.Translations.Default("catalog.room_bundle.error.room_limit")
-		}
-		packet, encodeErr = bubblealert.Encode("catalog.room_bundle.error.room_limit", message, bubblealert.WithDisplayBubble())
-		if encodeErr != nil {
-			return encodeErr
-		}
-		return connection.Send(ctx, packet)
-	}
-	if errors.Is(err, catalogservice.ErrOfferNotFound) || errors.Is(err, catalogservice.ErrOfferNotVisible) ||
-		errors.Is(err, catalogservice.ErrOfferDisabled) || errors.Is(err, catalogservice.ErrPageNotFound) ||
-		errors.Is(err, catalogservice.ErrInvalidAmount) || errors.Is(err, currencyservice.ErrInsufficientBalance) {
-		return handler.sendUnavailable(ctx, connection)
-	}
-	if handler.Log != nil {
-		handler.Log.Error("catalog purchase failed", zap.Int64("offer_id", offerID), zap.Error(err))
-	}
-	packet, encodeErr := outfailed.Encode(outfailed.CodeServer)
-	if encodeErr != nil {
-		return encodeErr
-	}
-
-	return connection.Send(ctx, packet)
-}
-
-// sendUnavailable sends an illegal purchase response.
-func (handler Handler) sendUnavailable(ctx context.Context, connection netconn.Context) error {
-	packet, err := outunavailable.Encode(outunavailable.CodeIllegal)
-	if err != nil {
-		return err
-	}
-
-	return connection.Send(ctx, packet)
 }

@@ -15,11 +15,14 @@ import (
 	"github.com/niflaot/pixels/internal/realm/session/binding"
 	netconn "github.com/niflaot/pixels/networking/connection"
 	outalert "github.com/niflaot/pixels/networking/outbound/session/alert"
+	outnotification "github.com/niflaot/pixels/networking/outbound/session/bubblealert"
 	"github.com/niflaot/pixels/pkg/build"
 	"github.com/niflaot/pixels/pkg/i18n"
 	sdkcommand "github.com/niflaot/pixels/sdk/command"
 	"go.uber.org/zap"
 )
+
+const effectConfirmationSound = "sound_respect_received"
 
 // Service implements first-party administrative command behavior.
 type Service struct {
@@ -173,11 +176,30 @@ func (service *Service) Effect(ctx context.Context, sender sdkcommand.Sender, ef
 		return service.replyFailure(ctx, sender, err)
 	}
 	service.log.Info("avatar effect command used", zap.Int64("player_id", player.ID()), zap.String("player_name", player.Username()), zap.Int32("effect_id", effectID), zap.Bool("permission", permitted))
-	if effectID == 0 {
-		return sender.Reply(ctx, service.message("admin.command.effect.cleared", "Efecto desactivado."))
+	if err := service.sendEffectConfirmation(ctx, player.ID()); err != nil {
+		service.log.Warn("avatar effect confirmation sound failed", zap.Int64("player_id", player.ID()), zap.Error(err))
 	}
 
-	return sender.Reply(ctx, service.message("admin.command.effect.selected", "Efecto {effect} activado.", i18n.Params{"effect": strconv.FormatInt(int64(effectID), 10)}))
+	return nil
+}
+
+// sendEffectConfirmation sends a sound-only Nitro notification.
+func (service *Service) sendEffectConfirmation(ctx context.Context, playerID int64) error {
+	packet, err := outnotification.Encode(
+		"effect.confirmation",
+		"",
+		outnotification.WithParam("display", "SOUND"),
+		outnotification.WithParam("sound", effectConfirmationSound),
+	)
+	if err != nil {
+		return err
+	}
+	connection, err := service.connection(playerID)
+	if err != nil {
+		return err
+	}
+
+	return connection.Send(ctx, packet)
 }
 
 // canUseEffectCommand exposes the root to staff or to self-clear compatibility.

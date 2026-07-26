@@ -10,6 +10,7 @@ import (
 	"github.com/niflaot/pixels/internal/plugin/loader"
 	playereffect "github.com/niflaot/pixels/internal/realm/player/effect"
 	"github.com/niflaot/pixels/networking/codec"
+	outnotification "github.com/niflaot/pixels/networking/outbound/session/bubblealert"
 	"github.com/niflaot/pixels/pkg/build"
 	sdkplayer "github.com/niflaot/pixels/sdk/player"
 	"go.uber.org/zap"
@@ -58,6 +59,25 @@ func (*commandEffectManager) Activate(context.Context, int64, int32) (playereffe
 // Revoke accepts an unused effect revocation.
 func (*commandEffectManager) Revoke(context.Context, int64, int32) error {
 	return nil
+}
+
+// assertEffectSound verifies one sound-only confirmation packet.
+func assertEffectSound(t *testing.T, packets []codec.Packet) {
+	t.Helper()
+	if len(packets) != 1 || packets[0].Header != outnotification.Header {
+		t.Fatalf("unexpected confirmation packets %#v", packets)
+	}
+	definition := codec.Definition{
+		codec.StringField, codec.Int32Field,
+		codec.StringField, codec.StringField,
+		codec.StringField, codec.StringField,
+		codec.StringField, codec.StringField,
+	}
+	values, err := codec.DecodePacketExact(packets[0], definition)
+	if err != nil || values[1].Int32 != 3 || values[4].String != "display" || values[5].String != "SOUND" ||
+		values[6].String != "sound" || values[7].String != effectConfirmationSound {
+		t.Fatalf("unexpected confirmation payload %#v err=%v", values, err)
+	}
 }
 
 // TestRegisteredCommandsExecuteEveryCorePath verifies the complete command tree.
@@ -134,9 +154,10 @@ func TestEffectCommandAllowsStaffSelection(t *testing.T) {
 		t.Fatal(err)
 	}
 	handled, err := tree.Execute(context.Background(), sdkplayer.Player{ID: 7, Username: "admin", Online: true}, ":effect 90")
-	if err != nil || !handled || len(effects.enabled) != 1 || effects.enabled[0] != [2]int64{7, 90} {
+	if err != nil || !handled || len(effects.enabled) != 1 || effects.enabled[0] != [2]int64{7, 90} || players.message != "" {
 		t.Fatalf("handled=%v enabled=%v message=%q err=%v", handled, effects.enabled, players.message, err)
 	}
+	assertEffectSound(t, packets)
 }
 
 // TestEffectCommandLimitsUnpermittedPlayersToClear verifies the environment exception.
@@ -157,9 +178,11 @@ func TestEffectCommandLimitsUnpermittedPlayersToClear(t *testing.T) {
 	if handled, err := tree.Execute(context.Background(), player, ":effect 90"); err != nil || !handled || len(effects.enabled) != 0 || !strings.Contains(players.message, "permiso") {
 		t.Fatalf("nonzero handled=%v enabled=%v message=%q err=%v", handled, effects.enabled, players.message, err)
 	}
-	if handled, err := tree.Execute(context.Background(), player, ":effect 0"); err != nil || !handled || len(effects.enabled) != 1 || effects.enabled[0] != [2]int64{7, 0} {
+	players.message = ""
+	if handled, err := tree.Execute(context.Background(), player, ":effect 0"); err != nil || !handled || len(effects.enabled) != 1 || effects.enabled[0] != [2]int64{7, 0} || players.message != "" {
 		t.Fatalf("clear handled=%v enabled=%v message=%q err=%v", handled, effects.enabled, players.message, err)
 	}
+	assertEffectSound(t, packets)
 	fixture.service.config.AllowUnpermittedEffectClear = false
 	if handled, err := tree.Execute(context.Background(), player, ":effect 0"); err != nil || !handled || len(effects.enabled) != 1 || !strings.Contains(players.message, "permiso") {
 		t.Fatalf("disabled clear handled=%v enabled=%v message=%q err=%v", handled, effects.enabled, players.message, err)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"unicode/utf8"
 
 	playermodel "github.com/niflaot/pixels/internal/realm/player/model"
 	"github.com/niflaot/pixels/internal/realm/player/repository"
@@ -105,10 +106,10 @@ func applyUpdate(record *Record, params UpdateParams) (bool, error) {
 	profileChanged := params.Look != nil || params.Gender != nil || params.Motto != nil || params.HomeRoomID != nil ||
 		params.BubbleStyle != nil || params.BlockFriendRequests != nil ||
 		params.BlockRoomInvites != nil || params.BlockFollowing != nil
-	applyProfileUpdate(&record.Profile, params)
-	if err := validateStoredProfile(record.Profile); err != nil {
+	if err := validateProfileUpdate(params); err != nil {
 		return false, err
 	}
+	applyProfileUpdate(&record.Profile, params)
 
 	return profileChanged, nil
 }
@@ -141,15 +142,24 @@ func applyProfileUpdate(profile *playermodel.Profile, params UpdateParams) {
 	}
 }
 
-// validateStoredProfile validates one complete persisted profile candidate.
-func validateStoredProfile(profile playermodel.Profile) error {
-	if profile.BubbleStyle < 0 {
+// validateProfileUpdate validates only fields selected by one partial mutation.
+func validateProfileUpdate(params UpdateParams) error {
+	if params.Look != nil && utf8.RuneCountInString(*params.Look) > MaxLookLength {
+		return ErrInvalidLook
+	}
+	if params.Gender != nil && !params.Gender.Valid() {
+		return ErrInvalidGender
+	}
+	if params.Motto != nil && utf8.RuneCountInString(*params.Motto) > MaxMottoLength {
+		return ErrInvalidMotto
+	}
+	if params.BubbleStyle != nil && *params.BubbleStyle < 0 {
 		return ErrInvalidBubbleStyle
 	}
-	if profile.HomeRoomID != nil && *profile.HomeRoomID <= 0 {
+	if params.HomeRoomID != nil && *params.HomeRoomID != nil && **params.HomeRoomID <= 0 {
 		return ErrInvalidHomeRoomID
 	}
-	return validateProfile(CreateProfileParams{Look: profile.Look, Gender: profile.Gender, Motto: profile.Motto, HomeRoomID: profile.HomeRoomID})
+	return nil
 }
 
 // updateProfileParams maps one profile into the repository replacement contract.

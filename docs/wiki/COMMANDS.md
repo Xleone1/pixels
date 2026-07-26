@@ -14,7 +14,7 @@ The seeded `admin` group already inherits these nodes through its `*` grant. Pro
 
 ## Avatar effects
 
-`:effect <id>` selects an effect already present in the issuing player's inventory. It does not grant new effects. `:effect 0` clears the active effect immediately.
+`:effect <id>` selects an effect already present in the issuing player's inventory. It does not grant new effects. `:effect 0` clears the active effect immediately. Successful selections and clears play a short confirmation sound without adding a chat message; validation and permission failures still show localized feedback.
 
 When `PIXELS_EFFECT_ALLOW_UNPERMITTED_CLEAR=true`, a player without `admin.effect` may use only `:effect 0`. Nonzero values remain denied. Set the variable to `false` when even clearing an effect must require the dotted permission.
 

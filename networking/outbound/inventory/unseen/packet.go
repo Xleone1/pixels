@@ -14,6 +14,8 @@ const (
 
 	// ownedFurnitureCategory identifies newly owned furniture.
 	ownedFurnitureCategory int32 = 1
+	// badgeCategory identifies newly owned badges.
+	badgeCategory int32 = 4
 )
 
 var (
@@ -23,6 +25,16 @@ var (
 
 // EncodeOwned creates an UNSEEN_ITEMS packet for newly owned furniture ids.
 func EncodeOwned(itemIDs []int64) (codec.Packet, error) {
+	return encodeCategory(ownedFurnitureCategory, itemIDs)
+}
+
+// EncodeBadges creates an UNSEEN_ITEMS packet for newly owned badge ids.
+func EncodeBadges(badgeIDs []int64) (codec.Packet, error) {
+	return encodeCategory(badgeCategory, badgeIDs)
+}
+
+// encodeCategory creates one bounded unseen inventory category packet.
+func encodeCategory(category int32, itemIDs []int64) (codec.Packet, error) {
 	for _, itemID := range itemIDs {
 		if itemID < math.MinInt32 || itemID > math.MaxInt32 {
 			return codec.Packet{}, ErrItemIDRange
@@ -32,7 +44,7 @@ func EncodeOwned(itemIDs []int64) (codec.Packet, error) {
 		codec.Named("categoryCount", codec.Int32Field),
 		codec.Named("category", codec.Int32Field),
 		codec.Named("itemCount", codec.Int32Field),
-	}, codec.Int32(1), codec.Int32(ownedFurnitureCategory), codec.Int32(int32(len(itemIDs))))
+	}, codec.Int32(1), codec.Int32(category), codec.Int32(int32(len(itemIDs))))
 	if err != nil {
 		return codec.Packet{}, err
 	}

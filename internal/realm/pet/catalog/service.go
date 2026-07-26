@@ -144,11 +144,17 @@ func (service *Service) GrantCatalog(ctx context.Context, params catalogservice.
 	if err != nil {
 		return catalogservice.PetReward{}, err
 	}
-	breed, found := sellablePalette(references, params.TypeID, paletteID)
+	breed, found := firstSellableBreed(references, params.TypeID)
+	if paletteID != nil {
+		breed, found = sellablePalette(references, params.TypeID, *paletteID)
+	}
 	if !found {
 		return catalogservice.PetReward{}, petrecord.ErrInvalidAppearance
 	}
-	pet, _, err := service.Grant(ctx, params.OwnerPlayerID, params.TypeID, breed.BreedID, paletteID, color, name, params.OperationKey)
+	if color == "" {
+		color = breed.Color
+	}
+	pet, _, err := service.Grant(ctx, params.OwnerPlayerID, params.TypeID, breed.BreedID, breed.PaletteID, color, name, params.OperationKey)
 	if err != nil {
 		return catalogservice.PetReward{}, err
 	}
@@ -166,21 +172,25 @@ func (service *Service) ProjectCatalog(ctx context.Context, reward catalogservic
 	service.runtime.Publish(ctx, petcreated.Name, petcreated.Payload{PetID: pet.ID, OwnerPlayerID: pet.OwnerPlayerID, TypeID: pet.TypeID})
 }
 
-// parsePurchaseData validates Nitro's three-line pet purchase payload.
-func parsePurchaseData(value string) (string, int32, string, error) {
+// parsePurchaseData validates Nitro's pet purchase payload and accepts missing appearance for compatibility.
+func parsePurchaseData(value string) (string, *int32, string, error) {
 	parts := strings.Split(value, "\n")
+	if len(parts) == 1 || len(parts) == 2 && strings.TrimSpace(parts[1]) == "" {
+		return parts[0], nil, "", nil
+	}
 	if len(parts) != 3 {
-		return "", 0, "", petrecord.ErrInvalidAppearance
+		return "", nil, "", petrecord.ErrInvalidAppearance
 	}
 	palette, err := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 32)
 	if err != nil || palette < 0 {
-		return "", 0, "", petrecord.ErrInvalidAppearance
+		return "", nil, "", petrecord.ErrInvalidAppearance
 	}
 	color, err := petidentity.NormalizeColor(parts[2])
 	if err != nil {
-		return "", 0, "", err
+		return "", nil, "", err
 	}
-	return parts[0], int32(palette), color, nil
+	valuePalette := int32(palette)
+	return parts[0], &valuePalette, color, nil
 }
 
 // sellablePalette selects a stable sellable breed for one palette.

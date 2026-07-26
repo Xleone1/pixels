@@ -26,6 +26,24 @@ func TestEncodeOwned(t *testing.T) {
 	}
 }
 
+// TestEncodeBadges verifies badge unseen markers use Nitro's badge category.
+func TestEncodeBadges(t *testing.T) {
+	packet, err := EncodeBadges([]int64{24})
+	if err != nil {
+		t.Fatalf("encode packet: %v", err)
+	}
+	values, err := codec.DecodePacketExact(packet, codec.Definition{
+		codec.Int32Field, codec.Int32Field, codec.Int32Field, codec.Int32Field,
+	})
+	if err != nil {
+		t.Fatalf("decode packet: %v", err)
+	}
+	if packet.Header != Header || values[0].Int32 != 1 || values[1].Int32 != badgeCategory ||
+		values[2].Int32 != 1 || values[3].Int32 != 24 {
+		t.Fatalf("unexpected values %#v", values)
+	}
+}
+
 // TestEncodeOwnedRejectsProtocolOverflow verifies ids cannot truncate on the wire.
 func TestEncodeOwnedRejectsProtocolOverflow(t *testing.T) {
 	_, err := EncodeOwned([]int64{math.MaxInt64})

@@ -1,7 +1,7 @@
 --liquibase formatted sql
 
 --changeset pixels:pixels-player-seed-development-0005-user-remaining context:development
---validCheckSum:ANY
+--validCheckSum: ANY
 insert into player_settings(player_id,volume_system,volume_furniture,volume_trax,old_chat,camera_follow_blocked,safety_locked)
 values (1,80,70,60,false,false,false),(2,100,90,80,true,false,false),(3,100,100,100,false,false,true),(4,50,50,50,false,true,false)
 on conflict(player_id) do update set volume_system=excluded.volume_system,volume_furniture=excluded.volume_furniture,volume_trax=excluded.volume_trax,old_chat=excluded.old_chat,camera_follow_blocked=excluded.camera_follow_blocked,safety_locked=excluded.safety_locked;

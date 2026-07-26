@@ -145,7 +145,8 @@ minimum manual checks expected when touching it.
 - `:effect` selects only effects already owned by the issuer. Effect zero
   clears the current selection, and
   `PIXELS_EFFECT_ALLOW_UNPERMITTED_CLEAR=true` optionally exposes only that
-  self-clear operation without `admin.effect`.
+  self-clear operation without `admin.effect`. Successful changes use a
+  sound-only Nitro notification and do not add command feedback to chat.
 - Direct alerts reject the issuer, hotel alerts exclude the issuer, and popup
   payloads contain only the requested message.
 - Packet traces follow player ids across reconnects, capture successful inbound
