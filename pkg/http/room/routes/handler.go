@@ -213,7 +213,7 @@ func ignored(err error) bool {
 func liftedResponses(rooms []navmodel.LiftedRoom) []LiftedResponse {
 	items := make([]LiftedResponse, 0, len(rooms))
 	for _, room := range rooms {
-		items = append(items, LiftedResponse{ID: room.ID, RoomID: room.RoomID, AreaID: room.AreaID, Image: room.Image, Caption: room.Caption})
+		items = append(items, liftedResponse(room))
 	}
 
 	return items

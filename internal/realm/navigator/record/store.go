@@ -26,6 +26,10 @@ type Store interface {
 	ListCategoryPreferences(ctx context.Context, playerID int64) ([]CategoryPreference, error)
 	// ListLiftedRooms lists currently active lifted rooms.
 	ListLiftedRooms(ctx context.Context) ([]LiftedRoom, error)
+	// UpsertLiftedRoom creates or updates one room's active Navigator media.
+	UpsertLiftedRoom(ctx context.Context, mutation LiftedRoomMutation) (LiftedRoom, error)
+	// DisableLiftedRoom soft deletes one active Navigator media row.
+	DisableLiftedRoom(ctx context.Context, roomID int64, expectedVersion int64, actorPlayerID int64) (LiftedRoom, error)
 }
 
 // VisitStore persists and reads bounded room visit history.

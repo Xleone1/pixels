@@ -11,17 +11,20 @@ func (room *Room) startLoop(ctx context.Context, interval time.Duration, movemen
 		return
 	}
 	room.loop.Start(ctx, interval, func(loopCtx context.Context) {
+		started := time.Now()
+		failed := false
 		movements := room.Tick()
 		if len(movements) > 0 && movementPublisher != nil {
-			_ = movementPublisher(loopCtx, room, movements)
+			failed = movementPublisher(loopCtx, room, movements) != nil || failed
 		}
 		expired := room.SweepDoorbell(time.Now(), doorbellTimeout)
 		if len(expired) > 0 && doorbellPublisher != nil {
-			_ = doorbellPublisher(loopCtx, room, expired)
+			failed = doorbellPublisher(loopCtx, room, expired) != nil || failed
 		}
 		if cyclePublisher != nil {
-			_ = cyclePublisher(loopCtx, room, time.Now())
+			failed = cyclePublisher(loopCtx, room, time.Now()) != nil || failed
 		}
+		room.recordTick(started, failed)
 	})
 }
 

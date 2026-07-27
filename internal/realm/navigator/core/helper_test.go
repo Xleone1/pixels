@@ -78,3 +78,13 @@ func (store *fakeStore) ListCategoryPreferences(context.Context, int64) ([]navmo
 func (store *fakeStore) ListLiftedRooms(context.Context) ([]navmodel.LiftedRoom, error) {
 	return []navmodel.LiftedRoom{{RoomID: 1}}, nil
 }
+
+// UpsertLiftedRoom returns one test Navigator media row.
+func (store *fakeStore) UpsertLiftedRoom(_ context.Context, mutation navmodel.LiftedRoomMutation) (navmodel.LiftedRoom, error) {
+	return navmodel.LiftedRoom{RoomID: mutation.RoomID, Image: mutation.Image, AssetRef: mutation.AssetRef}, nil
+}
+
+// DisableLiftedRoom returns one test disabled Navigator media row.
+func (store *fakeStore) DisableLiftedRoom(_ context.Context, roomID int64, _ int64, _ int64) (navmodel.LiftedRoom, error) {
+	return navmodel.LiftedRoom{RoomID: roomID}, nil
+}

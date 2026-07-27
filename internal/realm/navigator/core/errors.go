@@ -21,6 +21,9 @@ var (
 
 	// ErrInvalidPreference reports malformed preference data.
 	ErrInvalidPreference = errors.New("invalid navigator preference")
+
+	// ErrInvalidLiftedRoom reports malformed Navigator room media.
+	ErrInvalidLiftedRoom = errors.New("invalid navigator lifted room")
 )
 
 const (

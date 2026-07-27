@@ -104,7 +104,12 @@ func scanLiftedRoom(row pgx.Row) (navmodel.LiftedRoom, error) {
 	var startsAt pgtype.Timestamptz
 	var endsAt pgtype.Timestamptz
 	var deletedAt pgtype.Timestamptz
-	err := row.Scan(&room.ID, &room.RoomID, &room.AreaID, &room.Image, &room.Caption, &room.Order, &startsAt, &endsAt, &room.CreatedAt, &room.UpdatedAt, &deletedAt, &room.Version.Version)
+	err := row.Scan(
+		&room.ID, &room.RoomID, &room.AreaID, &room.Image, &room.AssetRef,
+		&room.Caption, &room.Order, &startsAt, &endsAt, &room.CreatedByPlayerID,
+		&room.UpdatedByPlayerID, &room.CreatedAt, &room.UpdatedAt, &deletedAt,
+		&room.Version.Version,
+	)
 	if err != nil {
 		return navmodel.LiftedRoom{}, err
 	}

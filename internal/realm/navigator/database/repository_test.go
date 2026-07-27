@@ -163,7 +163,11 @@ func savedSearchValuesForTest() []any {
 // liftedValuesForTest returns scannable lifted room values.
 func liftedValuesForTest() []any {
 	now := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
-	return []any{int64(1), int64(9), 0, "image.png", "Lobby", 1, pgtype.Timestamptz{}, pgtype.Timestamptz{}, now, now, pgtype.Timestamptz{}, int64(1)}
+	return []any{
+		int64(1), int64(9), 0, "https://cdn.example/room.png", "asset:1",
+		"Lobby", 1, pgtype.Timestamptz{}, pgtype.Timestamptz{}, nil, nil,
+		now, now, pgtype.Timestamptz{}, int64(1),
+	}
 }
 
 // preferenceValuesForTest returns scannable preference values.

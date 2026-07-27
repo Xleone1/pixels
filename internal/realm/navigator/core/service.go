@@ -30,6 +30,10 @@ type Manager interface {
 	ListCategoryPreferences(ctx context.Context, playerID int64) ([]record.CategoryPreference, error)
 	// ListLiftedRooms lists currently active lifted rooms.
 	ListLiftedRooms(ctx context.Context) ([]record.LiftedRoom, error)
+	// UpsertLiftedRoom creates or updates one room's Navigator media.
+	UpsertLiftedRoom(ctx context.Context, mutation record.LiftedRoomMutation) (record.LiftedRoom, error)
+	// DisableLiftedRoom soft deletes one room's Navigator media.
+	DisableLiftedRoom(ctx context.Context, roomID int64, expectedVersion int64, actorPlayerID int64) (record.LiftedRoom, error)
 	// RecordVisit records one admitted room visit.
 	RecordVisit(ctx context.Context, playerID int64, roomID int64) error
 	// ListRecentRoomIDs lists recent room history.
