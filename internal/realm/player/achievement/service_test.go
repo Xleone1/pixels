@@ -87,7 +87,7 @@ func TestServiceProjectsEquippedBadgesAndValidatesGrants(t *testing.T) {
 	if wearing, _ := service.Wearing(8, "OWNED"); wearing {
 		t.Fatal("owned but unequipped badge passed")
 	}
-	if _, err := service.GrantBadge(context.Background(), 8, " qa_badge ", "wired"); err != nil || store.code != "QA_BADGE" {
+	if _, err := service.GrantBadge(context.Background(), 8, " qa_badge ", "wired"); err != nil || store.code != "qa_badge" {
 		t.Fatalf("badge code=%q err=%v", store.code, err)
 	}
 	if granted, err := service.GrantRespect(context.Background(), 8, 1001, "bad"); err != nil || granted || store.respectKey != "" {

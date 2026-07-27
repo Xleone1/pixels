@@ -205,6 +205,8 @@ type fakeStore struct {
 	grantErr error
 	// mutation stores the last mutation.
 	mutation currencyrepo.Mutation
+	// replayed reports that the mutation was previously committed.
+	replayed bool
 }
 
 // FindBalance finds a fake balance.
@@ -223,7 +225,7 @@ func (store *fakeStore) ListBalances(context.Context, int64) ([]currencymodel.Ba
 // Grant records a fake grant.
 func (store *fakeStore) Grant(_ context.Context, mutation currencyrepo.Mutation) (currencyrepo.Result, error) {
 	store.mutation = mutation
-	return currencyrepo.Result{Balance: store.grantBalance, Delta: mutation.Amount}, store.grantErr
+	return currencyrepo.Result{Balance: store.grantBalance, Delta: mutation.Amount, Replayed: store.replayed}, store.grantErr
 }
 
 // Set records a fake absolute set.

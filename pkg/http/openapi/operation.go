@@ -81,7 +81,7 @@ func errorResponses(statuses ...int) []response {
 
 // adminSubscription creates one protected subscription administration operation.
 func adminSubscription(method string, path string, summary string, request any, body any, status int) operation {
-	responses := errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusNotFound, http.StatusInternalServerError)
+	responses := errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError)
 	if body == nil {
 		responses = append([]response{emptyResponse(status, summary+".")}, responses...)
 	} else {

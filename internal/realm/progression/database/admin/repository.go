@@ -3,6 +3,7 @@ package admin
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/jackc/pgx/v5"
@@ -32,6 +33,20 @@ func (repository *Repository) WithinTransaction(ctx context.Context, work func(c
 // InsertAudit appends one administrative mutation record.
 func (repository *Repository) InsertAudit(ctx context.Context, actorID int64, action string, entity string, reason string) error {
 	_, err := repository.executorFor(ctx).Exec(ctx, `insert into progression_audit(actor_player_id,action,entity,reason) values(nullif($1,0),$2,$3,$4)`, actorID, action, entity, reason)
+	return err
+}
+
+// InsertAuditDetails appends one administrative mutation and its state transition.
+func (repository *Repository) InsertAuditDetails(ctx context.Context, actorID int64, action string, entity string, reason string, before any, after any) error {
+	beforeJSON, err := json.Marshal(before)
+	if err != nil {
+		return err
+	}
+	afterJSON, err := json.Marshal(after)
+	if err != nil {
+		return err
+	}
+	_, err = repository.executorFor(ctx).Exec(ctx, `insert into progression_audit(actor_player_id,action,entity,reason,before_state,after_state) values(nullif($1,0),$2,$3,$4,$5::jsonb,$6::jsonb)`, actorID, action, entity, reason, beforeJSON, afterJSON)
 	return err
 }
 

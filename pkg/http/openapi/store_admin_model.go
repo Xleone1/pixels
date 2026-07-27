@@ -65,13 +65,33 @@ type SubscriptionPlayerRequest struct {
 	PlayerID int64 `path:"playerId" required:"true" minimum:"1"`
 }
 
+// SubscriptionMembershipReadRequest attributes one protected membership read.
+type SubscriptionMembershipReadRequest struct {
+	SubscriptionPlayerRequest
+	// ActorPlayerID identifies the authorized administrative reader.
+	ActorPlayerID int64 `header:"X-Actor-Player-ID" required:"true" minimum:"1"`
+}
+
 // SubscriptionGrantRequest contains one membership grant.
 type SubscriptionGrantRequest struct {
 	SubscriptionPlayerRequest
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
+	// Reason explains the membership mutation.
+	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
 	// Level stores HC or VIP tier.
 	Level int16 `json:"level" minimum:"1" maximum:"2"`
 	// DurationSeconds stores the extension duration.
 	DurationSeconds int64 `json:"durationSeconds" minimum:"1"`
+}
+
+// SubscriptionRevokeRequest attributes one membership revocation.
+type SubscriptionRevokeRequest struct {
+	SubscriptionPlayerRequest
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
+	// Reason explains the membership revocation.
+	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
 }
 
 // SubscriptionIDRequest identifies one subscription configuration record.
@@ -84,7 +104,7 @@ type SubscriptionIDRequest struct {
 // SubscriptionResponse contains membership state and payday history.
 type SubscriptionResponse struct {
 	// Membership stores membership data.
-	Membership map[string]any `json:"membership"`
+	Membership SubscriptionMembershipResponse `json:"membership"`
 	// PaydayProjection stores the current reward and countdown calculation.
 	PaydayProjection map[string]any `json:"paydayProjection"`
 	// GiftsAvailable stores currently claimable monthly rewards.

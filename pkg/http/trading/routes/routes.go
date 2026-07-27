@@ -2,6 +2,7 @@
 package routes
 
 import (
+	"context"
 	"errors"
 	"strconv"
 	"strings"
@@ -12,6 +13,8 @@ import (
 	sanctioncore "github.com/niflaot/pixels/internal/realm/sanction/core"
 	sanctionrecord "github.com/niflaot/pixels/internal/realm/sanction/record"
 	tradeadmin "github.com/niflaot/pixels/internal/realm/trade/admin"
+	tradecore "github.com/niflaot/pixels/internal/realm/trade/core"
+	"github.com/niflaot/pixels/pkg/http/adminaction"
 	"go.uber.org/fx"
 )
 
@@ -51,6 +54,8 @@ type Dependencies struct {
 	Trade *tradeadmin.Service
 	// Sanctions owns the superseding global trade-lock records.
 	Sanctions *sanctioncore.Service
+	// AdminActions authorizes and audits trading administration.
+	AdminActions *adminaction.Service `optional:"true"`
 }
 
 // Register mounts protected trading administration routes.
@@ -80,6 +85,15 @@ func (dependencies Dependencies) logs(ctx *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	if dependencies.AdminActions != nil {
+		actorID, parseErr := strconv.ParseInt(ctx.Get("X-Actor-Player-ID"), 10, 64)
+		if parseErr != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "X-Actor-Player-ID is required")
+		}
+		if authorizeErr := dependencies.AdminActions.Authorize(ctx.Context(), actorID, tradecore.ModerationLock); authorizeErr != nil {
+			return adminaction.HTTPError(authorizeErr)
+		}
+	}
 	values, err := dependencies.Trade.Logs(ctx.Context(), id)
 	if err != nil {
 		return err
@@ -108,25 +122,62 @@ func (dependencies Dependencies) setLock(ctx *fiber.Ctx, locked bool) error {
 	if dependencies.Sanctions == nil {
 		return fiber.NewError(fiber.StatusServiceUnavailable, "global sanction service unavailable")
 	}
-	if locked {
-		_, err = dependencies.Sanctions.Apply(ctx.Context(), sanctionrecord.ApplyParams{ReceiverPlayerID: id, IssuerKind: "system", Kind: sanctionrecord.KindTradeLock, Reason: "Administrative direct-trade lock", Source: "admin_http"})
+	var request struct {
+		ActorPlayerID int64  `json:"actorPlayerId"`
+		Reason        string `json:"reason"`
+	}
+	if dependencies.AdminActions != nil {
+		if err = ctx.BodyParser(&request); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "invalid trade lock request")
+		}
+		err = dependencies.AdminActions.Execute(ctx.Context(), adminaction.Request{
+			Action: "trade.lock", ActorPlayerID: request.ActorPlayerID,
+			Node: tradecore.ModerationLock, Reason: request.Reason,
+			TargetPlayerID: id,
+			Before:         dependencies.tradeLockSnapshot(id),
+			After:          dependencies.tradeLockSnapshot(id),
+		}, func(actionCtx context.Context) error {
+			return dependencies.applyLock(actionCtx, id, locked, request)
+		})
 		if err != nil {
-			return err
+			return adminaction.HTTPError(err)
 		}
 		return ctx.SendStatus(fiber.StatusNoContent)
 	}
-	history, err := dependencies.Sanctions.History(ctx.Context(), id, 500)
+	if err = dependencies.applyLock(ctx.Context(), id, locked, request); err != nil {
+		return err
+	}
+	return ctx.SendStatus(fiber.StatusNoContent)
+}
+
+// applyLock applies or revokes the global direct-trade sanction.
+func (dependencies Dependencies) applyLock(ctx context.Context, id int64, locked bool, request struct {
+	ActorPlayerID int64  `json:"actorPlayerId"`
+	Reason        string `json:"reason"`
+}) error {
+	if locked {
+		issuerID := request.ActorPlayerID
+		issuerKind := "system"
+		var issuer *int64
+		if issuerID > 0 {
+			issuerKind = "player"
+			issuer = &issuerID
+		}
+		_, err := dependencies.Sanctions.Apply(ctx, sanctionrecord.ApplyParams{ReceiverPlayerID: id, IssuerPlayerID: issuer, IssuerKind: issuerKind, Kind: sanctionrecord.KindTradeLock, Reason: request.Reason, Source: "admin_http"})
+		return err
+	}
+	history, err := dependencies.Sanctions.History(ctx, id, 500)
 	if err != nil {
 		return err
 	}
 	for _, punishment := range history {
 		if punishment.Kind == sanctionrecord.KindTradeLock && punishment.ActiveAt(time.Now()) && (punishment.Source == "admin_http" || strings.HasPrefix(punishment.Reason, "Migrated legacy")) {
-			if _, err = dependencies.Sanctions.RevokeSystem(ctx.Context(), punishment.ID); err != nil {
+			if _, err = dependencies.Sanctions.RevokeSystem(ctx, punishment.ID); err != nil {
 				return err
 			}
 		}
 	}
-	return ctx.SendStatus(fiber.StatusNoContent)
+	return nil
 }
 
 // forceClose returns one open Marketplace item to its seller.

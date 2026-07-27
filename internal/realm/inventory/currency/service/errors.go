@@ -17,4 +17,7 @@ var (
 
 	// ErrInvalidActor reports an unsupported mutation source.
 	ErrInvalidActor = errors.New("invalid currency actor")
+
+	// ErrIdempotencyConflict reports one key reused for different mutation input.
+	ErrIdempotencyConflict = errors.New("currency operation idempotency conflict")
 )

@@ -6,12 +6,14 @@ import (
 	playerlive "github.com/niflaot/pixels/internal/realm/player/live"
 	playerservice "github.com/niflaot/pixels/internal/realm/player/service"
 	netconn "github.com/niflaot/pixels/networking/connection"
+	"github.com/niflaot/pixels/pkg/http/adminaction"
 	"github.com/niflaot/pixels/pkg/redis"
 )
 
 // Register mounts the authenticated administrative player routes.
-func Register(app *fiber.App, players playerservice.AdminManager, redisClient *redis.Client, live *playerlive.Registry, connections *netconn.Registry, effectManagers ...playereffect.Manager) {
+func Register(app *fiber.App, players playerservice.AdminManager, redisClient *redis.Client, live *playerlive.Registry, connections *netconn.Registry, adminActions *adminaction.Service, effectManagers ...playereffect.Manager) {
 	handler := handler{players: players, idempotency: newIdempotencyStore(redisClient), live: live, connections: connections}
+	handler.adminActions = adminActions
 	if len(effectManagers) > 0 {
 		handler.effects = effectManagers[0]
 	}

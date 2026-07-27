@@ -99,6 +99,26 @@ catalog is loaded once, so updates take effect after a process restart.
 
 `pkg/http` hosts the [Fiber](https://github.com/gofiber/fiber)-based HTTP server that serves everything that isn't the game protocol: the public `/status` and `/ws` endpoints, Nitro client configuration resources, and the private administrative API. Private routes sit behind a single `X-API-Key` middleware checked against `PIXELS_ACCESS_KEY`, and each realm contributes its own route group (`pkg/http/<realm>/routes`) with a uniform pattern: an fx-injected `Dependencies` struct, per-feature handler files, permission-node authorization for the acting staff member, and an audit trail (`actorPlayerId` + `reason`) on every mutation. Every route is described in `pkg/http/openapi`, which is what `GET /docs` renders interactively in development. If you add an admin route without documenting it there, review will send you back.
 
+### Administrative actors
+
+An administrative mutation has two player identities. The `actorPlayerId` is the authenticated staff member performing the operation. The target player is the account receiving the change. Pixels resolves the actor's dotted permission before running the mutation, and stores the actor, target, reason, operation, and state transition in the audit record.
+
+For example, when staff member `1` grants 500 credits to player `25`, the request identifies both identities:
+
+```json
+{
+  "actorPlayerId": 1,
+  "playerId": 25,
+  "currencyType": 0,
+  "amount": 500,
+  "reason": "Premio del evento"
+}
+```
+
+The browser must not choose the actor. The CMS obtains it from the authenticated session and sends it to the protected Pixels API. Pixels checks that identity again, so changing the field does not grant permissions. A mutation without a valid actor or reason is rejected before any state changes.
+
+Financial mutations also require an `Idempotency-Key`. Repeating the same key and request returns the original result without applying the balance change twice. Reusing a key with different data returns a conflict.
+
 ## Build metadata
 
 `pkg/build` carries the project name, semantic version, and commit hash injected at build time through `-ldflags`. The running server reports the semantic version, such as `v0.0.3`, in `/status`. The startup log reports that version and the short commit separately, so operators can compare the public release identity and the exact source revision without producing a noncanonical version string.

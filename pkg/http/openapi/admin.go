@@ -47,7 +47,7 @@ func adminOperations() []operation {
 		adminMessenger(http.MethodDelete, "/api/admin/players/{playerId}/friends/{friendId}", "Remove player friendship", &MessengerFriendRequest{}, &MessengerMutationResponse{}, http.StatusOK),
 		adminMessenger(http.MethodPost, "/api/admin/players/{playerId}/privacy", "Update player messenger privacy", &MessengerPrivacyRequest{}, &MessengerPrivacyResponse{}, http.StatusOK),
 		adminCurrencyRead("/api/admin/currencies/wallet", "Read player currency wallet", &CurrencyWalletRequest{}, &CurrencyWalletResponse{}),
-		adminCurrencyRead("/api/admin/currencies/types", "List configured currency types", &APIKeyRequest{}, &CurrencyTypesResponse{}),
+		adminCurrencyRead("/api/admin/currencies/types", "List configured currency types", &CurrencyTypesRequest{}, &CurrencyTypesResponse{}),
 		adminCurrencyAction("/api/admin/currencies/grant", "Grant player currency"),
 		adminCurrencyAction("/api/admin/currencies/deduct", "Deduct player currency"),
 		adminCurrencyAction("/api/admin/currencies/set", "Set player currency balance"),
@@ -64,9 +64,9 @@ func adminOperations() []operation {
 		adminCatalog(http.MethodPost, "/api/admin/catalog/vouchers", "Create catalog voucher", &VoucherRequest{}, &VoucherResponse{}),
 		adminCatalog(http.MethodPatch, "/api/admin/catalog/vouchers/{id}", "Update catalog voucher", &VoucherPatchRequest{}, &VoucherResponse{}),
 		adminCatalog(http.MethodGet, "/api/admin/catalog/vouchers/{id}/redemptions", "List voucher redemptions", &CatalogIDRequest{}, &VoucherRedemptionListResponse{}),
-		adminSubscription(http.MethodGet, "/api/admin/subscriptions/{playerId}", "Read player membership", &SubscriptionPlayerRequest{}, &SubscriptionResponse{}, http.StatusOK),
+		adminSubscription(http.MethodGet, "/api/admin/subscriptions/{playerId}", "Read player membership", &SubscriptionMembershipReadRequest{}, &SubscriptionResponse{}, http.StatusOK),
 		adminSubscription(http.MethodPost, "/api/admin/subscriptions/{playerId}/grant", "Grant or extend membership", &SubscriptionGrantRequest{}, &SubscriptionResponse{}, http.StatusOK),
-		adminSubscription(http.MethodDelete, "/api/admin/subscriptions/{playerId}", "Revoke membership", &SubscriptionPlayerRequest{}, nil, http.StatusNoContent),
+		adminSubscription(http.MethodDelete, "/api/admin/subscriptions/{playerId}", "Revoke membership", &SubscriptionRevokeRequest{}, nil, http.StatusNoContent),
 		adminSubscription(http.MethodGet, "/api/admin/subscriptions/club-offers", "List club offers", &APIKeyRequest{}, &ClubOfferListResponse{}, http.StatusOK),
 		adminSubscription(http.MethodPost, "/api/admin/subscriptions/club-offers", "Create club offer", &ClubOfferRequest{}, &ClubOfferResponse{}, http.StatusOK),
 		adminSubscription(http.MethodPatch, "/api/admin/subscriptions/club-offers/{id}", "Update club offer", &ClubOfferPatchRequest{}, &ClubOfferResponse{}, http.StatusOK),
@@ -201,7 +201,7 @@ func adminCurrencyRead(path string, summary string, request any, body any) opera
 		request:     request,
 		responses: append(
 			[]response{jsonResponse(http.StatusOK, body, summary+".")},
-			errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusNotFound, http.StatusInternalServerError)...,
+			errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusInternalServerError)...,
 		),
 		secured: true,
 	}
@@ -218,7 +218,7 @@ func adminCurrencyAction(path string, summary string) operation {
 		request:     &CurrencyMutationRequest{},
 		responses: append(
 			[]response{jsonResponse(http.StatusOK, &CurrencyMutationResponse{}, "Currency mutation committed.")},
-			errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError)...,
+			errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError)...,
 		),
 		secured: true,
 	}
@@ -235,7 +235,7 @@ func adminRoomAction(path string, summary string, request any) operation {
 		request:     request,
 		responses: append(
 			[]response{jsonResponse(http.StatusOK, &RoomActionResponse{}, summary+".")},
-			errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusNotFound)...,
+			errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusConflict)...,
 		),
 		secured: true,
 	}

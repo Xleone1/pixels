@@ -12,6 +12,15 @@ type AdminTradePlayerRequest struct {
 	PlayerID int64 `path:"playerId" required:"true" minimum:"1"`
 }
 
+// AdminTradeMutationRequest attributes one direct-trade lock mutation.
+type AdminTradeMutationRequest struct {
+	AdminTradePlayerRequest
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
+	// Reason explains the lock mutation.
+	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
+}
+
 // AdminMarketplaceListingRequest documents one listing id.
 type AdminMarketplaceListingRequest struct {
 	APIKeyRequest
@@ -55,12 +64,12 @@ type AdminTradeAuditList struct {
 
 // adminTradingOperations returns protected trading administration operations.
 func adminTradingOperations() []operation {
-	return []operation{adminTrading(http.MethodGet, "/api/admin/trade/players/{playerId}/log", "List player trade audit", &AdminTradePlayerRequest{}, &AdminTradeAuditList{}, http.StatusOK), adminTrading(http.MethodPost, "/api/admin/trade/players/{playerId}/lock", "Lock player trading", &AdminTradePlayerRequest{}, nil, http.StatusNoContent), adminTrading(http.MethodDelete, "/api/admin/trade/players/{playerId}/lock", "Unlock player trading", &AdminTradePlayerRequest{}, nil, http.StatusNoContent), adminTrading(http.MethodPost, "/api/admin/marketplace/listings/{id}/force-close", "Force-close Marketplace listing", &AdminMarketplaceListingRequest{}, nil, http.StatusNoContent)}
+	return []operation{adminTrading(http.MethodGet, "/api/admin/trade/players/{playerId}/log", "List player trade audit", &AdminTradePlayerRequest{}, &AdminTradeAuditList{}, http.StatusOK), adminTrading(http.MethodPost, "/api/admin/trade/players/{playerId}/lock", "Lock player trading", &AdminTradeMutationRequest{}, nil, http.StatusNoContent), adminTrading(http.MethodDelete, "/api/admin/trade/players/{playerId}/lock", "Unlock player trading", &AdminTradeMutationRequest{}, nil, http.StatusNoContent), adminTrading(http.MethodPost, "/api/admin/marketplace/listings/{id}/force-close", "Force-close Marketplace listing", &AdminMarketplaceListingRequest{}, nil, http.StatusNoContent)}
 }
 
 // adminTrading creates one protected trading operation.
 func adminTrading(method string, path string, summary string, request any, body any, status int) operation {
-	responses := errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusNotFound, http.StatusInternalServerError)
+	responses := errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError)
 	if body == nil {
 		responses = append([]response{emptyResponse(status, summary+".")}, responses...)
 	} else {

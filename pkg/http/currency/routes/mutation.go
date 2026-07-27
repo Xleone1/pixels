@@ -1,11 +1,15 @@
 package routes
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	currencyrealm "github.com/niflaot/pixels/internal/realm/inventory/currency"
 	currencyservice "github.com/niflaot/pixels/internal/realm/inventory/currency/service"
+	"github.com/niflaot/pixels/pkg/http/adminaction"
 )
 
 // mutationAction names one administrative balance operation.
@@ -32,10 +36,39 @@ func mutationHandler(action mutationAction, dependencies Dependencies) fiber.Han
 		if err := requirePlayer(ctx.Context(), dependencies, input.playerID); err != nil {
 			return err
 		}
+		if dependencies.AdminActions == nil && input.request.Reason == "" {
+			input.request.Reason = "admin_api_" + string(action)
+		}
 
-		amount, err := action.apply(ctx, dependencies, input)
+		var amount int64
+		var previousAmount int64
+		work := func(txCtx context.Context) error {
+			var applyErr error
+			amount, applyErr = action.apply(txCtx, dependencies, input)
+			return applyErr
+		}
+		if dependencies.AdminActions != nil {
+			if _, parseErr := uuid.Parse(input.operationKey); parseErr != nil {
+				return fiber.NewError(fiber.StatusBadRequest, "valid Idempotency-Key is required")
+			}
+			err = dependencies.AdminActions.Execute(ctx.Context(), adminaction.Request{
+				Action: "currency." + string(action), ActorPlayerID: input.request.ActorPlayerID,
+				Node: currencyrealm.AdminManage, Reason: input.request.Reason,
+				TargetPlayerID: input.playerID,
+				Before: func(actionCtx context.Context) (any, error) {
+					var balanceErr error
+					previousAmount, balanceErr = dependencies.Currencies.Balance(actionCtx, input.playerID, input.currencyType)
+					return currencyState(input.currencyType, previousAmount), balanceErr
+				},
+				After: func(context.Context) (any, error) {
+					return currencyState(input.currencyType, amount), nil
+				},
+			}, work)
+		} else {
+			err = work(ctx.Context())
+		}
 		if err != nil {
-			return mutationError(input, err)
+			return mutationError(input, adminaction.HTTPError(err))
 		}
 		alertSent := sendMutationAlert(ctx, dependencies, action, input, amount)
 
@@ -44,6 +77,11 @@ func mutationHandler(action mutationAction, dependencies Dependencies) fiber.Han
 			AlertRequested: input.request.Alert, AlertSent: alertSent,
 		})
 	}
+}
+
+// currencyState creates one compact balance audit state.
+func currencyState(currencyType int32, amount int64) map[string]any {
+	return map[string]any{"currencyType": currencyType, "balance": amount}
 }
 
 // validate validates action-specific request amounts.
@@ -62,15 +100,18 @@ func (action mutationAction) validate(amount int64) error {
 }
 
 // apply executes one action through currency management behavior.
-func (action mutationAction) apply(ctx *fiber.Ctx, dependencies Dependencies, input mutationInput) (int64, error) {
+func (action mutationAction) apply(ctx context.Context, dependencies Dependencies, input mutationInput) (int64, error) {
 	reason := input.request.Reason
-	if reason == "" {
-		reason = "admin_api_" + string(action)
+	actorID := input.request.ActorPlayerID
+	var actorIDPointer *int64
+	if actorID > 0 {
+		actorIDPointer = &actorID
 	}
 	if action == setAction {
-		return dependencies.Currencies.Set(ctx.Context(), currencyservice.SetParams{
-			PlayerID: input.playerID, CurrencyType: input.currencyType, Amount: input.request.Amount,
-			Reason: reason, ActorKind: currencyservice.ActorAdmin,
+		return dependencies.Currencies.Set(ctx, currencyservice.SetParams{
+			OperationKey: input.operationKey,
+			PlayerID:     input.playerID, CurrencyType: input.currencyType, Amount: input.request.Amount,
+			Reason: reason, ActorKind: currencyservice.ActorAdmin, ActorID: actorIDPointer,
 		})
 	}
 
@@ -79,9 +120,10 @@ func (action mutationAction) apply(ctx *fiber.Ctx, dependencies Dependencies, in
 		delta = -delta
 	}
 
-	return dependencies.Currencies.Grant(ctx.Context(), currencyservice.GrantParams{
-		PlayerID: input.playerID, CurrencyType: input.currencyType, Amount: delta,
-		Reason: reason, ActorKind: currencyservice.ActorAdmin,
+	return dependencies.Currencies.Grant(ctx, currencyservice.GrantParams{
+		OperationKey: input.operationKey,
+		PlayerID:     input.playerID, CurrencyType: input.currencyType, Amount: delta,
+		Reason: reason, ActorKind: currencyservice.ActorAdmin, ActorID: actorIDPointer,
 	})
 }
 
@@ -94,6 +136,8 @@ func mutationError(input mutationInput, err error) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	case errors.Is(err, currencyservice.ErrInsufficientBalance):
 		return fiber.NewError(fiber.StatusConflict, "currency deduction exceeds player balance")
+	case errors.Is(err, currencyservice.ErrIdempotencyConflict):
+		return fiber.NewError(fiber.StatusConflict, err.Error())
 	default:
 		return fmt.Errorf("mutate player %d currency %d: %w", input.playerID, input.currencyType, err)
 	}

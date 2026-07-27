@@ -92,21 +92,34 @@ type NotificationResponse struct {
 // CurrencyWalletRequest identifies one player's wallet.
 type CurrencyWalletRequest struct {
 	APIKeyRequest
+	// ActorPlayerID identifies the authorized administrative reader.
+	ActorPlayerID int64 `header:"X-Actor-Player-ID" required:"true" minimum:"1"`
 	// PlayerID stores the target player id.
 	PlayerID int64 `query:"playerId" required:"true" minimum:"1"`
+}
+
+// CurrencyTypesRequest attributes one protected currency catalog read.
+type CurrencyTypesRequest struct {
+	APIKeyRequest
+	// ActorPlayerID identifies the authorized administrative reader.
+	ActorPlayerID int64 `header:"X-Actor-Player-ID" required:"true" minimum:"1"`
 }
 
 // CurrencyMutationRequest contains one administrative currency mutation.
 type CurrencyMutationRequest struct {
 	APIKeyRequest
+	// IdempotencyKey prevents retrying one financial mutation twice.
+	IdempotencyKey string `header:"Idempotency-Key" required:"true" format:"uuid"`
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
 	// PlayerID stores the target player id.
 	PlayerID int64 `json:"playerId" required:"true" minimum:"1"`
 	// CurrencyType stores the signed protocol currency type.
 	CurrencyType int32 `json:"currencyType" required:"true" example:"5"`
 	// Amount stores a positive delta or non-negative absolute balance.
 	Amount int64 `json:"amount" required:"true" minimum:"0"`
-	// Reason stores an optional ledger audit reason.
-	Reason string `json:"reason,omitempty"`
+	// Reason stores the required ledger and action audit reason.
+	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
 	// Alert requests an additional localized generic alert.
 	Alert bool `json:"alert,omitempty" default:"false" description:"Disabled by default. When true, sends a localized alert if the player is online."`
 	// Locale optionally overrides the alert locale.

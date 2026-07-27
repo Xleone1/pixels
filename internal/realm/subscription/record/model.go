@@ -18,29 +18,29 @@ const (
 // Membership contains one player's subscription lifecycle.
 type Membership struct {
 	// PlayerID identifies the player.
-	PlayerID int64
+	PlayerID int64 `json:"playerId"`
 	// Level stores the current tier.
-	Level Level
+	Level Level `json:"level"`
 	// StartedAt stores the first activation instant.
-	StartedAt *time.Time
+	StartedAt *time.Time `json:"startedAt,omitempty"`
 	// StreakStartedAt stores the current uninterrupted membership start.
-	StreakStartedAt *time.Time
+	StreakStartedAt *time.Time `json:"streakStartedAt,omitempty"`
 	// ExpiresAt stores the exclusive entitlement expiration.
-	ExpiresAt *time.Time
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 	// LastPaydayAt stores the last evaluated kickback instant.
-	LastPaydayAt *time.Time
+	LastPaydayAt *time.Time `json:"lastPaydayAt,omitempty"`
 	// LastAccruedAt stores the last durable active-time boundary.
-	LastAccruedAt *time.Time
+	LastAccruedAt *time.Time `json:"lastAccruedAt,omitempty"`
 	// LifetimeActiveSeconds stores accumulated active club time.
-	LifetimeActiveSeconds int64
+	LifetimeActiveSeconds int64 `json:"lifetimeActiveSeconds"`
 	// LifetimeVIPSeconds stores accumulated time at the highest tier.
-	LifetimeVIPSeconds int64
+	LifetimeVIPSeconds int64 `json:"lifetimeVipSeconds"`
 	// GiftsEarned stores materialized monthly gift periods.
-	GiftsEarned int32
+	GiftsEarned int32 `json:"giftsEarned"`
 	// GiftsClaimed stores claimed monthly gifts.
-	GiftsClaimed int32
+	GiftsClaimed int32 `json:"giftsClaimed"`
 	// Version stores the optimistic version.
-	Version int64
+	Version int64 `json:"version"`
 }
 
 // Offer contains one purchasable club duration.

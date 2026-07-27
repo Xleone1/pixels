@@ -15,6 +15,10 @@ type AdminPlayerPathRequest struct {
 // AdminPlayerEffectRequest grants one player effect charge.
 type AdminPlayerEffectRequest struct {
 	APIKeyRequest
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
+	// Reason explains the effect grant.
+	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
 	// PlayerID identifies the target player.
 	PlayerID int64 `path:"playerId" required:"true" minimum:"1"`
 	// EffectID identifies the Nitro effect.
@@ -28,6 +32,10 @@ type AdminPlayerEffectRequest struct {
 // AdminPlayerEffectDeleteRequest revokes one player effect stack.
 type AdminPlayerEffectDeleteRequest struct {
 	APIKeyRequest
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
+	// Reason explains the effect revocation.
+	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
 	// PlayerID identifies the target player.
 	PlayerID int64 `path:"playerId" required:"true" minimum:"1"`
 	// EffectID identifies the Nitro effect.
@@ -174,7 +182,7 @@ func adminPlayerOperations() []operation {
 
 // adminPlayer creates one protected player administration operation.
 func adminPlayer(method string, path string, summary string, request any, body any, status int) operation {
-	statuses := []int{http.StatusBadRequest, http.StatusUnauthorized, http.StatusInternalServerError}
+	statuses := []int{http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusInternalServerError}
 	switch method {
 	case http.MethodGet:
 		statuses = append(statuses, http.StatusNotFound)

@@ -112,10 +112,15 @@ func (service *Service) Grant(ctx context.Context, params GrantParams) (int64, e
 	if errors.Is(err, currencyrepo.ErrBalanceOverflow) {
 		return 0, ErrInvalidAmount
 	}
+	if errors.Is(err, currencyrepo.ErrIdempotencyConflict) {
+		return 0, ErrIdempotencyConflict
+	}
 	if err != nil {
 		return 0, err
 	}
-	service.publish(ctx, params.PlayerID, params.CurrencyType, result.Balance.Amount, result.Delta, params.ActorKind)
+	if !result.Replayed {
+		service.publish(ctx, params.PlayerID, params.CurrencyType, result.Balance.Amount, result.Delta, params.ActorKind)
+	}
 
 	return result.Balance.Amount, nil
 }
@@ -137,10 +142,15 @@ func (service *Service) Set(ctx context.Context, params SetParams) (int64, error
 	}
 
 	result, err := service.store.Set(ctx, setMutation(params, definition.Ledger))
+	if errors.Is(err, currencyrepo.ErrIdempotencyConflict) {
+		return 0, ErrIdempotencyConflict
+	}
 	if err != nil {
 		return 0, err
 	}
-	service.publish(ctx, params.PlayerID, params.CurrencyType, result.Balance.Amount, result.Delta, params.ActorKind)
+	if !result.Replayed {
+		service.publish(ctx, params.PlayerID, params.CurrencyType, result.Balance.Amount, result.Delta, params.ActorKind)
+	}
 
 	return result.Balance.Amount, nil
 }
@@ -177,22 +187,6 @@ func (service *Service) validateMutation(playerID int64, currencyType int32, amo
 	definition, _ := service.catalog.Type(currencyType)
 
 	return definition, nil
-}
-
-// mutation maps grant parameters into repository data.
-func mutation(params GrantParams, ledger bool) currencyrepo.Mutation {
-	return currencyrepo.Mutation{
-		PlayerID: params.PlayerID, CurrencyType: params.CurrencyType, Amount: params.Amount,
-		Ledger: ledger, Reason: params.Reason, ActorKind: params.ActorKind, ActorID: params.ActorID,
-	}
-}
-
-// setMutation maps set parameters into repository data.
-func setMutation(params SetParams, ledger bool) currencyrepo.Mutation {
-	return currencyrepo.Mutation{
-		PlayerID: params.PlayerID, CurrencyType: params.CurrencyType, Amount: params.Amount,
-		Ledger: ledger, Reason: params.Reason, ActorKind: params.ActorKind, ActorID: params.ActorID,
-	}
 }
 
 // publish emits a committed currency change without rolling back persistence on projection failure.

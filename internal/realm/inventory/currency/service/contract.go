@@ -47,6 +47,8 @@ type Manager interface {
 
 // GrantParams contains a signed currency balance change.
 type GrantParams struct {
+	// OperationKey prevents one administrative request from being applied twice.
+	OperationKey string
 	// PlayerID identifies the affected player.
 	PlayerID int64
 
@@ -68,6 +70,8 @@ type GrantParams struct {
 
 // SetParams contains an absolute currency balance correction.
 type SetParams struct {
+	// OperationKey prevents one administrative request from being applied twice.
+	OperationKey string
 	// PlayerID identifies the affected player.
 	PlayerID int64
 

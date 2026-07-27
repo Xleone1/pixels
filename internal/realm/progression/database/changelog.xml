@@ -8,4 +8,6 @@
     <include file="migrations/0006_audit.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0007_daily_rejections.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0008_polls.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0009_normalize_achievement_badge_case.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0010_audit_state.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

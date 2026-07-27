@@ -128,13 +128,13 @@ func (service *Service) Wearing(playerID int64, code string) (bool, bool) {
 
 // GrantBadge grants one durable unequipped badge.
 func (service *Service) GrantBadge(ctx context.Context, playerID int64, code string, source string) (bool, error) {
-	granted, err := service.store.GrantBadge(ctx, playerID, strings.ToUpper(strings.TrimSpace(code)), source)
+	granted, err := service.store.GrantBadge(ctx, playerID, strings.TrimSpace(code), source)
 	return granted, err
 }
 
 // ReplaceBadge replaces one owned badge code while preserving its active slot.
 func (service *Service) ReplaceBadge(ctx context.Context, playerID int64, oldCode string, newCode string, source string) (bool, error) {
-	replaced, err := service.store.ReplaceBadge(ctx, playerID, strings.ToUpper(strings.TrimSpace(oldCode)), strings.ToUpper(strings.TrimSpace(newCode)), source)
+	replaced, err := service.store.ReplaceBadge(ctx, playerID, strings.TrimSpace(oldCode), strings.TrimSpace(newCode), source)
 	if err != nil || !replaced {
 		return replaced, err
 	}
@@ -146,7 +146,7 @@ func (service *Service) ReplaceBadge(ctx context.Context, playerID int64, oldCod
 
 // RemoveBadge removes one owned badge and refreshes the hot-path snapshot.
 func (service *Service) RemoveBadge(ctx context.Context, playerID int64, code string) (bool, error) {
-	removed, err := service.store.RemoveBadge(ctx, playerID, strings.ToUpper(strings.TrimSpace(code)))
+	removed, err := service.store.RemoveBadge(ctx, playerID, strings.TrimSpace(code))
 	if err != nil || !removed {
 		return removed, err
 	}

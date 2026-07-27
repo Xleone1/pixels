@@ -63,6 +63,10 @@ type ForwardRequest struct {
 
 // TeleportRequest contains one player forwarding request.
 type TeleportRequest struct {
+	// ActorPlayerID identifies the administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId"`
+	// Reason explains the movement override.
+	Reason string `json:"reason"`
 	// TargetRoomID identifies the destination room.
 	TargetRoomID int64 `json:"targetRoomId"`
 	// Bypass reports whether closed-room gating should be skipped once.

@@ -19,6 +19,7 @@ import (
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/registry"
 	wiredruntime "github.com/niflaot/pixels/internal/realm/room/world/wired/runtime"
 	netconn "github.com/niflaot/pixels/networking/connection"
+	"github.com/niflaot/pixels/pkg/http/adminaction"
 	voteroutes "github.com/niflaot/pixels/pkg/http/room/routes/votes"
 	wiredroutes "github.com/niflaot/pixels/pkg/http/room/routes/wired"
 	"go.uber.org/fx"
@@ -55,6 +56,8 @@ type Dependencies struct {
 	WiredEngine *wiredruntime.Engine
 	// WiredGames owns game lifecycle and scoreboards.
 	WiredGames *game.Coordinator
+	// AdminActions authorizes and audits user movement.
+	AdminActions *adminaction.Service `optional:"true"`
 }
 
 const (
@@ -82,7 +85,7 @@ func Register(app *fiber.App, rooms roomservice.Manager, runtime *roomlive.Regis
 	}
 	app.Post(roomPath+"/:id/close", closeHandler(runtime))
 	app.Post(roomPath+"/:id/forward", forwardHandler(runtime, connections))
-	app.Post(roomPath+"/players/:playerId/teleport", teleportHandler(rooms, players, connections, entry))
+	app.Post(roomPath+"/players/:playerId/teleport", teleportHandler(rooms, players, connections, entry, dependencies.AdminActions))
 	app.Get(navigatorPath+"/categories", categoriesHandler(rooms))
 	app.Get(navigatorPath+"/lifted", liftedHandler(navigator))
 	app.Get(navigatorPath+"/history", navigatorHistoryHandler(navigator))

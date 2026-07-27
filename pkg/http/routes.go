@@ -22,6 +22,7 @@ import (
 	roomlayout "github.com/niflaot/pixels/internal/realm/room/world/layout"
 	"github.com/niflaot/pixels/pkg/build"
 	"github.com/niflaot/pixels/pkg/config"
+	"github.com/niflaot/pixels/pkg/http/adminaction"
 	botroutes "github.com/niflaot/pixels/pkg/http/bot/routes"
 	cameraroutes "github.com/niflaot/pixels/pkg/http/camera/routes"
 	catalogroutes "github.com/niflaot/pixels/pkg/http/catalog/routes"
@@ -62,8 +63,13 @@ func registerPublic(app *fiber.App, config config.AppConfig, info build.Info, we
 
 // registerPrivate registers private authenticated fallback routes.
 func registerPrivate(app *fiber.App, sso *sso.Service, redisClient *redispkg.Client, players playerservice.AdminManager, effects playereffect.Manager, identity *playeridentity.Service, settings *playersettings.Service, profile *playerprofile.Service, wardrobe *playerwardrobe.Service, rooms roomservice.Manager, runtime *roomlive.Registry, roomEntry *roomentry.Service, navigator navservice.Manager, currencyAdmin currencyroutes.Dependencies, catalogAdmin catalogroutes.Dependencies, botAdmin botroutes.Dependencies, petAdmin petroutes.Dependencies, groupAdmin grouproutes.Dependencies, craftingAdmin craftingroutes.Dependencies, cameraAdmin cameraroutes.Dependencies, progressionAdmin progressionroutes.Dependencies, gameAdmin gameroutes.Dependencies, permissionAdmin permissionroutes.Dependencies, roomAdmin roomroutes.Dependencies, chatAdmin chatroutes.Dependencies, messengerAdmin messengerroutes.Dependencies, moderationAdmin moderationroutes.Dependencies, subscriptionAdmin subscriptionroutes.Dependencies, tradingAdmin tradingroutes.Dependencies, pluginRoutes *pluginroutes.Registry, log *zap.Logger) {
+	adminActions := adminaction.New(permissionAdmin.Permissions, progressionAdmin.Admin)
+	currencyAdmin.AdminActions = adminActions
+	roomAdmin.AdminActions = adminActions
+	subscriptionAdmin.AdminActions = adminActions
+	tradingAdmin.AdminActions = adminActions
 	app.Post("/api/sso/tickets", createSSOTicketHandler(sso, redisClient))
-	playerroutes.Register(app, players, redisClient, currencyAdmin.Players, currencyAdmin.Connections, effects)
+	playerroutes.Register(app, players, redisClient, currencyAdmin.Players, currencyAdmin.Connections, adminActions, effects)
 	if settings != nil && profile != nil && wardrobe != nil {
 		playerroutes.RegisterRemaining(app, playerroutes.RemainingDependencies{Players: players, Identity: identity, Settings: settings, Profile: profile, Wardrobe: wardrobe, Live: currencyAdmin.Players, Rooms: runtime, Connections: currencyAdmin.Connections})
 	}

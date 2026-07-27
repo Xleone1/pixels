@@ -8,10 +8,22 @@ import (
 
 // GrantRequest contains a manual membership grant.
 type GrantRequest struct {
+	// ActorPlayerID identifies the administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId"`
+	// Reason explains the membership mutation.
+	Reason string `json:"reason"`
 	// Level stores the granted club tier.
 	Level record.Level `json:"level"`
 	// DurationSeconds stores the extension duration.
 	DurationSeconds int64 `json:"durationSeconds"`
+}
+
+// RevokeRequest attributes one membership revocation.
+type RevokeRequest struct {
+	// ActorPlayerID identifies the administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId"`
+	// Reason explains the membership revocation.
+	Reason string `json:"reason"`
 }
 
 // ClubOfferRequest contains writable club offer fields.

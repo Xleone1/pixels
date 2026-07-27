@@ -12,6 +12,7 @@ import (
 	playermodel "github.com/niflaot/pixels/internal/realm/player/model"
 	playerservice "github.com/niflaot/pixels/internal/realm/player/service"
 	netconn "github.com/niflaot/pixels/networking/connection"
+	"github.com/niflaot/pixels/pkg/http/adminaction"
 )
 
 const (
@@ -33,6 +34,8 @@ type handler struct {
 	connections *netconn.Registry
 	// effects administers durable player effects.
 	effects playereffect.Manager
+	// adminActions authorizes and audits effect mutations.
+	adminActions *adminaction.Service
 }
 
 // create creates one player and profile atomically.

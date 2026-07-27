@@ -1,16 +1,24 @@
 package routes
 
 import (
+	"context"
 	"errors"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	playerrealm "github.com/niflaot/pixels/internal/realm/player"
 	playereffect "github.com/niflaot/pixels/internal/realm/player/effect"
+	"github.com/niflaot/pixels/pkg/http/adminaction"
 )
 
 // EffectRequest contains one administrative effect grant.
 type EffectRequest struct {
+	// ActorPlayerID identifies the administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId"`
+	// Reason explains the effect mutation.
+	Reason string `json:"reason"`
 	// EffectID identifies the Nitro effect.
 	EffectID int32 `json:"effectId"`
 	// DurationSeconds stores one charge duration; zero means permanent.
@@ -48,13 +56,31 @@ func (handler handler) grantEffect(ctx *fiber.Ctx) error {
 	}
 	enabled := request.Enable == nil || *request.Enable
 	var effect playereffect.Effect
-	if enabled {
-		effect, err = handler.effects.GrantEnabled(ctx.Context(), playerID, request.EffectID, request.DurationSeconds, playereffect.SourceAdmin)
+	work := func(actionCtx context.Context) error {
+		if enabled {
+			effect, err = handler.effects.GrantEnabled(actionCtx, playerID, request.EffectID, request.DurationSeconds, playereffect.SourceAdmin)
+		} else {
+			effect, err = handler.effects.Grant(actionCtx, playerID, request.EffectID, request.DurationSeconds, playereffect.SourceAdmin)
+		}
+		return err
+	}
+	if handler.adminActions != nil {
+		err = handler.adminActions.Execute(ctx.Context(), adminaction.Request{
+			Action: "player.effect.grant", ActorPlayerID: request.ActorPlayerID,
+			Node: playerrealm.AdminEffectGrant, Reason: request.Reason,
+			TargetPlayerID: playerID,
+			Before: func(actionCtx context.Context) (any, error) {
+				return handler.effectState(actionCtx, playerID, request.EffectID)
+			},
+			After: func(actionCtx context.Context) (any, error) {
+				return handler.effectState(actionCtx, playerID, request.EffectID)
+			},
+		}, work)
 	} else {
-		effect, err = handler.effects.Grant(ctx.Context(), playerID, request.EffectID, request.DurationSeconds, playereffect.SourceAdmin)
+		err = work(ctx.Context())
 	}
 	if err != nil {
-		return effectError(err)
+		return effectError(adminaction.HTTPError(err))
 	}
 	return ctx.JSON(EffectResponse{PlayerID: effect.PlayerID, EffectID: effect.ID, DurationSeconds: effect.DurationSeconds, RemainingCharges: effect.RemainingCharges, Enabled: enabled})
 }
@@ -72,10 +98,49 @@ func (handler handler) revokeEffect(ctx *fiber.Ctx) error {
 	if handler.effects == nil {
 		return fiber.NewError(fiber.StatusServiceUnavailable, "player effects are unavailable")
 	}
-	if err = handler.effects.Revoke(ctx.Context(), playerID, int32(effectID)); err != nil {
-		return effectError(err)
+	var request EffectRequest
+	if handler.adminActions != nil {
+		if err = ctx.BodyParser(&request); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "invalid player effect request body")
+		}
+		request.Reason = strings.TrimSpace(request.Reason)
+		err = handler.adminActions.Execute(ctx.Context(), adminaction.Request{
+			Action: "player.effect.revoke", ActorPlayerID: request.ActorPlayerID,
+			Node: playerrealm.AdminEffectGrant, Reason: request.Reason,
+			TargetPlayerID: playerID,
+			Before: func(actionCtx context.Context) (any, error) {
+				return handler.effectState(actionCtx, playerID, int32(effectID))
+			},
+			After: func(actionCtx context.Context) (any, error) {
+				return handler.effectState(actionCtx, playerID, int32(effectID))
+			},
+		}, func(actionCtx context.Context) error {
+			return handler.effects.Revoke(actionCtx, playerID, int32(effectID))
+		})
+	} else {
+		err = handler.effects.Revoke(ctx.Context(), playerID, int32(effectID))
+	}
+	if err != nil {
+		return effectError(adminaction.HTTPError(err))
 	}
 	return ctx.SendStatus(fiber.StatusNoContent)
+}
+
+// effectState returns one compact durable effect state.
+func (handler handler) effectState(ctx context.Context, playerID int64, effectID int32) (any, error) {
+	effects, err := handler.effects.List(ctx, playerID)
+	if err != nil {
+		return nil, err
+	}
+	for _, effect := range effects {
+		if effect.ID == effectID {
+			return map[string]any{
+				"effectId": effect.ID, "durationSeconds": effect.DurationSeconds,
+				"remainingCharges": effect.RemainingCharges,
+			}, nil
+		}
+	}
+	return map[string]any{"effectId": effectID, "present": false}, nil
 }
 
 // positivePathID parses one positive route identifier.

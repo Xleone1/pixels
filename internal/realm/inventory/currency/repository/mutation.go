@@ -12,10 +12,17 @@ var (
 
 	// ErrBalanceOverflow reports a mutation outside signed 64-bit storage.
 	ErrBalanceOverflow = errors.New("currency balance overflow")
+
+	// ErrIdempotencyConflict reports one operation key reused for different input.
+	ErrIdempotencyConflict = errors.New("currency operation idempotency conflict")
 )
 
 // Mutation contains one atomic balance and ledger mutation.
 type Mutation struct {
+	// OperationKey prevents one administrative request from being applied twice.
+	OperationKey string
+	// RequestHash binds an operation key to immutable request input.
+	RequestHash string
 	// PlayerID identifies the affected player.
 	PlayerID int64
 
@@ -45,6 +52,8 @@ type Result struct {
 
 	// Delta stores the signed change committed by the mutation.
 	Delta int64
+	// Replayed reports that a prior committed result was returned.
+	Replayed bool
 }
 
 // ledgerEntry creates an audit record from a completed mutation.

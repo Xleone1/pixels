@@ -136,7 +136,7 @@ func (dependencies Dependencies) grantPlayerBadge(ctx *fiber.Ctx) error {
 	if err = parseBody(ctx, &request); err != nil {
 		return err
 	}
-	code := strings.ToUpper(strings.TrimSpace(request.Badge))
+	code := strings.TrimSpace(request.Badge)
 	if code == "" || len(code) > 64 {
 		return fiber.NewError(fiber.StatusUnprocessableEntity, "invalid badge code")
 	}
@@ -158,7 +158,7 @@ func (dependencies Dependencies) removePlayerBadge(ctx *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	code := strings.ToUpper(strings.TrimSpace(ctx.Params("code")))
+	code := strings.TrimSpace(ctx.Params("code"))
 	var request AuditRequest
 	if err = parseBody(ctx, &request); err != nil {
 		return err

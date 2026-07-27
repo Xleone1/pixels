@@ -9,6 +9,9 @@ import (
 
 // MutationRequest contains one administrative currency mutation.
 type MutationRequest struct {
+	// ActorPlayerID identifies the administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId"`
+
 	// PlayerID identifies the target player.
 	PlayerID int64 `json:"playerId"`
 
@@ -18,8 +21,8 @@ type MutationRequest struct {
 	// Amount stores a positive delta or non-negative absolute balance.
 	Amount int64 `json:"amount"`
 
-	// Reason stores an optional ledger audit reason.
-	Reason string `json:"reason,omitempty"`
+	// Reason stores the required ledger audit reason.
+	Reason string `json:"reason"`
 
 	// Alert requests an additional localized generic alert.
 	Alert bool `json:"alert,omitempty"`
@@ -30,6 +33,8 @@ type MutationRequest struct {
 
 // mutationInput contains parsed mutation route input.
 type mutationInput struct {
+	// operationKey stores the caller replay key.
+	operationKey string
 	// playerID identifies the target player.
 	playerID int64
 
@@ -57,7 +62,10 @@ func parseMutationInput(ctx *fiber.Ctx, action mutationAction) (mutationInput, e
 	}
 	request.Reason = strings.TrimSpace(request.Reason)
 
-	return mutationInput{playerID: request.PlayerID, currencyType: *request.CurrencyType, request: request}, nil
+	return mutationInput{
+		operationKey: strings.TrimSpace(ctx.Get("Idempotency-Key")),
+		playerID:     request.PlayerID, currencyType: *request.CurrencyType, request: request,
+	}, nil
 }
 
 // playerIDQuery parses the required wallet player query parameter.

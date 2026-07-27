@@ -26,6 +26,10 @@ type RoomForwardRequest struct {
 // RoomTeleportRequest contains a single-player room forwarding request.
 type RoomTeleportRequest struct {
 	APIKeyRequest
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
+	// Reason explains the movement override.
+	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
 	// PlayerID identifies the live player.
 	PlayerID int64 `path:"playerId" required:"true" minimum:"1"`
 	// TargetRoomID identifies the destination room.

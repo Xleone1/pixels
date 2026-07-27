@@ -7,6 +7,7 @@ import (
 	playerlive "github.com/niflaot/pixels/internal/realm/player/live"
 	playerservice "github.com/niflaot/pixels/internal/realm/player/service"
 	netconn "github.com/niflaot/pixels/networking/connection"
+	"github.com/niflaot/pixels/pkg/http/adminaction"
 	"github.com/niflaot/pixels/pkg/i18n"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -38,6 +39,9 @@ type Dependencies struct {
 
 	// Log records optional alert delivery failures.
 	Log *zap.Logger
+
+	// AdminActions authorizes and audits protected mutations.
+	AdminActions *adminaction.Service `optional:"true"`
 }
 
 // Register registers protected currency administration routes.

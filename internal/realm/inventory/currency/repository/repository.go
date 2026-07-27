@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -83,6 +84,10 @@ func (repository *Repository) Set(ctx context.Context, mutation Mutation) (Resul
 func (repository *Repository) mutate(ctx context.Context, mutation Mutation, absolute bool) (Result, error) {
 	var result Result
 	err := repository.withinTx(ctx, func(ctx context.Context, executor postgres.Executor) error {
+		replayed, replayErr := replayOperation(ctx, executor, mutation, &result)
+		if replayErr != nil || replayed {
+			return replayErr
+		}
 		if err := lockBalance(ctx, executor, mutation.PlayerID, mutation.CurrencyType); err != nil {
 			return err
 		}
@@ -113,14 +118,69 @@ func (repository *Repository) mutate(ctx context.Context, mutation Mutation, abs
 		}
 		result.Delta = next - previous
 		if mutation.Ledger {
-			return insertLedger(ctx, executor, ledgerEntry(mutation, result.Delta, next))
+			if err = insertLedger(ctx, executor, ledgerEntry(mutation, result.Delta, next)); err != nil {
+				return err
+			}
 		}
-
-		return nil
+		return insertOperation(ctx, executor, mutation, result)
 	})
 	if err != nil {
 		return Result{}, err
 	}
 
 	return result, nil
+}
+
+// replayOperation locks and resolves one optional idempotency operation.
+func replayOperation(ctx context.Context, executor postgres.Executor, mutation Mutation, result *Result) (bool, error) {
+	if mutation.OperationKey == "" {
+		return false, nil
+	}
+	if _, err := executor.Exec(ctx, `select pg_advisory_xact_lock(hashtextextended($1, 0))`, mutation.OperationKey); err != nil {
+		return false, fmt.Errorf("lock currency operation: %w", err)
+	}
+	var requestHash string
+	err := executor.QueryRow(ctx, `
+		select request_hash, balance_after, delta
+		from currency_admin_operations
+		where operation_key = $1`, mutation.OperationKey).Scan(
+		&requestHash,
+		&result.Balance.Amount,
+		&result.Delta,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("read currency operation: %w", err)
+	}
+	if requestHash != mutation.RequestHash {
+		return false, ErrIdempotencyConflict
+	}
+	result.Balance.PlayerID = mutation.PlayerID
+	result.Balance.CurrencyType = mutation.CurrencyType
+	result.Replayed = true
+	return true, nil
+}
+
+// insertOperation persists one optional replay result.
+func insertOperation(ctx context.Context, executor postgres.Executor, mutation Mutation, result Result) error {
+	if mutation.OperationKey == "" {
+		return nil
+	}
+	_, err := executor.Exec(ctx, `
+		insert into currency_admin_operations(
+			operation_key, request_hash, player_id, currency_type, balance_after, delta
+		) values ($1, $2, $3, $4, $5, $6)`,
+		mutation.OperationKey,
+		mutation.RequestHash,
+		mutation.PlayerID,
+		mutation.CurrencyType,
+		result.Balance.Amount,
+		result.Delta,
+	)
+	if err != nil {
+		return fmt.Errorf("insert currency operation: %w", err)
+	}
+	return nil
 }

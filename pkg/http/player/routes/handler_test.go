@@ -113,7 +113,7 @@ func TestReadProjectsLivePresence(t *testing.T) {
 		t.Fatalf("add live player: %v", err)
 	}
 	app := fiber.New()
-	Register(app, &fakeManager{record: testRecord()}, redisClient, live, nil)
+	Register(app, &fakeManager{record: testRecord()}, redisClient, live, nil, nil)
 
 	response, err := app.Test(requestForTest(t, http.MethodGet, "/api/admin/players/7", ""))
 	if err != nil {
@@ -139,7 +139,7 @@ func testApplication(t *testing.T, effectManagers ...playereffect.Manager) (*fib
 	})
 	manager := &fakeManager{record: testRecord()}
 	app := fiber.New()
-	Register(app, manager, redisClient, nil, nil, effectManagers...)
+	Register(app, manager, redisClient, nil, nil, nil, effectManagers...)
 
 	return app, manager
 }

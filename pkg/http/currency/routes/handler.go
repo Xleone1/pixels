@@ -3,13 +3,19 @@ package routes
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	currencyrealm "github.com/niflaot/pixels/internal/realm/inventory/currency"
+	"github.com/niflaot/pixels/pkg/http/adminaction"
 )
 
 // walletHandler returns one persistent player's configured wallet.
 func walletHandler(dependencies Dependencies) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		if err := authorizeRead(ctx, dependencies); err != nil {
+			return err
+		}
 		playerID, err := playerIDQuery(ctx)
 		if err != nil {
 			return err
@@ -30,6 +36,9 @@ func walletHandler(dependencies Dependencies) fiber.Handler {
 // typesHandler returns configured currency definitions.
 func typesHandler(dependencies Dependencies) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		if err := authorizeRead(ctx, dependencies); err != nil {
+			return err
+		}
 		definitions, err := dependencies.Currencies.Types(ctx.Context())
 		if err != nil {
 			return fmt.Errorf("read currency types: %w", err)
@@ -37,6 +46,22 @@ func typesHandler(dependencies Dependencies) fiber.Handler {
 
 		return ctx.JSON(TypesResponse{Types: typeResponses(definitions)})
 	}
+}
+
+// authorizeRead validates the optional production actor boundary.
+func authorizeRead(ctx *fiber.Ctx, dependencies Dependencies) error {
+	if dependencies.AdminActions == nil {
+		return nil
+	}
+	actorID, err := strconv.ParseInt(ctx.Get("X-Actor-Player-ID"), 10, 64)
+	if err != nil || actorID <= 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "X-Actor-Player-ID is required")
+	}
+	return adminaction.HTTPError(dependencies.AdminActions.Authorize(
+		ctx.Context(),
+		actorID,
+		currencyrealm.AdminManage,
+	))
 }
 
 // requirePlayer verifies a persistent player identity.
