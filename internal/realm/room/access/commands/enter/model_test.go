@@ -16,6 +16,7 @@ import (
 	outentrytile "github.com/niflaot/pixels/networking/outbound/room/entrytile"
 	outmodel "github.com/niflaot/pixels/networking/outbound/room/model"
 	outmodelname "github.com/niflaot/pixels/networking/outbound/room/modelname"
+	outpaint "github.com/niflaot/pixels/networking/outbound/room/paint"
 	outrightslevel "github.com/niflaot/pixels/networking/outbound/room/rights/level"
 	outrightsowner "github.com/niflaot/pixels/networking/outbound/room/rights/owner"
 )
@@ -62,6 +63,38 @@ func TestSendModelSendsEntryTileBeforeScaledHeightmap(t *testing.T) {
 	}
 	if !values[0].Boolean {
 		t.Fatalf("expected scaled heightmap packet, got %#v", values)
+	}
+}
+
+// TestSendEnteredOrdersAppearanceBeforeHeightMap verifies the room's saved floor, wallpaper, and
+// landscape paint reaches Nitro before the height map packet that triggers room instantiation.
+// Nitro falls back to hardcoded default materials whenever it instantiates a room before it has
+// cached real paint, so appearance must never be sent after SendModel.
+func TestSendEnteredOrdersAppearanceBeforeHeightMap(t *testing.T) {
+	connection, sent := sessionConnectionForTest(t)
+
+	room := roomForTest()
+	room.FloorPaint = "101"
+	room.Wallpaper = "201"
+	room.Landscape = "1"
+
+	if err := sendAppearance(context.Background(), connection, room); err != nil {
+		t.Fatalf("send appearance: %v", err)
+	}
+	if err := SendModel(context.Background(), connection, room, layoutForTest()); err != nil {
+		t.Fatalf("send model: %v", err)
+	}
+
+	if len(*sent) != 6 {
+		t.Fatalf("expected appearance and model packets, got %#v", *sent)
+	}
+	for index := 0; index < 3; index++ {
+		if (*sent)[index].Header != outpaint.Header {
+			t.Fatalf("expected appearance packets first, got %#v", *sent)
+		}
+	}
+	if (*sent)[3].Header != outmodelname.Header || (*sent)[5].Header != outmodel.Header {
+		t.Fatalf("expected model packets after appearance, got %#v", *sent)
 	}
 }
 

@@ -66,13 +66,16 @@ func (handler Handler) sendEntered(ctx context.Context, connection netconn.Conte
 	if err := connection.Send(ctx, packet); err != nil {
 		return err
 	}
+	// Appearance must reach the client before SendModel's height map (header 1301):
+	// that packet is what triggers the client to instantiate the room, and it falls back to
+	// hardcoded default floor/wall/landscape materials unless the real paint already arrived.
+	if err := sendAppearance(ctx, connection, room); err != nil {
+		return err
+	}
 	if err := SendModel(ctx, connection, room, roomLayout); err != nil {
 		return err
 	}
 	if err := handler.sendFloorItems(ctx, connection, room, active); err != nil {
-		return err
-	}
-	if err := sendAppearance(ctx, connection, room); err != nil {
 		return err
 	}
 	if err := handler.sendHeightMap(ctx, connection, active); err != nil {
