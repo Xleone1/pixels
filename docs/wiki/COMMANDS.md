@@ -1,6 +1,6 @@
 # Core Commands
 
-Pixels ships five first-party room-chat commands. They use `PIXELS_COMMAND_PREFIX`, which defaults to `:`, and are consumed before the text can appear as normal room chat. Every administrative capability has its own dotted permission node and follows the normal player, group, inheritance, wildcard, and deny resolution rules.
+Pixels ships six first-party room-chat commands. They use `PIXELS_COMMAND_PREFIX`, which defaults to `:`, and are consumed before the text can appear as normal room chat. Every administrative capability has its own dotted permission node and follows the normal player, group, inheritance, wildcard, and deny resolution rules.
 
 | Command | Permission | Purpose |
 |---|---|---|
@@ -9,8 +9,15 @@ Pixels ships five first-party room-chat commands. They use `PIXELS_COMMAND_PREFI
 | `:about` | `admin.about` | Show the running Pixels version, commit, and loaded plugins |
 | `:trace` | `admin.trace` | Toggle a bounded bidirectional packet trace for the issuing player |
 | `:effect <id>` | `admin.effect` | Select an owned avatar effect, or clear it with id `0` |
+| `:catalogbypass` | `catalog.bypass.toggle` | Toggle zero-price catalog debug mode for the running process |
 
 The seeded `admin` group already inherits these nodes through its `*` grant. Production operators can grant or deny each node explicitly through the permission administration API.
+
+## Catalog price bypass
+
+`PIXELS_CATALOG_FREE_ITEMS=true` starts Pixels with every catalog offer projected and charged at zero credits and zero secondary currency. Durable catalog prices remain unchanged in PostgreSQL.
+
+`:catalogbypass` atomically toggles that process-local state. Players must reopen the catalog to refresh prices already visible in Nitro. The toggle is never persisted: every restart restores the value from `PIXELS_CATALOG_FREE_ITEMS`.
 
 ## Avatar effects
 

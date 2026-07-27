@@ -58,6 +58,10 @@ func (service *Service) Purchase(ctx context.Context, params PurchaseParams) (Pu
 	if err != nil {
 		return PurchaseResult{}, err
 	}
+	if service.pricing.FreeItems() {
+		item = service.pricing.Apply(item)
+		params.Free = true
+	}
 	if item.IsPet() {
 		if service.pets == nil {
 			return PurchaseResult{}, ErrCommerceUnavailable

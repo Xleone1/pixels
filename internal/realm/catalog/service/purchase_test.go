@@ -8,10 +8,26 @@ import (
 	"testing"
 
 	"github.com/niflaot/pixels/internal/permission"
+	catalogpricing "github.com/niflaot/pixels/internal/realm/catalog/pricing"
 	catalogtrophy "github.com/niflaot/pixels/internal/realm/catalog/trophy"
 	furnituremodel "github.com/niflaot/pixels/internal/realm/furniture/model"
 	currencyservice "github.com/niflaot/pixels/internal/realm/inventory/currency/service"
 )
+
+// TestPurchaseFreeModeSkipsEveryCurrencyCharge verifies server-authoritative bypass behavior.
+func TestPurchaseFreeModeSkipsEveryCurrencyCharge(t *testing.T) {
+	item := itemForTest()
+	item.CostPoints = 4
+	item.PointsType = 5
+	fixture := newServiceFixture(t, item)
+	fixture.service.WithPricing(catalogpricing.New(true))
+
+	result, err := fixture.service.Purchase(context.Background(), PurchaseParams{PlayerID: 7, CatalogItemID: item.ID})
+	if err != nil || len(result.GrantedItems) != 1 || result.Item.CostCredits != 0 || result.Item.CostPoints != 0 ||
+		result.ChargedCredits != 0 || result.ChargedPoints != 0 || len(fixture.currency.calls) != 0 {
+		t.Fatalf("result=%#v calls=%#v error=%v", result, fixture.currency.calls, err)
+	}
+}
 
 // TestPurchaseTrophyPersistsBuyerInscription verifies client data is filtered into server-owned trophy data.
 func TestPurchaseTrophyPersistsBuyerInscription(t *testing.T) {

@@ -5,10 +5,32 @@ import (
 	"testing"
 
 	catalogmodel "github.com/niflaot/pixels/internal/realm/catalog/model"
+	catalogpricing "github.com/niflaot/pixels/internal/realm/catalog/pricing"
 	furnituremodel "github.com/niflaot/pixels/internal/realm/furniture/model"
 	sharedmodel "github.com/niflaot/pixels/pkg/model"
 	"go.uber.org/zap"
 )
+
+// TestPageProjectsFreePricesWithoutMutatingTheCache verifies reversible debug pricing.
+func TestPageProjectsFreePricesWithoutMutatingTheCache(t *testing.T) {
+	item := dynamicItem(10, 1)
+	item.CostCredits = 10
+	item.CostPoints = 4
+	store := &fakeStore{pages: []catalogmodel.Page{dynamicPage(1, catalogmodel.DefaultLayout)}, items: []catalogmodel.Item{item}}
+	service := dynamicService(t, store)
+	pricing := catalogpricing.New(true)
+	service.WithPricing(pricing)
+
+	_, free, err := service.Page(context.Background(), 1, 7, false)
+	if err != nil || len(free) != 1 || free[0].CostCredits != 0 || free[0].CostPoints != 0 {
+		t.Fatalf("free=%#v error=%v", free, err)
+	}
+	pricing.ToggleFreeItems()
+	_, paid, err := service.Page(context.Background(), 1, 7, false)
+	if err != nil || len(paid) != 1 || paid[0].CostCredits != 10 || paid[0].CostPoints != 4 {
+		t.Fatalf("paid=%#v error=%v", paid, err)
+	}
+}
 
 // TestRecentPurchasesPageUsesPlayerHistory verifies dynamic offer ordering and visibility.
 func TestRecentPurchasesPageUsesPlayerHistory(t *testing.T) {

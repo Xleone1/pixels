@@ -326,6 +326,9 @@ minimum manual checks expected when touching it.
   sanitation. Protocol packets and HTTP administration begin in K4 and K5.
 - Catalog purchases share one PostgreSQL transaction across catalog, currency,
   and furniture repositories; currency events run only after commit.
+- `PIXELS_CATALOG_FREE_ITEMS` initializes the process-local zero-price debug
+  mode. `:catalogbypass` may toggle it during the process lifetime, but a
+  restart always restores the environment value.
 - Test after changes:
   - `go test -race ./internal/realm/catalog/...`
   - `go test ./internal/realm/furniture/... ./internal/realm/inventory/...`

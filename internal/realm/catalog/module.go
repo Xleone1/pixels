@@ -7,7 +7,9 @@ import (
 	permissionservice "github.com/niflaot/pixels/internal/permission/service"
 	catalogadmin "github.com/niflaot/pixels/internal/realm/catalog/admin"
 	builderscmd "github.com/niflaot/pixels/internal/realm/catalog/commands/builders"
+	bypasscmd "github.com/niflaot/pixels/internal/realm/catalog/commands/bypass"
 	"github.com/niflaot/pixels/internal/realm/catalog/gift"
+	catalogpricing "github.com/niflaot/pixels/internal/realm/catalog/pricing"
 	catalogrepo "github.com/niflaot/pixels/internal/realm/catalog/repository"
 	catalogservice "github.com/niflaot/pixels/internal/realm/catalog/service"
 	catalogtrophy "github.com/niflaot/pixels/internal/realm/catalog/trophy"
@@ -29,6 +31,8 @@ import (
 var Module = fx.Module(
 	"realm-catalog",
 	fx.Provide(
+		LoadConfig,
+		NewPricing,
 		NewStore,
 		builderscmd.LoadConfig,
 		NewService,
@@ -39,12 +43,17 @@ var Module = fx.Module(
 		NewAdminManager,
 		NewVoucherManager,
 	),
-	fx.Invoke(RegisterLifecycle, RegisterConnectionHandlers),
+	fx.Invoke(RegisterLifecycle, RegisterConnectionHandlers, bypasscmd.Register),
 )
 
+// NewPricing creates the process-local catalog pricing mode.
+func NewPricing(config Config) *catalogpricing.State {
+	return catalogpricing.New(config.FreeItems)
+}
+
 // NewService creates permission-aware catalog behavior.
-func NewService(store catalogrepo.Store, currencies currencyservice.Granter, furniture furnitureservice.DefinitionGranter, teleportPairs furnitureservice.TeleportPairer, events bus.Publisher, log *zap.Logger, permissions permissionservice.Checker, players playerservice.Finder, rooms roombundle.Manager, effects playereffect.Manager, achievements *playerachievement.Service, filter *chatfilter.Service, groups *groupmembership.Service) *catalogservice.Service {
-	return catalogservice.New(store, currencies, furniture, events, log, permissions).WithTeleportPairer(teleportPairs).WithPlayers(players).WithRoomBundles(rooms).WithEffects(effects).WithBadges(badgeCatalog{achievements}).WithTrophies(catalogtrophy.New(filter)).WithGroups(groups)
+func NewService(store catalogrepo.Store, currencies currencyservice.Granter, furniture furnitureservice.DefinitionGranter, teleportPairs furnitureservice.TeleportPairer, events bus.Publisher, log *zap.Logger, permissions permissionservice.Checker, players playerservice.Finder, rooms roombundle.Manager, effects playereffect.Manager, achievements *playerachievement.Service, filter *chatfilter.Service, groups *groupmembership.Service, pricing *catalogpricing.State) *catalogservice.Service {
+	return catalogservice.New(store, currencies, furniture, events, log, permissions).WithPricing(pricing).WithTeleportPairer(teleportPairs).WithPlayers(players).WithRoomBundles(rooms).WithEffects(effects).WithBadges(badgeCatalog{achievements}).WithTrophies(catalogtrophy.New(filter)).WithGroups(groups)
 }
 
 // badgeCatalog adapts player achievements to transactional catalog grants.

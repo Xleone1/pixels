@@ -7,6 +7,7 @@ import (
 
 	permissionservice "github.com/niflaot/pixels/internal/permission/service"
 	catalogmodel "github.com/niflaot/pixels/internal/realm/catalog/model"
+	catalogpricing "github.com/niflaot/pixels/internal/realm/catalog/pricing"
 	catalogrepo "github.com/niflaot/pixels/internal/realm/catalog/repository"
 	furnituremodel "github.com/niflaot/pixels/internal/realm/furniture/model"
 	furnitureservice "github.com/niflaot/pixels/internal/realm/furniture/service"
@@ -45,6 +46,8 @@ type Service struct {
 
 	// cache stores one immutable catalog generation.
 	cache *catalogCache
+	// pricing stores the process-local catalog price override.
+	pricing *catalogpricing.State
 
 	// events publishes completed purchase facts.
 	events bus.Publisher
@@ -123,11 +126,20 @@ func New(store catalogrepo.Store, currencies currencyservice.Granter, furniture 
 		log = zap.NewNop()
 	}
 
-	service := &Service{store: store, currencies: currencies, furniture: furniture, cache: newCache(), events: events, log: log}
+	service := &Service{store: store, currencies: currencies, furniture: furniture, cache: newCache(), pricing: catalogpricing.New(false), events: events, log: log}
 	service.commerce, _ = store.(catalogrepo.CommerceStore)
 	service.purchaseHistory, _ = store.(catalogrepo.PurchaseHistoryReader)
 	if len(checkers) > 0 {
 		service.permissions = checkers[0]
+	}
+
+	return service
+}
+
+// WithPricing configures the process-local catalog pricing mode.
+func (service *Service) WithPricing(pricing *catalogpricing.State) *Service {
+	if pricing != nil {
+		service.pricing = pricing
 	}
 
 	return service

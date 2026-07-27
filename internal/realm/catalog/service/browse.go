@@ -45,7 +45,7 @@ func (service *Service) Page(ctx context.Context, pageID int64, playerID int64, 
 	visible := make([]catalogmodel.Item, 0, len(items))
 	for _, item := range items {
 		if (item.Enabled || page.Layout == catalogmodel.SoldLimitedItemsLayout) && (!item.ClubOnly || hasClub) {
-			visible = append(visible, item)
+			visible = append(visible, service.pricing.Apply(item))
 		}
 	}
 

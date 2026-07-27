@@ -104,6 +104,7 @@ updated in the same change.
 |---|---|
 | `catalog.admin.manage` | Manage catalog pages and offers |
 | `catalog.admin.voucher.manage` | Manage catalog voucher definitions |
+| `catalog.bypass.toggle` | Toggle the process-local free catalog debug mode |
 | `currency.admin.manage` | Mutate player currency through administration |
 | `currency.economy.infinite` | Bypass player-originated currency deductions |
 | `marketplace.admin.manage` | Perform marketplace administration |

@@ -22,7 +22,8 @@ import (
 func TestProvidersExposeCatalogContracts(t *testing.T) {
 	service := &catalogservice.Service{}
 	adminService := &catalogadmin.Service{}
-	if NewStore(nil) == nil || NewManager(service) == nil || NewReader(service) == nil || NewAdminManager(adminService) == nil {
+	if NewStore(nil) == nil || NewManager(service) == nil || NewReader(service) == nil || NewAdminManager(adminService) == nil ||
+		!NewPricing(Config{FreeItems: true}).FreeItems() {
 		t.Fatal("expected catalog providers")
 	}
 }

@@ -99,6 +99,7 @@ Durations use Go duration syntax such as `250ms`, `5m`, `24h`, and `168h`. Empty
 | `PIXELS_ROOM_SPECTATOR_ENABLED` | `true` | Allow spectator room entry mode |
 | `PIXELS_ROOM_BUNDLE_BOTS_ENABLED` | `true` | Clone bots from purchased room templates |
 | `PIXELS_BUILDERS_CLUB_FURNITURE_LIMIT` | `0` | Builders Club room furniture allowance |
+| `PIXELS_CATALOG_FREE_ITEMS` | `false` | Start every catalog offer at zero credits and zero secondary currency |
 
 ## Chat and messenger
 
