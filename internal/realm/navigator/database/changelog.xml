@@ -7,4 +7,5 @@
 
     <include file="migrations/0001_create_navigator_records.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0002_room_visits.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0003_lifted_room_assets.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

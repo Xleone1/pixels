@@ -31,6 +31,22 @@ type highscoreData struct {
 	Entries []stuffdata.HighscoreEntry `json:"entries"`
 }
 
+// brandingData stores Nitro room branding map values.
+type brandingData struct {
+	// State stores the visual state.
+	State string `json:"state"`
+	// ImageURL stores the public image URL.
+	ImageURL string `json:"imageUrl"`
+	// ClickURL stores the optional billboard target.
+	ClickURL string `json:"clickUrl"`
+	// OffsetX stores the horizontal renderer offset.
+	OffsetX string `json:"offsetX"`
+	// OffsetY stores the vertical renderer offset.
+	OffsetY string `json:"offsetY"`
+	// OffsetZ stores the depth renderer offset.
+	OffsetZ string `json:"offsetZ"`
+}
+
 // SpecializedObjectData maps durable state to Nitro object-data formats.
 func SpecializedObjectData(interactionType string, extraData string) *stuffdata.Data {
 	switch interactionType {
@@ -80,6 +96,19 @@ func SpecializedObjectData(interactionType string, extraData string) *stuffdata.
 			pairs = append(pairs, stuffdata.Pair{Key: key, Value: values[key]})
 		}
 		return stuffdata.Map(pairs)
+	case "room_branding", "furniture_bg", "furniture_bb":
+		var data brandingData
+		if json.Unmarshal([]byte(extraData), &data) != nil {
+			return nil
+		}
+		return stuffdata.Map([]stuffdata.Pair{
+			{Key: "state", Value: data.State},
+			{Key: "imageUrl", Value: data.ImageURL},
+			{Key: "clickUrl", Value: data.ClickURL},
+			{Key: "offsetX", Value: data.OffsetX},
+			{Key: "offsetY", Value: data.OffsetY},
+			{Key: "offsetZ", Value: data.OffsetZ},
+		})
 	default:
 		return nil
 	}

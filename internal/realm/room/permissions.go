@@ -68,4 +68,10 @@ var (
 	StaffPickManage = permission.RegisterNode("room.staffpick.manage", "")
 	// AmbassadorAlert allows a player to submit the native in-room ambassador alert.
 	AmbassadorAlert = permission.RegisterNode("room.ambassador.alert", "")
+	// BrandingManage allows attributed room branding mutations.
+	BrandingManage = permission.RegisterNode("room.branding.manage", "")
+	// InsightRead allows administrative room statistics and profiling reads.
+	InsightRead = permission.RegisterNode("room.insight.read", "")
+	// NavigatorMediaManage allows attributed Navigator room media mutations.
+	NavigatorMediaManage = permission.RegisterNode("room.navigator.media.manage", "")
 )

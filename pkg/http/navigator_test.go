@@ -63,6 +63,16 @@ func (testNavigatorManager) ListLiftedRooms(context.Context) ([]navmodel.LiftedR
 	return []navmodel.LiftedRoom{{Base: sharedmodel.Base{Identity: sharedmodel.Identity{ID: 1}}, RoomID: 1}}, nil
 }
 
+// UpsertLiftedRoom creates or updates Navigator media for tests.
+func (testNavigatorManager) UpsertLiftedRoom(_ context.Context, mutation navmodel.LiftedRoomMutation) (navmodel.LiftedRoom, error) {
+	return navmodel.LiftedRoom{RoomID: mutation.RoomID}, nil
+}
+
+// DisableLiftedRoom disables Navigator media for tests.
+func (testNavigatorManager) DisableLiftedRoom(_ context.Context, roomID int64, _ int64, _ int64) (navmodel.LiftedRoom, error) {
+	return navmodel.LiftedRoom{RoomID: roomID}, nil
+}
+
 // RecordVisit accepts one navigator visit for tests.
 func (testNavigatorManager) RecordVisit(context.Context, int64, int64) error { return nil }
 

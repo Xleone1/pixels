@@ -771,10 +771,24 @@ minimum manual checks expected when touching it.
 - Owns `pkg/http/room/routes` and related OpenAPI models.
 - Provides protected room list/detail/occupancy/close/forward routes plus
   navigator categories and lifted room routes.
+- Provides attributed optimistic room setting updates, CMS-owned Navigator
+  image references, branding configuration for compatible furniture, aggregate
+  furniture, bot, pet, and WIRED counters, and bounded live room profiling.
+- Branding and Navigator media persist only durable public URLs plus opaque CMS
+  asset references. Pixels never uploads, deletes, signs, or otherwise manages
+  those objects; the CMS exclusively owns their object-storage lifecycle.
+- Room insight reports WIRED only as an aggregate count. These administration
+  routes do not expose WIRED configuration or mutation behavior.
 - Test after changes:
   - `go test ./pkg/http/...`
   - `GET /api/admin/rooms`, `/api/admin/rooms/:id`,
     `/api/admin/rooms/:id/occupancy`.
+  - `GET /api/admin/rooms/:id/stats` returns durable counters and overlays live
+    occupancy when loaded; `/profile` reports unavailable for closed rooms.
+  - Configure and remove one compatible branding item and verify the current
+    room receives `furniture_bg` or `furniture_bb` object data immediately.
+  - Configure Navigator media with a CMS public URL, then disable it without
+    causing Pixels to call object storage.
   - `POST /api/admin/rooms/:id/close` closes active runtime rooms.
   - `POST /api/admin/rooms/:id/forward` sends `room.forward` to active occupants.
   - `GET /api/admin/navigator/categories` and `/api/admin/navigator/lifted`.

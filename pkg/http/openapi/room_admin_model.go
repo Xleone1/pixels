@@ -81,6 +81,65 @@ type RoomRollerSettingsRequest struct {
 	RollerSpeed int `json:"rollerSpeed" required:"true" minimum:"-1" maximum:"20"`
 }
 
+// RoomSettingsRequest documents one attributed optimistic room settings update.
+type RoomSettingsRequest struct {
+	RoomIDRequest
+	// ExpectedVersion stores the current durable room version.
+	ExpectedVersion int64 `json:"expectedVersion" required:"true" minimum:"1"`
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
+	// Reason explains the configuration change.
+	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
+	// Name optionally replaces the room name.
+	Name *string `json:"name,omitempty" minLength:"3" maxLength:"25"`
+	// Description optionally replaces the room description.
+	Description *string `json:"description,omitempty" maxLength:"128"`
+	// CategoryID optionally replaces the navigator category.
+	CategoryID *int64 `json:"categoryId,omitempty" minimum:"1"`
+	// Tags optionally replace normalized room tags.
+	Tags *[]string `json:"tags,omitempty" maxItems:"2"`
+	// MaxUsers optionally replaces room capacity.
+	MaxUsers *int `json:"maxUsers,omitempty" minimum:"1" maximum:"100"`
+	// DoorMode optionally replaces the access mode.
+	DoorMode *int16 `json:"doorMode,omitempty" minimum:"0" maximum:"3"`
+	// Password optionally replaces the room password.
+	Password *string `json:"password,omitempty" maxLength:"128"`
+	// TradeMode optionally replaces trading behavior.
+	TradeMode *int16 `json:"tradeMode,omitempty" minimum:"0" maximum:"2"`
+	// RollerSpeed optionally replaces roller cadence.
+	RollerSpeed *int `json:"rollerSpeed,omitempty" minimum:"-1" maximum:"20"`
+	// AllowWalkthrough optionally replaces walkthrough behavior.
+	AllowWalkthrough *bool `json:"allowWalkthrough,omitempty"`
+	// AllowPets optionally replaces pet admission.
+	AllowPets *bool `json:"allowPets,omitempty"`
+	// AllowPetsEat optionally replaces pet feeding.
+	AllowPetsEat *bool `json:"allowPetsEat,omitempty"`
+	// HideWalls optionally replaces wall visibility.
+	HideWalls *bool `json:"hideWalls,omitempty"`
+	// WallThickness optionally replaces wall thickness.
+	WallThickness *int `json:"wallThickness,omitempty" minimum:"-2" maximum:"1"`
+	// FloorThickness optionally replaces floor thickness.
+	FloorThickness *int `json:"floorThickness,omitempty" minimum:"-2" maximum:"1"`
+	// ChatMode optionally replaces chat mode.
+	ChatMode *int16 `json:"chatMode,omitempty" minimum:"0" maximum:"2"`
+	// ChatWeight optionally replaces chat bubble weight.
+	ChatWeight *int16 `json:"chatWeight,omitempty" minimum:"0" maximum:"2"`
+	// ChatSpeed optionally replaces chat speed.
+	ChatSpeed *int16 `json:"chatSpeed,omitempty" minimum:"0" maximum:"2"`
+	// ChatDistance optionally replaces chat distance.
+	ChatDistance *int16 `json:"chatDistance,omitempty" minimum:"0" maximum:"100"`
+	// ChatProtection optionally replaces flood protection.
+	ChatProtection *int16 `json:"chatProtection,omitempty" minimum:"0" maximum:"2"`
+	// ModerationMute optionally replaces mute policy.
+	ModerationMute *int16 `json:"moderationMute,omitempty" minimum:"0" maximum:"2"`
+	// ModerationKick optionally replaces kick policy.
+	ModerationKick *int16 `json:"moderationKick,omitempty" minimum:"0" maximum:"2"`
+	// ModerationBan optionally replaces ban policy.
+	ModerationBan *int16 `json:"moderationBan,omitempty" minimum:"0" maximum:"2"`
+	// StaffPicked optionally replaces official navigator selection.
+	StaffPicked *bool `json:"staffPicked,omitempty"`
+}
+
 // RoomOccupancyResponse contains active room occupancy.
 type RoomOccupancyResponse struct {
 	// RoomID identifies the room.

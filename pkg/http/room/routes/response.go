@@ -43,6 +43,64 @@ type RollerSettingsRequest struct {
 	RollerSpeed int `json:"rollerSpeed"`
 }
 
+// SettingsRequest contains one attributed optimistic room configuration update.
+type SettingsRequest struct {
+	// ExpectedVersion stores the current durable room version.
+	ExpectedVersion int64 `json:"expectedVersion"`
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId"`
+	// Reason explains the configuration change.
+	Reason string `json:"reason"`
+	// Name optionally replaces the visible room name.
+	Name *string `json:"name"`
+	// Description optionally replaces the visible description.
+	Description *string `json:"description"`
+	// CategoryID optionally replaces the navigator category.
+	CategoryID **int64 `json:"categoryId"`
+	// Tags optionally replace the normalized room tags.
+	Tags *[]string `json:"tags"`
+	// MaxUsers optionally replaces room capacity.
+	MaxUsers *int `json:"maxUsers"`
+	// DoorMode optionally replaces the room access mode.
+	DoorMode *int16 `json:"doorMode"`
+	// Password optionally replaces the plaintext door password.
+	Password *string `json:"password"`
+	// TradeMode optionally replaces the room trading mode.
+	TradeMode *int16 `json:"tradeMode"`
+	// RollerSpeed optionally replaces the room roller cadence.
+	RollerSpeed *int `json:"rollerSpeed"`
+	// AllowWalkthrough optionally replaces walkthrough behavior.
+	AllowWalkthrough *bool `json:"allowWalkthrough"`
+	// AllowPets optionally replaces pet admission behavior.
+	AllowPets *bool `json:"allowPets"`
+	// AllowPetsEat optionally replaces pet feeding behavior.
+	AllowPetsEat *bool `json:"allowPetsEat"`
+	// HideWalls optionally replaces wall visibility.
+	HideWalls *bool `json:"hideWalls"`
+	// WallThickness optionally replaces wall thickness.
+	WallThickness *int `json:"wallThickness"`
+	// FloorThickness optionally replaces floor thickness.
+	FloorThickness *int `json:"floorThickness"`
+	// ChatMode optionally replaces room chat mode.
+	ChatMode *int16 `json:"chatMode"`
+	// ChatWeight optionally replaces room chat bubble weight.
+	ChatWeight *int16 `json:"chatWeight"`
+	// ChatSpeed optionally replaces room chat speed.
+	ChatSpeed *int16 `json:"chatSpeed"`
+	// ChatDistance optionally replaces room chat distance.
+	ChatDistance *int16 `json:"chatDistance"`
+	// ChatProtection optionally replaces flood protection.
+	ChatProtection *int16 `json:"chatProtection"`
+	// ModerationMute optionally replaces the mute policy.
+	ModerationMute *int16 `json:"moderationMute"`
+	// ModerationKick optionally replaces the kick policy.
+	ModerationKick *int16 `json:"moderationKick"`
+	// ModerationBan optionally replaces the ban policy.
+	ModerationBan *int16 `json:"moderationBan"`
+	// StaffPicked optionally replaces official navigator selection.
+	StaffPicked *bool `json:"staffPicked"`
+}
+
 // OccupancyResponse contains active room occupancy.
 type OccupancyResponse struct {
 	// RoomID identifies the room.
@@ -121,6 +179,16 @@ type LiftedResponse struct {
 	AreaID int `json:"areaId"`
 	// Image stores the image key.
 	Image string `json:"image"`
+	// AssetRef stores an opaque CMS-owned asset reference.
+	AssetRef string `json:"assetRef"`
 	// Caption stores the caption.
 	Caption string `json:"caption"`
+	// Order stores Navigator display ordering.
+	Order int `json:"order"`
+	// StartsAt optionally stores the publication boundary.
+	StartsAt *string `json:"startsAt,omitempty"`
+	// EndsAt optionally stores the expiration boundary.
+	EndsAt *string `json:"endsAt,omitempty"`
+	// Version stores optimistic mutation order.
+	Version int64 `json:"version"`
 }

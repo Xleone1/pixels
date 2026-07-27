@@ -22,9 +22,16 @@ func adminOperations() []operation {
 		adminRoomTemplate(http.MethodDelete, "/api/admin/rooms/{id}/bundle-template", "Unmark room bundle template", &RoomIDRequest{}, &RoomResponse{}),
 		adminRoomRead("/api/admin/rooms/{id}", "Read room metadata", &RoomIDRequest{}, &RoomResponse{}),
 		adminRoomRead("/api/admin/rooms/{id}/occupancy", "Read active room occupancy", &RoomIDRequest{}, &RoomOccupancyResponse{}),
+		adminRoomInsight("/api/admin/rooms/{id}/stats", "Read durable room statistics", &RoomInsightRequest{}, &RoomStatsResponse{}),
+		adminRoomInsight("/api/admin/rooms/{id}/profile", "Read bounded live room profile", &RoomInsightRequest{}, &RoomProfileResponse{}),
+		adminRoomBranding(http.MethodGet, "/api/admin/rooms/{id}/branding", "List room branding", &RoomBrandingReadRequest{}, &RoomBrandingListResponse{}, http.StatusOK),
+		adminRoomBranding(http.MethodGet, "/api/admin/rooms/{id}/branding-compatible", "List branding-compatible furniture", &RoomBrandingReadRequest{}, &RoomBrandingFurnitureListResponse{}, http.StatusOK),
+		adminRoomBranding(http.MethodPut, "/api/admin/rooms/{id}/branding/{itemId}", "Create or update room branding", &RoomBrandingMutationRequest{}, &RoomBrandingResponse{}, http.StatusOK),
+		adminRoomBranding(http.MethodDelete, "/api/admin/rooms/{id}/branding/{brandingId}", "Disable room branding", &RoomBrandingDisableRequest{}, &RoomBrandingResponse{}, http.StatusOK),
 		adminRoomRead("/api/admin/rooms/{id}/promotion", "Read active room promotion", &RoomIDRequest{}, &RoomPromotionResponse{}),
 		adminRoomMutation(http.MethodDelete, "/api/admin/rooms/{id}/promotion", "Cancel active room promotion", &RoomIDRequest{}, nil),
 		adminRoomSettings(http.MethodPatch, "/api/admin/rooms/{id}/roller", "Update room roller speed", &RoomRollerSettingsRequest{}, &RoomResponse{}),
+		adminRoomSettings(http.MethodPatch, "/api/admin/rooms/{id}/settings", "Update room configuration", &RoomSettingsRequest{}, &RoomResponse{}),
 		adminRoomAction("/api/admin/rooms/{id}/close", "Close active room", &RoomIDRequest{}),
 		adminRoomAction("/api/admin/rooms/{id}/forward", "Forward active room occupants", &RoomForwardRequest{}),
 		adminRoomAction("/api/admin/rooms/players/{playerId}/teleport", "Teleport one live player", &RoomTeleportRequest{}),
@@ -36,6 +43,8 @@ func adminOperations() []operation {
 		adminRoomAudit("/api/admin/players/{playerId}/moderation/actions", "Read moderation performed by player", &PlayerAuditRequest{}, &RoomModerationAuditResponse{}),
 		adminNavigatorRead("/api/admin/navigator/categories", "List navigator categories", &APIKeyRequest{}, &CategoryListResponse{}),
 		adminNavigatorRead("/api/admin/navigator/lifted", "List navigator lifted rooms", &APIKeyRequest{}, &LiftedListResponse{}),
+		adminNavigatorMutation(http.MethodPut, "/api/admin/rooms/{id}/media/navigator", "Create or update room Navigator media", &NavigatorMediaRequest{}, &LiftedResponse{}),
+		adminNavigatorMutation(http.MethodDelete, "/api/admin/rooms/{id}/media/navigator", "Disable room Navigator media", &NavigatorMediaDisableRequest{}, &LiftedResponse{}),
 		adminNavigatorRead("/api/admin/navigator/history", "Read player navigator history", &NavigatorPlayerRequest{}, &NavigatorRoomIDsResponse{}),
 		adminNavigatorRead("/api/admin/navigator/favorites", "Read player navigator favorites", &NavigatorPlayerRequest{}, &NavigatorRoomIDsResponse{}),
 		adminNavigatorMutation(http.MethodDelete, "/api/admin/navigator/history", "Delete player navigator history", &NavigatorHistoryDeleteRequest{}, &NavigatorDeleteResponse{}),
@@ -97,6 +106,22 @@ func adminOperations() []operation {
 		adminPermission(http.MethodGet, "/api/admin/permissions/players/{playerId}/effective", "List effective player permissions", &permissionapi.PlayerRequest{}, &permissionapi.EffectiveResponse{}, http.StatusOK),
 		adminPermission(http.MethodGet, "/api/admin/permissions/players/{playerId}/check", "Check player permission", &permissionapi.CheckRequest{}, &permissionapi.CheckResponse{}, http.StatusOK),
 	}
+}
+
+// adminRoomInsight creates a protected room observability read operation.
+func adminRoomInsight(path string, summary string, request any, body any) operation {
+	return operation{method: http.MethodGet, path: path, tag: "Room Runtime", summary: summary,
+		description: summary + ". WIRED data is exposed only as an aggregate count.", request: request,
+		responses: append([]response{jsonResponse(http.StatusOK, body, summary+".")},
+			errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusNotFound, http.StatusInternalServerError)...), secured: true}
+}
+
+// adminRoomBranding creates a protected room branding operation.
+func adminRoomBranding(method string, path string, summary string, request any, body any, status int) operation {
+	return operation{method: method, path: path, tag: "Rooms", summary: summary,
+		description: summary + ". Pixels persists public URLs and opaque CMS asset references without accessing object storage.", request: request,
+		responses: append([]response{jsonResponse(status, body, summary+".")},
+			errorResponses(http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError)...), secured: true}
 }
 
 // adminRoomSettings creates a protected room settings mutation operation.

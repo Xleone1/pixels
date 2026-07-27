@@ -49,6 +49,18 @@ type Room struct {
 	interactionLocks map[int64]time.Time
 	// rollerCycle stores owner-loop ticks accumulated toward the next roller step.
 	rollerCycle int
+	// tickCount stores completed owner-loop cycles.
+	tickCount atomic.Uint64
+	// tickErrors stores owner-loop publisher failures.
+	tickErrors atomic.Uint64
+	// totalTickNanos stores cumulative owner-loop duration.
+	totalTickNanos atomic.Int64
+	// lastTickNanos stores the latest owner-loop duration.
+	lastTickNanos atomic.Int64
+	// maxTickNanos stores the slowest owner-loop duration.
+	maxTickNanos atomic.Int64
+	// lastTickUnixNanos stores the latest owner-loop completion.
+	lastTickUnixNanos atomic.Int64
 }
 
 // NewRoom creates an active room.

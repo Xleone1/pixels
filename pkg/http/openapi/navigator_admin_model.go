@@ -83,6 +83,52 @@ type LiftedResponse struct {
 	AreaID int `json:"areaId" required:"true"`
 	// Image stores the image key.
 	Image string `json:"image" required:"true"`
+	// AssetRef stores an opaque CMS-owned asset reference.
+	AssetRef string `json:"assetRef"`
 	// Caption stores the caption.
 	Caption string `json:"caption" required:"true"`
+	// Order stores Navigator display ordering.
+	Order int `json:"order" required:"true"`
+	// StartsAt optionally stores the publication boundary.
+	StartsAt *string `json:"startsAt,omitempty" format:"date-time"`
+	// EndsAt optionally stores the expiration boundary.
+	EndsAt *string `json:"endsAt,omitempty" format:"date-time"`
+	// Version stores optimistic mutation order.
+	Version int64 `json:"version" required:"true" minimum:"1"`
+}
+
+// NavigatorMediaRequest documents one attributed Navigator media replacement.
+type NavigatorMediaRequest struct {
+	RoomIDRequest
+	// Image stores a durable public image URL.
+	Image string `json:"image" required:"true" format:"uri"`
+	// AssetRef stores an opaque CMS-owned asset reference.
+	AssetRef string `json:"assetRef" maxLength:"255"`
+	// Caption stores visible Navigator copy.
+	Caption string `json:"caption" maxLength:"255"`
+	// AreaID stores the visual area id.
+	AreaID int `json:"areaId" minimum:"0"`
+	// Order stores Navigator display ordering.
+	Order int `json:"order" minimum:"0"`
+	// StartsAt optionally stores the publication boundary.
+	StartsAt *string `json:"startsAt,omitempty" format:"date-time"`
+	// EndsAt optionally stores the expiration boundary.
+	EndsAt *string `json:"endsAt,omitempty" format:"date-time"`
+	// ExpectedVersion stores zero for creation or the current media version.
+	ExpectedVersion int64 `json:"expectedVersion" minimum:"0"`
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
+	// Reason explains the mutation.
+	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
+}
+
+// NavigatorMediaDisableRequest documents one attributed media disable.
+type NavigatorMediaDisableRequest struct {
+	RoomIDRequest
+	// ExpectedVersion stores the current media version.
+	ExpectedVersion int64 `json:"expectedVersion" required:"true" minimum:"1"`
+	// ActorPlayerID identifies the authorized administrative actor.
+	ActorPlayerID int64 `json:"actorPlayerId" required:"true" minimum:"1"`
+	// Reason explains the mutation.
+	Reason string `json:"reason" required:"true" minLength:"1" maxLength:"500"`
 }

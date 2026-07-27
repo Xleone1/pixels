@@ -15,8 +15,10 @@ import (
 	roomvotes "github.com/niflaot/pixels/internal/realm/room/control/votes"
 	roomwordfilter "github.com/niflaot/pixels/internal/realm/room/control/wordfilter"
 	auditrepo "github.com/niflaot/pixels/internal/realm/room/database/audit"
+	brandingrepo "github.com/niflaot/pixels/internal/realm/room/database/branding"
 	decorationrepo "github.com/niflaot/pixels/internal/realm/room/database/decoration"
 	roomgamedb "github.com/niflaot/pixels/internal/realm/room/database/games"
+	insightrepo "github.com/niflaot/pixels/internal/realm/room/database/insight"
 	layoutrepo "github.com/niflaot/pixels/internal/realm/room/database/layout"
 	moderationrepo "github.com/niflaot/pixels/internal/realm/room/database/moderation"
 	promotiondb "github.com/niflaot/pixels/internal/realm/room/database/promotion"
@@ -26,7 +28,9 @@ import (
 	wordrepo "github.com/niflaot/pixels/internal/realm/room/database/wordfilter"
 	roomdecoration "github.com/niflaot/pixels/internal/realm/room/decoration"
 	roompromotion "github.com/niflaot/pixels/internal/realm/room/promotion"
+	roombranding "github.com/niflaot/pixels/internal/realm/room/record/branding"
 	roombundle "github.com/niflaot/pixels/internal/realm/room/record/bundle"
+	roominsight "github.com/niflaot/pixels/internal/realm/room/record/insight"
 	"github.com/niflaot/pixels/internal/realm/room/record/service"
 	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
 	roomaction "github.com/niflaot/pixels/internal/realm/room/world/action"
@@ -49,6 +53,8 @@ var Module = fx.Module(
 	fx.Provide(
 		NewLayoutStore,
 		NewStore,
+		brandingrepo.New,
+		insightrepo.New,
 		decorationrepo.New,
 		NewDecorationStore,
 		roomdecoration.New,
@@ -63,6 +69,10 @@ var Module = fx.Module(
 		NewRoomLayoutManager,
 		NewManager,
 		NewConfigManager,
+		NewBrandingStore,
+		NewBrandingService,
+		NewInsightStore,
+		NewInsightService,
 		NewBundleManager,
 		NewRightsStore,
 		NewRightsService,
@@ -106,6 +116,22 @@ var Module = fx.Module(
 	fx.Invoke(roomaction.RegisterScheduler),
 	fx.Invoke(roomgames.Register),
 )
+
+// NewBrandingStore exposes PostgreSQL branding persistence through its domain contract.
+func NewBrandingStore(repository *brandingrepo.Repository) roombranding.Store { return repository }
+
+// NewBrandingService creates authorized room branding behavior.
+func NewBrandingService(store roombranding.Store, permissions permissionservice.Checker, runtime *roomlive.Registry, connections *netconn.Registry) *roombranding.Service {
+	return roombranding.New(store, permissions, BrandingManage, runtime, connections)
+}
+
+// NewInsightStore exposes PostgreSQL room aggregate reads through its domain contract.
+func NewInsightStore(repository *insightrepo.Repository) roominsight.Store { return repository }
+
+// NewInsightService creates durable and live room observability.
+func NewInsightService(store roominsight.Store, runtime *roomlive.Registry) *roominsight.Service {
+	return roominsight.New(store, runtime)
+}
 
 // NewPromotionStore creates room-promotion persistence.
 func NewPromotionStore(pool *postgres.Pool) roompromotion.Store { return promotiondb.New(pool) }

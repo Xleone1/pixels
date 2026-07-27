@@ -9,7 +9,9 @@ import (
 	roommoderation "github.com/niflaot/pixels/internal/realm/room/control/moderation"
 	roomvotes "github.com/niflaot/pixels/internal/realm/room/control/votes"
 	roompromotion "github.com/niflaot/pixels/internal/realm/room/promotion"
+	roombranding "github.com/niflaot/pixels/internal/realm/room/record/branding"
 	roombundle "github.com/niflaot/pixels/internal/realm/room/record/bundle"
+	roominsight "github.com/niflaot/pixels/internal/realm/room/record/insight"
 	roomservice "github.com/niflaot/pixels/internal/realm/room/record/service"
 	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
 	roomwired "github.com/niflaot/pixels/internal/realm/room/world/wired"
@@ -20,6 +22,8 @@ import (
 	wiredruntime "github.com/niflaot/pixels/internal/realm/room/world/wired/runtime"
 	netconn "github.com/niflaot/pixels/networking/connection"
 	"github.com/niflaot/pixels/pkg/http/adminaction"
+	brandingroutes "github.com/niflaot/pixels/pkg/http/room/routes/branding"
+	insightroutes "github.com/niflaot/pixels/pkg/http/room/routes/insight"
 	voteroutes "github.com/niflaot/pixels/pkg/http/room/routes/votes"
 	wiredroutes "github.com/niflaot/pixels/pkg/http/room/routes/wired"
 	"go.uber.org/fx"
@@ -58,6 +62,10 @@ type Dependencies struct {
 	WiredGames *game.Coordinator
 	// AdminActions authorizes and audits user movement.
 	AdminActions *adminaction.Service `optional:"true"`
+	// Branding manages CMS-owned URL projection through compatible furniture.
+	Branding *roombranding.Service
+	// Insight reads durable statistics and bounded live profiling.
+	Insight *roominsight.Service
 }
 
 const (
@@ -82,18 +90,23 @@ func Register(app *fiber.App, rooms roomservice.Manager, runtime *roomlive.Regis
 	}
 	if dependencies.ConfigRooms != nil {
 		app.Patch(roomPath+"/:id/roller", rollerSettingsHandler(dependencies.ConfigRooms, runtime))
+		app.Patch(roomPath+"/:id/settings", settingsHandler(dependencies.ConfigRooms, runtime, dependencies.AdminActions))
 	}
 	app.Post(roomPath+"/:id/close", closeHandler(runtime))
 	app.Post(roomPath+"/:id/forward", forwardHandler(runtime, connections))
 	app.Post(roomPath+"/players/:playerId/teleport", teleportHandler(rooms, players, connections, entry, dependencies.AdminActions))
 	app.Get(navigatorPath+"/categories", categoriesHandler(rooms))
 	app.Get(navigatorPath+"/lifted", liftedHandler(navigator))
+	app.Put(roomPath+"/:id/media/navigator", navigatorMediaHandler(navigator, dependencies.AdminActions))
+	app.Delete(roomPath+"/:id/media/navigator", disableNavigatorMediaHandler(navigator, dependencies.AdminActions))
 	app.Get(navigatorPath+"/history", navigatorHistoryHandler(navigator))
 	app.Delete(navigatorPath+"/history", deleteNavigatorHistoryHandler(navigator))
 	app.Get(navigatorPath+"/favorites", navigatorFavoritesHandler(navigator))
 	app.Post(navigatorPath+"/official/:roomId", officialRoomHandler(dependencies.ConfigRooms, true))
 	app.Delete(navigatorPath+"/official/:roomId", officialRoomHandler(dependencies.ConfigRooms, false))
 	registerAudit(app, dependencies)
+	brandingroutes.Register(app, dependencies.Branding)
+	insightroutes.Register(app, dependencies.Insight, dependencies.AdminActions)
 	voteroutes.Register(app, dependencies.Votes)
 	wiredroutes.Register(app, wiredroutes.Dependencies{Config: dependencies.WiredConfig, Store: dependencies.WiredStore, Rewards: dependencies.WiredRewards, Registry: dependencies.WiredRegistry, Compiler: dependencies.WiredCompiler, Engine: dependencies.WiredEngine, Games: dependencies.WiredGames, Rooms: dependencies.ConfigRooms})
 }

@@ -169,6 +169,24 @@ func TestListLiftedRoomsReadsStore(t *testing.T) {
 	}
 }
 
+// TestUpsertLiftedRoomRequiresCMSReference verifies that Pixels stores references without owning assets.
+func TestUpsertLiftedRoomRequiresCMSReference(t *testing.T) {
+	service := New(newFakeStore())
+	_, err := service.UpsertLiftedRoom(context.Background(), navmodel.LiftedRoomMutation{
+		RoomID: 1, Image: "https://cdn.example/room.png", ActorPlayerID: 7,
+	})
+	if !errors.Is(err, ErrInvalidLiftedRoom) {
+		t.Fatalf("expected missing asset reference to fail, got %v", err)
+	}
+	value, err := service.UpsertLiftedRoom(context.Background(), navmodel.LiftedRoomMutation{
+		RoomID: 1, Image: " https://cdn.example/room.png ",
+		AssetRef: " cms:room-navigator:9 ", ActorPlayerID: 7,
+	})
+	if err != nil || value.AssetRef != "cms:room-navigator:9" {
+		t.Fatalf("value=%#v err=%v", value, err)
+	}
+}
+
 // TestListCategoryPreferencesReadsStore verifies category preference listing.
 func TestListCategoryPreferencesReadsStore(t *testing.T) {
 	preferences, err := New(newFakeStore()).ListCategoryPreferences(context.Background(), 7)

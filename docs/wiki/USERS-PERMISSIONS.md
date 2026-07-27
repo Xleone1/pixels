@@ -184,6 +184,7 @@ updated in the same change.
 |---|---|
 | `room.admin.bundle_template.manage` | Manage hidden room-bundle templates |
 | `room.ambassador.alert` | Send room ambassador alerts |
+| `room.branding.manage` | Configure public image URLs on compatible room branding furniture |
 | `room.delete.any` | Delete any room |
 | `room.doorbell.answer.any` | Answer the doorbell in any room |
 | `room.enter.any` | Bypass ordinary room entry policy |
@@ -191,6 +192,7 @@ updated in the same change.
 | `room.floorplan.any.edit` | Edit the floor plan of any room |
 | `room.floorplan.own.edit` | Edit an owned room's floor plan |
 | `room.furniture.any.manage` | Place, move, use, or pick up furniture in any room |
+| `room.insight.read` | Read room inventory counters and bounded live profiling |
 | `room.moderation.any.ban` | Ban a player from any room |
 | `room.moderation.any.kick` | Kick a player from any room |
 | `room.moderation.any.mute` | Mute a player in any room |
@@ -199,6 +201,7 @@ updated in the same change.
 | `room.moderation.own.mute` | Mute a player in an owned room |
 | `room.moderation.policy.any.manage` | Change moderation policy in any room |
 | `room.moderation.policy.own.manage` | Change moderation policy in an owned room |
+| `room.navigator.media.manage` | Configure CMS-owned Navigator room media |
 | `room.promotion.manage.any` | Manage any room promotion |
 | `room.rights.any.grant` | Grant rights in any room |
 | `room.rights.any.revoke` | Revoke rights in any room |

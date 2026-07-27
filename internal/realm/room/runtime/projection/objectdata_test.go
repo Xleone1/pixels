@@ -38,3 +38,11 @@ func TestSpecializedObjectDataRejectsMalformedState(t *testing.T) {
 		t.Fatal("expected malformed specialized data to be rejected")
 	}
 }
+
+// TestSpecializedObjectDataEncodesBrandingMap verifies Nitro receives every room-branding key.
+func TestSpecializedObjectDataEncodesBrandingMap(t *testing.T) {
+	data := SpecializedObjectData("furniture_bb", `{"state":"1","imageUrl":"https://cdn.example/ad.png","clickUrl":"https://example.com","offsetX":"2","offsetY":"3","offsetZ":"4"}`)
+	if data == nil || len(data.Pairs) != 6 {
+		t.Fatalf("expected six branding map pairs, got %#v", data)
+	}
+}
