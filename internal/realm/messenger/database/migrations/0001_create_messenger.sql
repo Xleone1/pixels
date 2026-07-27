@@ -1,6 +1,7 @@
 --liquibase formatted sql
 
 --changeset pixels:messenger-0001
+--validCheckSum: 9:6716f50abc978f7db177aaf9defcdee4
 create table messenger_friendships (
     player_id bigint not null references players(id) on delete cascade,
     friend_player_id bigint not null references players(id) on delete cascade,
@@ -31,10 +32,6 @@ alter table player_profiles
     add column block_room_invites boolean not null default false,
     add column block_following boolean not null default false;
 
-create index players_username_prefix_idx
-on players (lower(username) text_pattern_ops)
-where deleted_at is null;
-
 create table messenger_private_messages (
     id bigint generated always as identity primary key,
     from_player_id bigint not null references players(id) on delete cascade,
@@ -48,4 +45,4 @@ create table messenger_private_messages (
 create index messenger_private_messages_players_created_idx
 on messenger_private_messages (from_player_id, to_player_id, created_at desc);
 
---rollback drop table if exists messenger_private_messages; drop index if exists players_username_prefix_idx; alter table player_profiles drop column if exists block_following, drop column if exists block_room_invites, drop column if exists block_friend_requests; drop table if exists messenger_friend_requests; drop table if exists messenger_friendships;
+--rollback drop table if exists messenger_private_messages; alter table player_profiles drop column if exists block_following, drop column if exists block_room_invites, drop column if exists block_friend_requests; drop table if exists messenger_friend_requests; drop table if exists messenger_friendships;

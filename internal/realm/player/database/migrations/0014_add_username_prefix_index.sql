@@ -1,7 +1,8 @@
 --liquibase formatted sql
 
 --changeset pixels:pixels-player-0014-add-username-prefix-index
-create index players_username_prefix_idx
+--validCheckSum: 9:6159bd470d8fbd72a18152d4ca030387
+create index if not exists players_username_prefix_idx
 on players (lower(username) text_pattern_ops)
 where deleted_at is null;
 
