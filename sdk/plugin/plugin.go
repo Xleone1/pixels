@@ -14,7 +14,7 @@ import (
 
 const (
 	// SDKVersion is the semantic version implemented by this host SDK.
-	SDKVersion = "1.0.0"
+	SDKVersion = "2.0.0"
 	// PriorityLowest runs before no lower-priority callback.
 	PriorityLowest Priority = sdkpriority.Lowest
 	// PriorityLow runs below normal callbacks.
@@ -74,6 +74,36 @@ type Host interface {
 	Commands() CommandTree
 	// Permissions returns namespaced permission-node registration.
 	Permissions() PermissionRegistrar
+	// Economy returns bounded currency read and mutation operations.
+	Economy() EconomyAccess
+	// Rooms returns bounded room read and mutation operations.
+	Rooms() RoomAccess
+	// Trades returns bounded live-trade operations.
+	Trades() TradeAccess
+}
+
+// CurrencyDefinition describes one configured plugin-visible currency.
+type CurrencyDefinition struct {
+	// Type identifies the protocol currency type.
+	Type int32
+	// Key identifies its stable localization key.
+	Key string
+	// Ledger reports whether mutations are audited durably.
+	Ledger bool
+	// Color stores the optional presentation color.
+	Color string
+}
+
+// EconomyAccess exposes bounded currency behavior to plugins.
+type EconomyAccess interface {
+	// Grant applies a signed delta to one player's balance.
+	Grant(int64, int32, int64) (int64, error)
+	// Set replaces one player's balance with an absolute amount.
+	Set(int64, int32, int64) (int64, error)
+	// Balance reads one player's current balance.
+	Balance(int64, int32) (int64, error)
+	// Types lists configured currencies.
+	Types() ([]CurrencyDefinition, error)
 }
 
 // PlayerAccess exposes bounded live-player read and action operations.

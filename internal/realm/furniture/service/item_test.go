@@ -4,7 +4,25 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	furnituremodel "github.com/niflaot/pixels/internal/realm/furniture/model"
 )
+
+// furnitureEventsForTest mutates or cancels one placement.
+type furnitureEventsForTest struct {
+	// placement stores the replacement placement.
+	placement furnituremodel.Placement
+	// cancelled stores the veto decision.
+	cancelled bool
+}
+
+// DispatchFurniturePlace returns the configured plugin decision.
+func (events furnitureEventsForTest) DispatchFurniturePlace(_ context.Context, params PlaceParams) (PlaceParams, bool) {
+	if events.placement.Rotation != 0 {
+		params.Placement = events.placement
+	}
+	return params, events.cancelled
+}
 
 // TestFindDefinitionByIDRejectsInvalidID verifies definition id validation.
 func TestFindDefinitionByIDRejectsInvalidID(t *testing.T) {
@@ -174,4 +192,31 @@ func TestPickupValidatesRoomAndForeignAuthority(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestPluginFurniturePlacementMutatesAndCancelsBeforePersistence verifies placement interception.
+func TestPluginFurniturePlacementMutatesAndCancelsBeforePersistence(t *testing.T) {
+	t.Run("mutates", func(t *testing.T) {
+		store := newFakeStore()
+		store.item = inventoryItemForTest()
+		replacement := furnituremodel.Placement{X: 8, Y: 9, Rotation: furnituremodel.RotationSouth}
+		service := New(store)
+		service.SetPluginRuntime(furnitureEventsForTest{placement: replacement})
+
+		_, err := service.Place(context.Background(), validPlaceForTest())
+		if err != nil || store.placeParams.Placement != replacement {
+			t.Fatalf("placement=%#v err=%v", store.placeParams.Placement, err)
+		}
+	})
+	t.Run("cancels", func(t *testing.T) {
+		store := newFakeStore()
+		store.item = inventoryItemForTest()
+		service := New(store)
+		service.SetPluginRuntime(furnitureEventsForTest{cancelled: true})
+
+		_, err := service.Place(context.Background(), validPlaceForTest())
+		if !errors.Is(err, ErrCancelledByPlugin) || store.placeParams.ID != 0 {
+			t.Fatalf("placement=%#v err=%v", store.placeParams, err)
+		}
+	})
 }

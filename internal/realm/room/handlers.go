@@ -109,6 +109,10 @@ type HandlerDeps struct {
 	Groups *socialgroup.Service
 	// Promotions manages purchased room event banners.
 	Promotions *roompromotion.Service
+	// PluginEvents intercepts allocation-sensitive live movement.
+	PluginEvents walkcmd.EventDispatcher
+	// PluginEntryEvents intercepts authorized room admission.
+	PluginEntryEvents entercmd.EventDispatcher
 }
 
 // RegisterConnectionHandlers registers room packet handlers.
@@ -151,7 +155,8 @@ func RegisterConnectionHandlers(handlers *realmconn.Handlers, deps HandlerDeps) 
 		Players: deps.Players, Bindings: deps.Bindings, Runtime: deps.Runtime, Connections: deps.Connections,
 	}, deps.Log))
 	movementhandler.RegisterWalk(handlers.Inbound, movementhandler.NewWalk(walkcmd.Handler{
-		Players: deps.Players, Bindings: deps.Bindings, Runtime: deps.Runtime, Connections: deps.Connections, Actions: deps.Actions,
+		Players: deps.Players, Bindings: deps.Bindings, Runtime: deps.Runtime, Connections: deps.Connections,
+		Actions: deps.Actions, PluginEvents: deps.PluginEvents,
 	}, deps.Log))
 	actionhandler.Register(handlers.Inbound, actionhandler.New(actioncmd.Handler{
 		Players: deps.Players, Bindings: deps.Bindings, Runtime: deps.Runtime, Actions: deps.Actions,
@@ -201,9 +206,10 @@ func newEnterCommand(deps HandlerDeps) entercmd.Handler {
 		Layouts: deps.Layouts, Furniture: deps.Furniture, PlayerDirectory: deps.PlayerDirectory,
 		Runtime: deps.Runtime, Connections: deps.Connections, Events: deps.Events,
 		Entry: deps.Entry, Rights: deps.Rights, Moderation: deps.Moderation,
-		Votes:      deps.Votes,
-		Groups:     deps.Groups,
-		Promotions: deps.Promotions,
+		Votes:        deps.Votes,
+		Groups:       deps.Groups,
+		Promotions:   deps.Promotions,
+		PluginEvents: deps.PluginEntryEvents,
 		Control: entercmd.ControlPolicy{
 			Permissions:    deps.Permissions,
 			RightsAnyGrant: RightsAnyGrant, RightsAnyRevoke: RightsAnyRevoke,

@@ -3,6 +3,8 @@ package core
 import "errors"
 
 var (
+	// ErrCancelledByPlugin reports a sanction vetoed before persistence.
+	ErrCancelledByPlugin = errors.New("sanction cancelled by plugin")
 	// ErrInvalidRequest reports malformed sanction input.
 	ErrInvalidRequest = errors.New("invalid sanction request")
 	// ErrUnauthorized reports a missing moderator capability.

@@ -3,6 +3,10 @@ package service
 import "errors"
 
 var (
+	// ErrCancelledByPlugin reports a catalog purchase vetoed before charging.
+	ErrCancelledByPlugin = errors.New("catalog purchase cancelled by plugin")
+	// ErrInvalidPrice reports a negative plugin-adjusted catalog price.
+	ErrInvalidPrice = errors.New("invalid catalog purchase price")
 	// ErrCommerceUnavailable reports a store without extended catalog persistence.
 	ErrCommerceUnavailable = errors.New("catalog commerce persistence unavailable")
 

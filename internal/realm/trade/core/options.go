@@ -9,6 +9,8 @@ import (
 )
 
 var (
+	// ErrCancelledByPlugin reports a trade lifecycle mutation vetoed by a plugin.
+	ErrCancelledByPlugin = errors.New("trade mutation cancelled by plugin")
 	// BypassRestrictions bypasses room and global trade restrictions.
 	BypassRestrictions = permission.RegisterNode("trade.bypass_restrictions", "")
 	// ModerationLock permits changing a player's durable trade lock.

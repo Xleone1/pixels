@@ -56,7 +56,7 @@ From there, six feature-focused sections go deep on the systems players actually
 - **Decoration** ([[DECORATION-SEATING]], [[DECORATION-WALL]], [[DECORATION-AMBIENCE]]): the furniture that acts through movement and the surface system rather than clicks: seats, rollers, teleports, wall items, post-its, room paint, and the mood light.
 - **Games** ([[GAMES-OVERVIEW]], [[GAMES-AREA]], [[GAMES-TEAM]]): the shared engine behind the four server-authoritative furniture games, and what makes Battle Banzai, Freeze, Football, and Tag each distinct.
 - **Operations** ([[COMMANDS]]): permission-gated first-party alerts, build discovery, and bounded production packet tracing.
-- **Plugins** ([[PLUGINS-OVERVIEW]], [[PLUGINS-CREATING]], [[PLUGINS-LISTENERS]], [[PLUGINS-COMMANDS]], [[PLUGINS-SDK]], [[PLUGINS-DEPLOYMENT]]): native Go plugin architecture, creation, listeners, Brigodier commands, permission integration, SDK capabilities, and compatible deployment.
+- **Plugins** ([[PLUGINS-OVERVIEW]], [[PLUGINS-CREATING]], [[PLUGINS-LISTENERS]], [[PLUGINS-EVENTS-REALMS]], [[PLUGINS-COMMANDS]], [[PLUGINS-SDK]], [[PLUGINS-DEPLOYMENT]]): native Go plugin architecture, realm events and interceptors, Brigodier commands, permission integration, SDK capabilities, and compatible deployment.
 
 Beyond the wiki:
 
@@ -80,7 +80,7 @@ Beyond the wiki:
 | Decoration | [[DECORATION-SEATING]] · [[DECORATION-WALL]] · [[DECORATION-AMBIENCE]] |
 | Games | [[GAMES-OVERVIEW]] · [[GAMES-AREA]] · [[GAMES-TEAM]] |
 | Operations | [[COMMANDS]] |
-| Plugins | [[PLUGINS-OVERVIEW]] · [[PLUGINS-CREATING]] · [[PLUGINS-LISTENERS]] · [[PLUGINS-COMMANDS]] · [[PLUGINS-SDK]] · [[PLUGINS-DEPLOYMENT]] |
+| Plugins | [[PLUGINS-OVERVIEW]] · [[PLUGINS-CREATING]] · [[PLUGINS-LISTENERS]] · [[PLUGINS-EVENTS-REALMS]] · [[PLUGINS-COMMANDS]] · [[PLUGINS-SDK]] · [[PLUGINS-DEPLOYMENT]] |
 
 ## Links
 

@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+
 	"github.com/niflaot/pixels/internal/command"
 	playerlive "github.com/niflaot/pixels/internal/realm/player/live"
 	"github.com/niflaot/pixels/internal/realm/room/control/commands/resolve"
@@ -15,6 +16,7 @@ import (
 	netconn "github.com/niflaot/pixels/networking/connection"
 	outupdated "github.com/niflaot/pixels/networking/outbound/room/settings/updated"
 	"github.com/niflaot/pixels/pkg/bus"
+	sdkplayer "github.com/niflaot/pixels/sdk/player"
 )
 
 // QuickName identifies the focused category and trade-mode command.
@@ -82,7 +84,7 @@ func (handler QuickHandler) Handle(ctx context.Context, envelope command.Envelop
 		categoryID = nil
 	}
 	tradeMode := roommodel.TradeMode(input.TradeMode)
-	updated, err := handler.Rooms.Update(ctx, room.ID, room.Version.Version, roomservice.UpdateParams{CategoryID: &categoryID, TradeMode: &tradeMode, AllowReservedTags: allowReserved})
+	updated, err := handler.Rooms.Update(updateActorContext(ctx, player), room.ID, room.Version.Version, roomservice.UpdateParams{CategoryID: &categoryID, TradeMode: &tradeMode, AllowReservedTags: allowReserved})
 	if err != nil {
 		return err
 	}
@@ -109,4 +111,12 @@ func (handler QuickHandler) Handle(ctx context.Context, envelope command.Envelop
 		return nil
 	}
 	return handler.Events.Publish(ctx, bus.Event{Name: settingsupdated.Name, Payload: settingsupdated.Payload{RoomID: room.ID, ActorID: player.ID(), Version: updated.Version.Version}})
+}
+
+// updateActorContext attaches one live actor as an immutable plugin event snapshot.
+func updateActorContext(ctx context.Context, player *playerlive.Player) context.Context {
+	roomID, _ := player.CurrentRoom()
+	return roomservice.WithUpdateActor(ctx, sdkplayer.Player{
+		ID: player.ID(), Username: player.Username(), RoomID: roomID, Online: true,
+	})
 }

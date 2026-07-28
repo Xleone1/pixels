@@ -156,6 +156,8 @@ type fakeStore struct {
 	found bool
 	// placeUpdated reports whether PlaceItem matched a row.
 	placeUpdated bool
+	// placeParams stores the latest placement mutation input.
+	placeParams repository.PlaceItemParams
 	// moveUpdated reports whether MoveItem matched a row.
 	moveUpdated bool
 	// moveParams stores the latest move mutation input.
@@ -212,6 +214,7 @@ func (store *fakeStore) CreateItems(_ context.Context, definitionID int64, owner
 
 // PlaceItem places an item for tests.
 func (store *fakeStore) PlaceItem(_ context.Context, params repository.PlaceItemParams) (furnituremodel.Item, bool, error) {
+	store.placeParams = params
 	roomID := params.RoomID
 	item := store.item
 	item.RoomID = &roomID

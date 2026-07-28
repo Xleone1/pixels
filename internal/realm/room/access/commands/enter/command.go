@@ -28,6 +28,7 @@ import (
 	outdesktop "github.com/niflaot/pixels/networking/outbound/session/desktop"
 	outerror "github.com/niflaot/pixels/networking/outbound/session/error"
 	"github.com/niflaot/pixels/pkg/bus"
+	sdkplayer "github.com/niflaot/pixels/sdk/player"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -76,6 +77,12 @@ type PromotionProjector interface {
 	SendActive(context.Context, int64, netconn.Context) error
 }
 
+// EventDispatcher intercepts authorized room admission attempts.
+type EventDispatcher interface {
+	// DispatchRoomEnterAttempt reports whether room admission was vetoed.
+	DispatchRoomEnterAttempt(context.Context, sdkplayer.Player, int64, bool) bool
+}
+
 // Handler handles room entry commands.
 type Handler struct {
 	// Players stores live player state.
@@ -110,6 +117,8 @@ type Handler struct {
 	Groups GroupPolicy
 	// Promotions projects active room events after entry synchronization.
 	Promotions PromotionProjector
+	// PluginEvents intercepts admission before active room mutation.
+	PluginEvents EventDispatcher
 }
 
 // CommandName returns the stable command name.
@@ -151,6 +160,11 @@ func (handler Handler) Handle(ctx context.Context, envelope command.Envelope[Com
 		}
 
 		return handler.sendEntryError(ctx, envelope.Command.Handler, err)
+	}
+	currentRoomID, _ := player.CurrentRoom()
+	pluginPlayer := sdkplayer.Player{ID: player.ID(), Username: player.Username(), RoomID: currentRoomID, Online: true}
+	if handler.PluginEvents != nil && handler.PluginEvents.DispatchRoomEnterAttempt(ctx, pluginPlayer, room.ID, envelope.Command.Trusted) {
+		return handler.sendEntryError(ctx, envelope.Command.Handler, roomentry.ErrAccessDenied)
 	}
 	if handler.Groups != nil {
 		if err := handler.Groups.PrepareRoom(ctx, room.ID); err != nil {

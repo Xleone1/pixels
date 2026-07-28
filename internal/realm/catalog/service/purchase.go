@@ -118,6 +118,26 @@ func (service *Service) Purchase(ctx context.Context, params PurchaseParams) (Pu
 	if err := validateAmount(item, products, params.Amount, overrideQuantity); err != nil {
 		return PurchaseResult{}, err
 	}
+	effectiveItem := item
+	if params.OverrideCredits != nil {
+		effectiveItem.CostCredits = *params.OverrideCredits
+	}
+	if params.OverridePoints != nil {
+		effectiveItem.CostPoints = *params.OverridePoints
+	}
+	if params.OverridePointsType != nil {
+		effectiveItem.PointsType = *params.OverridePointsType
+	}
+	if service.pluginEvents != nil && service.pluginEvents.HasListeners("catalog.purchase") {
+		credits, points, pointsType, cancelled := service.pluginEvents.DispatchCatalogPurchase(ctx, params.PlayerID, effectiveItem, params.Amount)
+		if cancelled {
+			return PurchaseResult{}, ErrCancelledByPlugin
+		}
+		if credits < 0 || points < 0 {
+			return PurchaseResult{}, ErrInvalidPrice
+		}
+		params.OverrideCredits, params.OverridePoints, params.OverridePointsType = &credits, &points, &pointsType
+	}
 	result := PurchaseResult{Item: item, Products: products}
 	err = service.store.WithinTransaction(ctx, func(txCtx context.Context) error {
 		return service.commitPurchase(txCtx, params, item, products, &result)

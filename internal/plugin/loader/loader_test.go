@@ -172,7 +172,7 @@ func (panicObject) Lookup(string) (any, error) { panic("lookup panic") }
 // TestReadMetadataRejectsIncompatibleSDK verifies explicit SDK major validation.
 func TestReadMetadataRejectsIncompatibleSDK(t *testing.T) {
 	entry := &fixturePlugin{metadata: fixtureMetadata("fixture")}
-	entry.metadata.SDKVersion = "2.0.0"
+	entry.metadata.SDKVersion = "3.0.0"
 	_, err := readMetadata(context.Background(), time.Second, entry, "fixture.so", zap.NewNop())
 	if !errors.Is(err, ErrIncompatibleSDK) {
 		t.Fatalf("expected incompatible SDK, got %v", err)

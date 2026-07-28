@@ -15,6 +15,7 @@ import (
 	worldpath "github.com/niflaot/pixels/internal/realm/room/world/path"
 	"github.com/niflaot/pixels/internal/realm/session/binding"
 	netconn "github.com/niflaot/pixels/networking/connection"
+	sdkplayer "github.com/niflaot/pixels/sdk/player"
 )
 
 const (
@@ -58,6 +59,17 @@ type Handler struct {
 
 	// Actions synchronizes avatar actions with accepted movement.
 	Actions *actionservice.Service
+
+	// PluginEvents emits guarded pre-movement plugin events.
+	PluginEvents EventDispatcher
+}
+
+// EventDispatcher exposes allocation-aware movement interception.
+type EventDispatcher interface {
+	// HasListeners reports whether an event has active observers.
+	HasListeners(string) bool
+	// DispatchRoomUnitMove returns a possibly redirected target and veto state.
+	DispatchRoomUnitMove(context.Context, sdkplayer.Player, int64, int, int) (int, int, bool)
 }
 
 // CommandName returns the stable command name.
@@ -82,6 +94,18 @@ func (handler Handler) Handle(ctx context.Context, envelope command.Envelope[Com
 	point, ok := grid.NewPoint(envelope.Command.X, envelope.Command.Y)
 	if !ok {
 		return ErrInvalidTarget
+	}
+	if handler.PluginEvents != nil && handler.PluginEvents.HasListeners("room.unit.move") {
+		targetX, targetY, cancelled := handler.PluginEvents.DispatchRoomUnitMove(ctx, sdkplayer.Player{
+			ID: player.ID(), Username: player.Username(), RoomID: roomID, Online: true,
+		}, roomID, int(point.X), int(point.Y))
+		if cancelled {
+			return nil
+		}
+		point, ok = grid.NewPoint(targetX, targetY)
+		if !ok {
+			return ErrInvalidTarget
+		}
 	}
 
 	unit, _ := active.Unit(player.ID())

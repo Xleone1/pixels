@@ -114,6 +114,20 @@ func (service *Service) Place(ctx context.Context, params PlaceParams) (furnitur
 	if service.staged != nil && service.staged.Contains(params.ItemID) {
 		return furnituremodel.Item{}, ErrItemStaged
 	}
+	if service.pluginEvents != nil {
+		var cancelled bool
+		params, cancelled = service.pluginEvents.DispatchFurniturePlace(ctx, params)
+		if cancelled {
+			return furnituremodel.Item{}, ErrCancelledByPlugin
+		}
+		if params.WallPosition == "" {
+			if err := validatePlacement(params.Placement); err != nil {
+				return furnituremodel.Item{}, err
+			}
+		} else if !furnituremodel.ValidWallPosition(params.WallPosition) {
+			return furnituremodel.Item{}, ErrInvalidPlacement
+		}
+	}
 
 	placed, updated, err := service.store.PlaceItem(ctx, repository.PlaceItemParams{
 		ID:                    params.ItemID,

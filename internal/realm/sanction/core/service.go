@@ -41,6 +41,8 @@ type Service struct {
 	appliers map[sanctionrecord.Kind]Applier
 	// now supplies deterministic timestamps.
 	now func() time.Time
+	// pluginEvents intercepts sanctions before persistence.
+	pluginEvents EventDispatcher
 }
 
 // New creates a global sanction service.
@@ -73,6 +75,19 @@ func (service *Service) Apply(ctx context.Context, params sanctionrecord.ApplyPa
 	}
 	if err := service.authorize(ctx, params); err != nil {
 		return sanctionrecord.Punishment{}, err
+	}
+	if service.pluginEvents != nil {
+		var cancelled bool
+		params.Reason, params.ExpiresAt, cancelled = service.pluginEvents.DispatchSanctionApply(
+			ctx, params.IssuerPlayerID, params.ReceiverPlayerID, string(params.Kind), params.Reason, params.ExpiresAt,
+		)
+		if cancelled {
+			return sanctionrecord.Punishment{}, ErrCancelledByPlugin
+		}
+		params = normalize(params)
+		if !valid(params, service.now()) {
+			return sanctionrecord.Punishment{}, ErrInvalidRequest
+		}
 	}
 	punishment, err := service.store.Insert(ctx, params)
 	if err != nil {

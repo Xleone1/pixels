@@ -11,8 +11,6 @@ import (
 	"time"
 
 	pluginruntime "github.com/niflaot/pixels/internal/plugin/runtime"
-	playerconnected "github.com/niflaot/pixels/internal/realm/player/events/connected"
-	"github.com/niflaot/pixels/pkg/bus"
 	sdkevent "github.com/niflaot/pixels/sdk/event"
 	sdkplugin "github.com/niflaot/pixels/sdk/plugin"
 	"go.uber.org/zap"
@@ -55,6 +53,34 @@ type Hub struct {
 	timeout time.Duration
 	// log records isolated listener failures.
 	log *zap.Logger
+	// players resolves immutable player snapshots for realm interceptors.
+	players PlayerFinder
+}
+
+// SetPlayerFinder installs the shared immutable player resolver.
+func (hub *Hub) SetPlayerFinder(players PlayerFinder) {
+	hub.mutex.Lock()
+	hub.players = players
+	hub.mutex.Unlock()
+}
+
+// player returns a connected snapshot or an identity-only fallback.
+func (hub *Hub) player(playerID int64) sdkplugin.Player {
+	hub.mutex.RLock()
+	players := hub.players
+	hub.mutex.RUnlock()
+	if players != nil {
+		if player, found := players.Find(playerID); found {
+			return player
+		}
+	}
+	return sdkplugin.Player{ID: playerID}
+}
+
+// eventCloner creates an isolated callback-owned immutable notification.
+type eventCloner interface {
+	// CloneEvent returns one independent event value.
+	CloneEvent() sdkevent.Event
 }
 
 // NewHub creates an empty plugin-facing event dispatcher.
@@ -132,27 +158,16 @@ func (hub *Hub) Dispatch(ctx context.Context, event sdkevent.Event) error {
 	return nil
 }
 
-// DispatchChat sends one cancellable pre-delivery chat event.
-func (hub *Hub) DispatchChat(ctx context.Context, player sdkplugin.Player, roomID int64, text string) (string, bool) {
-	event := sdkevent.NewChatSend(player, roomID, text)
-	err := hub.Dispatch(ctx, event)
-	return event.Text, errors.Is(err, ErrEventCancelled)
-}
-
-// RegisterPlayerConnected forwards the post-authentication internal notification.
-func (hub *Hub) RegisterPlayerConnected(subscriber bus.Subscriber, players PlayerFinder) error {
-	_, err := subscriber.Subscribe(playerconnected.Name, bus.PriorityNormal, func(ctx context.Context, event bus.Event) error {
-		payload, ok := event.Payload.(playerconnected.Payload)
-		if !ok {
-			return nil
+// HasListeners reports whether at least one enabled listener observes a name.
+func (hub *Hub) HasListeners(name string) bool {
+	hub.mutex.RLock()
+	defer hub.mutex.RUnlock()
+	for _, entry := range hub.listeners[strings.TrimSpace(name)] {
+		if entry.scope.Enabled() {
+			return true
 		}
-		player, found := players.Find(payload.PlayerID)
-		if !found {
-			return nil
-		}
-		return hub.Dispatch(ctx, &sdkevent.PlayerConnected{Player: player})
-	})
-	return err
+	}
+	return false
 }
 
 // ignoreCancelled reports whether listener options skip a vetoed event.
@@ -163,26 +178,21 @@ func ignoreCancelled(event sdkevent.Event, options sdkevent.ListenerOptions) boo
 
 // clone creates a callback-owned event snapshot safe from late mutations.
 func clone(event sdkevent.Event) sdkevent.Event {
-	switch current := event.(type) {
-	case *sdkevent.ChatSend:
-		copied := sdkevent.NewChatSend(current.Player, current.RoomID, current.Text)
-		copied.SetCancelled(current.Cancelled())
-		return copied
-	case *sdkevent.PlayerConnected:
-		copied := *current
-		return &copied
-	default:
-		return event
+	if mutable, ok := event.(sdkevent.Mutable); ok {
+		return mutable.Clone()
 	}
+	if cloner, ok := event.(eventCloner); ok {
+		return cloner.CloneEvent()
+	}
+	return event
 }
 
 // apply commits a successful listener's mutable event result.
 func apply(target sdkevent.Event, result sdkevent.Event) {
-	targetChat, targetOK := target.(*sdkevent.ChatSend)
-	resultChat, resultOK := result.(*sdkevent.ChatSend)
+	targetMutable, targetOK := target.(sdkevent.Mutable)
+	resultMutable, resultOK := result.(sdkevent.Mutable)
 	if !targetOK || !resultOK {
 		return
 	}
-	targetChat.Text = resultChat.Text
-	targetChat.SetCancelled(resultChat.Cancelled())
+	resultMutable.Apply(targetMutable)
 }

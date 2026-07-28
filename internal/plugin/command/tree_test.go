@@ -10,6 +10,7 @@ import (
 	pluginruntime "github.com/niflaot/pixels/internal/plugin/runtime"
 	sdkcommand "github.com/niflaot/pixels/sdk/command"
 	sdkplayer "github.com/niflaot/pixels/sdk/player"
+	sdkplugin "github.com/niflaot/pixels/sdk/plugin"
 	"go.minekube.com/brigodier"
 	"go.uber.org/zap"
 )
@@ -22,6 +23,25 @@ type fakePlayerAccess struct {
 	allowed bool
 	// messages stores replies in delivery order.
 	messages []string
+}
+
+// attemptRecord stores one observed command submission.
+type attemptRecord struct {
+	// input stores command text without the prefix.
+	input string
+	// root stores the first command token.
+	root string
+}
+
+// attemptRecorder records command-prefixed chat before command resolution.
+type attemptRecorder struct {
+	// records stores observed attempts in order.
+	records []attemptRecord
+}
+
+// DispatchCommandAttempt records one command submission.
+func (recorder *attemptRecorder) DispatchCommandAttempt(_ context.Context, _ sdkplugin.Player, input string, root string) {
+	recorder.records = append(recorder.records, attemptRecord{input: input, root: root})
 }
 
 // Message records one player reply.
@@ -99,6 +119,32 @@ func TestTreeHonorsConfiguredPrefix(t *testing.T) {
 	handled, err = tree.Execute(context.Background(), testPlayer(), "!hello")
 	if err != nil || !handled {
 		t.Fatalf("expected configured prefix consumption, handled=%v err=%v", handled, err)
+	}
+}
+
+// TestTreeDetectsEveryPrefixedCommandAttempt verifies detection precedes parsing and ownership.
+func TestTreeDetectsEveryPrefixedCommandAttempt(t *testing.T) {
+	tree := NewTree(":", time.Second, nil, zap.NewNop())
+	tree.SetPlayers(&fakePlayerAccess{allowed: true})
+	recorder := &attemptRecorder{}
+	tree.SetAttemptDispatcher(recorder)
+
+	for _, input := range []string{"hello", ":", ":missing argument", ":hello value"} {
+		_, _ = tree.Execute(context.Background(), testPlayer(), input)
+	}
+
+	expected := []attemptRecord{
+		{input: "", root: ""},
+		{input: "missing argument", root: "missing"},
+		{input: "hello value", root: "hello"},
+	}
+	if len(recorder.records) != len(expected) {
+		t.Fatalf("unexpected attempts %#v", recorder.records)
+	}
+	for index := range expected {
+		if recorder.records[index] != expected[index] {
+			t.Fatalf("attempt %d = %#v, expected %#v", index, recorder.records[index], expected[index])
+		}
 	}
 }
 

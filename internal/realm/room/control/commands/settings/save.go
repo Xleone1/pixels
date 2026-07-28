@@ -142,7 +142,7 @@ func (handler SaveHandler) Handle(ctx context.Context, envelope command.Envelope
 	if !clubFieldsAllowed(room, input, player.Snapshot().HasClubAt(time.Now()), allowReserved) {
 		return roomsettings.ErrClubRequired
 	}
-	updated, err := handler.Rooms.Update(ctx, roomID, room.Version.Version, updateParams(input, allowReserved))
+	updated, err := handler.Rooms.Update(updateActorContext(ctx, player), roomID, room.Version.Version, updateParams(input, allowReserved))
 	if err != nil {
 		return handler.sendError(ctx, input.Handler, roomID, err)
 	}
