@@ -2,12 +2,36 @@ package walk
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/niflaot/pixels/internal/command"
 	"github.com/niflaot/pixels/internal/realm/room/world/grid"
 	worldpath "github.com/niflaot/pixels/internal/realm/room/world/path"
 	netconn "github.com/niflaot/pixels/networking/connection"
+	sdkplayer "github.com/niflaot/pixels/sdk/player"
 )
+
+// walkEventsForTest redirects or cancels one movement.
+type walkEventsForTest struct {
+	// x stores the replacement x coordinate.
+	x int
+	// y stores the replacement y coordinate.
+	y int
+	// cancelled stores the veto decision.
+	cancelled bool
+	// calls stores dispatch count.
+	calls int
+}
+
+// HasListeners reports a movement observer.
+func (*walkEventsForTest) HasListeners(name string) bool { return name == "room.unit.move" }
+
+// DispatchRoomUnitMove returns the configured plugin decision.
+func (events *walkEventsForTest) DispatchRoomUnitMove(_ context.Context, _ sdkplayer.Player, _ int64, _ int, _ int) (int, int, bool) {
+	events.calls++
+	return events.x, events.y, events.cancelled
+}
 
 // TestHandleMoveErrorSettlesActiveMovement verifies soft misses do not broadcast a snapping status.
 func TestHandleMoveErrorSettlesActiveMovement(t *testing.T) {
@@ -32,4 +56,59 @@ func TestHandleMoveErrorSettlesActiveMovement(t *testing.T) {
 	if len(movements) != 1 || !movements[0].Settled || movements[0].Moved {
 		t.Fatalf("expected deferred neutral settlement, got %#v", movements)
 	}
+}
+
+// TestPluginWalkRedirectsAreRevalidatedAndCancellationStopsMovement verifies the movement seam.
+func TestPluginWalkRedirectsAreRevalidatedAndCancellationStopsMovement(t *testing.T) {
+	t.Run("redirected", func(t *testing.T) {
+		handler, player := handlerForTest(t)
+		if err := player.EnterRoom(9); err != nil {
+			t.Fatal(err)
+		}
+		events := &walkEventsForTest{x: 2}
+		handler.PluginEvents = events
+		if err := handler.Handle(context.Background(), commandEnvelopeForWalkTest(1, 0)); err != nil {
+			t.Fatal(err)
+		}
+		room, _ := handler.Runtime.Find(9)
+		room.Tick()
+		room.Tick()
+		unit, _ := room.Unit(7)
+		if unit.Position.Point != grid.MustPoint(2, 0) || events.calls != 1 {
+			t.Fatalf("unit=%#v calls=%d", unit, events.calls)
+		}
+	})
+	t.Run("redirect revalidated", func(t *testing.T) {
+		handler, player := handlerForTest(t)
+		if err := player.EnterRoom(9); err != nil {
+			t.Fatal(err)
+		}
+		events := &walkEventsForTest{x: -1}
+		handler.PluginEvents = events
+		err := handler.Handle(context.Background(), commandEnvelopeForWalkTest(1, 0))
+		if !errors.Is(err, ErrInvalidTarget) || events.calls != 1 {
+			t.Fatalf("calls=%d err=%v", events.calls, err)
+		}
+	})
+	t.Run("cancelled", func(t *testing.T) {
+		handler, player := handlerForTest(t)
+		if err := player.EnterRoom(9); err != nil {
+			t.Fatal(err)
+		}
+		events := &walkEventsForTest{x: 1, cancelled: true}
+		handler.PluginEvents = events
+		if err := handler.Handle(context.Background(), commandEnvelopeForWalkTest(1, 0)); err != nil {
+			t.Fatal(err)
+		}
+		room, _ := handler.Runtime.Find(9)
+		unit, _ := room.Unit(7)
+		if unit.Moving || events.calls != 1 {
+			t.Fatalf("unit=%#v calls=%d", unit, events.calls)
+		}
+	})
+}
+
+// commandEnvelopeForWalkTest creates one walk command envelope.
+func commandEnvelopeForWalkTest(x int, y int) command.Envelope[Command] {
+	return command.Envelope[Command]{Command: Command{Handler: connectionForTest(), X: x, Y: y}}
 }

@@ -16,6 +16,9 @@ const (
 
 	// ActorPlayer identifies a player-originated mutation.
 	ActorPlayer = "player"
+
+	// ActorPlugin identifies a dynamic-plugin mutation.
+	ActorPlugin = "plugin"
 )
 
 // Reader reads player currency balances and configured types.

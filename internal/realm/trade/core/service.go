@@ -51,6 +51,8 @@ type Service struct {
 	tradePerkRequired bool
 	// tradePerk identifies the permission-backed Nitro perk.
 	tradePerk permission.Node
+	// pluginEvents intercepts trade lifecycle mutations.
+	pluginEvents EventDispatcher
 }
 
 // New creates a direct-trade service.
@@ -143,6 +145,9 @@ func (service *Service) Start(ctx context.Context, actorID int64, targetUnitID i
 		return nil, ErrUnavailable
 	}
 	session := &traderuntime.Session{RoomID: snapshot.ID, First: traderuntime.Participant{PlayerID: actorID, UnitID: actorUnit.UnitID, Username: actor.Username(), IP: normalizeIP(actorIP)}, Second: traderuntime.Participant{PlayerID: targetUnit.PlayerID, UnitID: targetUnit.UnitID, Username: target.Username()}}
+	if service.pluginEvents != nil && service.pluginEvents.DispatchTradeStart(ctx, session) {
+		return nil, ErrCancelledByPlugin
+	}
 	if !service.registry.Start(session) {
 		return nil, ErrUnavailable
 	}
@@ -183,9 +188,13 @@ func (service *Service) Confirm(ctx context.Context, playerID int64) (bool, erro
 	if !both {
 		return false, nil
 	}
+	if service.pluginEvents != nil && service.pluginEvents.DispatchTradeConfirm(ctx, session) {
+		session.FailSettlement()
+		return false, ErrCancelledByPlugin
+	}
 	if err := service.settle(ctx, session); err != nil {
 		session.FailSettlement()
-		service.closeWithReason(playerID, 1)
+		service.close(playerID, 1)
 		return false, err
 	}
 	service.closeSession(session)
@@ -198,11 +207,23 @@ func (service *Service) Confirm(ctx context.Context, playerID int64) (bool, erro
 
 // Close cancels one player's active trade.
 func (service *Service) Close(playerID int64) bool {
-	return service.closeWithReason(playerID, 0)
+	return service.closeWithReason(context.Background(), playerID, 0, "player")
 }
 
 // closeWithReason cancels one active trade with an event reason.
-func (service *Service) closeWithReason(playerID int64, reason int32) bool {
+func (service *Service) closeWithReason(ctx context.Context, playerID int64, reason int32, eventReason string) bool {
+	session, found := service.registry.Find(playerID)
+	if !found {
+		return false
+	}
+	if service.pluginEvents != nil && service.pluginEvents.DispatchTradeCancel(ctx, playerID, session, eventReason) {
+		return false
+	}
+	return service.close(playerID, reason)
+}
+
+// close removes one active session after all optional vetoes have run.
+func (service *Service) close(playerID int64, reason int32) bool {
 	session, found := service.registry.Close(playerID)
 	if !found {
 		return false

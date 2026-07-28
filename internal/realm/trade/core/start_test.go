@@ -22,6 +22,31 @@ import (
 // startPermissions provides one configurable restriction bypass.
 type startPermissions struct{ bypass bool }
 
+// tradeEventsForTest vetoes selected trade transitions.
+type tradeEventsForTest struct {
+	// start vetoes trade creation.
+	start bool
+	// confirm vetoes final settlement.
+	confirm bool
+	// cancel vetoes trade cancellation.
+	cancel bool
+}
+
+// DispatchTradeStart returns the configured creation veto.
+func (events tradeEventsForTest) DispatchTradeStart(context.Context, *traderuntime.Session) bool {
+	return events.start
+}
+
+// DispatchTradeConfirm returns the configured settlement veto.
+func (events tradeEventsForTest) DispatchTradeConfirm(context.Context, *traderuntime.Session) bool {
+	return events.confirm
+}
+
+// DispatchTradeCancel returns the configured cancellation veto.
+func (events tradeEventsForTest) DispatchTradeCancel(context.Context, int64, *traderuntime.Session, string) bool {
+	return events.cancel
+}
+
 // HasPermission returns the configured bypass decision.
 func (permissions startPermissions) HasPermission(context.Context, int64, permission.Node) (bool, error) {
 	return permissions.bypass, nil
@@ -170,4 +195,48 @@ func TestStartThrottlePrecedesBusySessionValidation(t *testing.T) {
 	if _, err := fixture.service.Start(context.Background(), 1, fixture.units[2], "127.0.0.1"); !errors.Is(err, ErrThrottled) {
 		t.Fatalf("got %v", err)
 	}
+}
+
+// TestPluginTradeEventsVetoEachMutableTransition verifies start, confirm, and cancel interception.
+func TestPluginTradeEventsVetoEachMutableTransition(t *testing.T) {
+	t.Run("start", func(t *testing.T) {
+		fixture := newStartFixture(t, false, nil)
+		fixture.service.SetPluginRuntime(tradeEventsForTest{start: true})
+		_, err := fixture.service.Start(context.Background(), 1, fixture.units[2], "127.0.0.1")
+		if !errors.Is(err, ErrCancelledByPlugin) || fixture.service.registry.ActiveCount() != 0 {
+			t.Fatalf("active=%d err=%v", fixture.service.registry.ActiveCount(), err)
+		}
+	})
+	t.Run("confirm", func(t *testing.T) {
+		fixture := newStartFixture(t, false, nil)
+		store := &settlementStore{}
+		furniture := &settlementFurniture{}
+		currencies := &settlementCurrency{}
+		fixture.service.store = store
+		fixture.service.furniture = furniture
+		fixture.service.currencies = currencies
+		session, err := fixture.service.Start(context.Background(), 1, fixture.units[2], "127.0.0.1")
+		if err != nil {
+			t.Fatal(err)
+		}
+		session.SetAccepted(1, true)
+		session.SetAccepted(2, true)
+		fixture.service.SetPluginRuntime(tradeEventsForTest{confirm: true})
+		_, _ = fixture.service.Confirm(context.Background(), 1)
+		_, err = fixture.service.Confirm(context.Background(), 2)
+		first, second := session.Snapshot()
+		if !errors.Is(err, ErrCancelledByPlugin) || first.Confirmed || second.Confirmed || store.transactions != 0 || furniture.transfers != 0 || furniture.deletions != 0 || currencies.grants != 0 {
+			t.Fatalf("first=%+v second=%+v transactions=%d transfers=%d deletions=%d grants=%d err=%v", first, second, store.transactions, furniture.transfers, furniture.deletions, currencies.grants, err)
+		}
+	})
+	t.Run("cancel", func(t *testing.T) {
+		fixture := newStartFixture(t, false, nil)
+		if _, err := fixture.service.Start(context.Background(), 1, fixture.units[2], "127.0.0.1"); err != nil {
+			t.Fatal(err)
+		}
+		fixture.service.SetPluginRuntime(tradeEventsForTest{cancel: true})
+		if fixture.service.Close(1) || fixture.service.registry.ActiveCount() != 1 {
+			t.Fatalf("active=%d", fixture.service.registry.ActiveCount())
+		}
+	})
 }

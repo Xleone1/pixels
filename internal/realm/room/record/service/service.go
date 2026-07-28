@@ -1,9 +1,15 @@
 package service
 
 import (
+	"context"
+
 	"github.com/niflaot/pixels/internal/realm/room/world/layout"
 	"github.com/niflaot/pixels/pkg/bus"
+	sdkplayer "github.com/niflaot/pixels/sdk/player"
 )
+
+// updateActorKey identifies an optional player-authored settings mutation.
+type updateActorKey struct{}
 
 // Service validates and coordinates room persistence behavior.
 type Service struct {
@@ -18,6 +24,15 @@ type Service struct {
 
 	// events publishes committed room record transitions.
 	events bus.Publisher
+
+	// pluginEvents emits cancellable pre-persistence room mutations.
+	pluginEvents EventDispatcher
+}
+
+// EventDispatcher emits cancellable room settings mutations.
+type EventDispatcher interface {
+	// DispatchRoomUpdate returns possibly replaced settings and veto state.
+	DispatchRoomUpdate(context.Context, sdkplayer.Player, int64, UpdateParams) (UpdateParams, bool)
 }
 
 // New creates a room service.
@@ -29,6 +44,20 @@ func New(store Store, layouts layout.Manager) *Service {
 func (service *Service) WithEvents(events bus.Publisher) *Service {
 	service.events = events
 	return service
+}
+
+// SetPluginRuntime installs the optional plugin room event seam.
+func (service *Service) SetPluginRuntime(events EventDispatcher) { service.pluginEvents = events }
+
+// WithUpdateActor attaches the immutable player responsible for a settings mutation.
+func WithUpdateActor(ctx context.Context, actor sdkplayer.Player) context.Context {
+	return context.WithValue(ctx, updateActorKey{}, actor)
+}
+
+// updateActor returns the player responsible for a settings mutation.
+func updateActor(ctx context.Context) sdkplayer.Player {
+	actor, _ := ctx.Value(updateActorKey{}).(sdkplayer.Player)
+	return actor
 }
 
 // WithProfanity configures optional global content validation.

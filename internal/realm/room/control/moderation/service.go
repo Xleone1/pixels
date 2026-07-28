@@ -31,6 +31,12 @@ type Nodes struct {
 	Unkickable permission.Node
 }
 
+// EventDispatcher intercepts authorized room moderation actions.
+type EventDispatcher interface {
+	// DispatchRoomModerationAction reports whether one action was vetoed.
+	DispatchRoomModerationAction(context.Context, string, int64, int64, int64) bool
+}
+
 // Service coordinates room moderation policy and state.
 type Service struct {
 	// config stores normalized moderation limits.
@@ -49,6 +55,13 @@ type Service struct {
 	nodes Nodes
 	// now returns current time for deterministic behavior.
 	now func() time.Time
+	// pluginEvents intercepts moderation before mutation.
+	pluginEvents EventDispatcher
+}
+
+// SetPluginRuntime installs the optional dynamic-plugin moderation interceptor.
+func (service *Service) SetPluginRuntime(events EventDispatcher) {
+	service.pluginEvents = events
 }
 
 // New creates a room moderation service.
@@ -60,6 +73,9 @@ func New(config Config, store Store, rooms RoomFinder, rights RightsChecker, per
 func (service *Service) Kick(ctx context.Context, roomID int64, actorID int64, targetID int64) error {
 	if _, err := service.authorize(ctx, roomID, actorID, targetID, moderationmodel.ActionKick); err != nil {
 		return err
+	}
+	if service.intercept(ctx, moderationmodel.ActionKick, roomID, actorID, targetID) {
+		return ErrCancelledByPlugin
 	}
 
 	return service.store.WithinTransaction(ctx, func(txCtx context.Context) error {
@@ -74,6 +90,9 @@ func (service *Service) Mute(ctx context.Context, roomID int64, actorID int64, t
 	}
 	if _, err := service.authorize(ctx, roomID, actorID, targetID, moderationmodel.ActionMute); err != nil {
 		return err
+	}
+	if service.intercept(ctx, moderationmodel.ActionMute, roomID, actorID, targetID) {
+		return ErrCancelledByPlugin
 	}
 	duration := time.Duration(minutes) * time.Minute
 	expiresAt := service.now().Add(duration)
@@ -128,6 +147,9 @@ func (service *Service) Unmute(ctx context.Context, roomID int64, actorID int64,
 	if _, err := service.authorize(ctx, roomID, actorID, targetID, moderationmodel.ActionMute); err != nil {
 		return err
 	}
+	if service.intercept(ctx, moderationmodel.ActionUnmute, roomID, actorID, targetID) {
+		return ErrCancelledByPlugin
+	}
 
 	return service.end(ctx, roomID, actorID, targetID, moderationmodel.ActionUnmute)
 }
@@ -140,6 +162,9 @@ func (service *Service) Ban(ctx context.Context, roomID int64, actorID int64, ta
 	}
 	if _, err := service.authorize(ctx, roomID, actorID, targetID, moderationmodel.ActionBan); err != nil {
 		return err
+	}
+	if service.intercept(ctx, moderationmodel.ActionBan, roomID, actorID, targetID) {
+		return ErrCancelledByPlugin
 	}
 	expiresAt := service.now().Add(duration)
 
@@ -158,6 +183,14 @@ func (service *Service) Unban(ctx context.Context, roomID int64, actorID int64, 
 	if _, err := service.authorize(ctx, roomID, actorID, targetID, moderationmodel.ActionBan); err != nil {
 		return err
 	}
+	if service.intercept(ctx, moderationmodel.ActionUnban, roomID, actorID, targetID) {
+		return ErrCancelledByPlugin
+	}
 
 	return service.end(ctx, roomID, actorID, targetID, moderationmodel.ActionUnban)
+}
+
+// intercept reports whether a plugin vetoes one authorized action.
+func (service *Service) intercept(ctx context.Context, action moderationmodel.Action, roomID int64, actorID int64, targetID int64) bool {
+	return service.pluginEvents != nil && service.pluginEvents.DispatchRoomModerationAction(ctx, string(action), roomID, actorID, targetID)
 }

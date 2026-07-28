@@ -12,6 +12,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// EventDispatcher intercepts catalog purchases after visibility validation.
+type EventDispatcher interface {
+	// HasListeners reports whether one plugin event has active observers.
+	HasListeners(string) bool
+	// DispatchCatalogPurchase returns mutable prices and cancellation.
+	DispatchCatalogPurchase(context.Context, int64, catalogmodel.Item, int32) (int64, int64, int32, bool)
+}
+
+// SetPluginRuntime installs the optional dynamic-plugin purchase interceptor.
+func (service *Service) SetPluginRuntime(events EventDispatcher) {
+	service.pluginEvents = events
+}
+
 // logPurchase writes extended commerce history when enabled.
 func (service *Service) logPurchase(ctx context.Context, params PurchaseParams, item catalogmodel.Item, result *PurchaseResult, credits int64, points int64) error {
 	if params.Free || service.commerce == nil {

@@ -2,9 +2,17 @@
 package service
 
 import (
+	"context"
+
 	furnituremodel "github.com/niflaot/pixels/internal/realm/furniture/model"
 	"github.com/niflaot/pixels/internal/realm/furniture/repository"
 )
+
+// EventDispatcher intercepts furniture placement before persistence.
+type EventDispatcher interface {
+	// DispatchFurniturePlace returns mutable placement and cancellation.
+	DispatchFurniturePlace(context.Context, PlaceParams) (PlaceParams, bool)
+}
 
 // Service validates and coordinates furniture persistence behavior.
 type Service struct {
@@ -13,6 +21,14 @@ type Service struct {
 
 	// staged reports inventory items temporarily locked by direct trades.
 	staged StagedChecker
+
+	// pluginEvents intercepts placement before persistence.
+	pluginEvents EventDispatcher
+}
+
+// SetPluginRuntime installs the optional dynamic-plugin placement interceptor.
+func (service *Service) SetPluginRuntime(events EventDispatcher) {
+	service.pluginEvents = events
 }
 
 // New creates a furniture service.

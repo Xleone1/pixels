@@ -153,3 +153,58 @@ func TestHubDiscardsLateTimedOutMutation(t *testing.T) {
 		t.Fatalf("expected original event after timeout, got %q", event.Text)
 	}
 }
+
+// TestHubCommitsCurrencyMutationsInPriorityOrder verifies generic Mutable dispatch.
+func TestHubCommitsCurrencyMutationsInPriorityOrder(t *testing.T) {
+	hub := NewHub(time.Second, zap.NewNop())
+	order := make([]string, 0, 2)
+	_ = hub.listen(pluginruntime.NewScope("cap"), sdkevent.CurrencyGrantName, sdkevent.ListenerOptions{Priority: 100}, func(_ context.Context, current sdkevent.Event) error {
+		order = append(order, "high")
+		grant := current.(*sdkevent.CurrencyGrant)
+		grant.Amount = 10
+		grant.SetCancelled(true)
+		return nil
+	})
+	_ = hub.listen(pluginruntime.NewScope("veto"), sdkevent.CurrencyGrantName, sdkevent.ListenerOptions{}, func(_ context.Context, current sdkevent.Event) error {
+		order = append(order, "normal")
+		grant := current.(*sdkevent.CurrencyGrant)
+		if grant.Amount != 10 || !grant.Cancelled() {
+			t.Fatalf("lower-priority listener received amount=%d cancelled=%v", grant.Amount, grant.Cancelled())
+		}
+		grant.SetCancelled(true)
+		return nil
+	})
+
+	amount, cancelled := hub.DispatchCurrencyGrant(context.Background(), testPlayer(), 5, 50, "plugin")
+	if amount != 10 || !cancelled || !reflect.DeepEqual(order, []string{"high", "normal"}) {
+		t.Fatalf("amount=%d cancelled=%v order=%v", amount, cancelled, order)
+	}
+}
+
+// BenchmarkHubHasNoRoomMoveListeners measures the hot-path allocation guard.
+func BenchmarkHubHasNoRoomMoveListeners(b *testing.B) {
+	hub := NewHub(time.Second, zap.NewNop())
+	b.ReportAllocs()
+	for b.Loop() {
+		if hub.HasListeners(sdkevent.RoomUnitMoveName) {
+			b.Fatal("unexpected listener")
+		}
+	}
+}
+
+// TestHubHasListenersTracksEnabledScopes verifies hot paths can skip event allocation.
+func TestHubHasListenersTracksEnabledScopes(t *testing.T) {
+	hub := NewHub(time.Second, zap.NewNop())
+	scope := pluginruntime.NewScope("listener")
+	if hub.HasListeners(sdkevent.RoomUnitMoveName) {
+		t.Fatal("unexpected listener")
+	}
+	_ = hub.listen(scope, sdkevent.RoomUnitMoveName, sdkevent.ListenerOptions{}, func(context.Context, sdkevent.Event) error { return nil })
+	if !hub.HasListeners(sdkevent.RoomUnitMoveName) {
+		t.Fatal("expected enabled listener")
+	}
+	scope.Disable()
+	if hub.HasListeners(sdkevent.RoomUnitMoveName) {
+		t.Fatal("disabled scope must not keep hot-path listener active")
+	}
+}

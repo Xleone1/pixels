@@ -25,8 +25,8 @@ parallel rank system.
 ## Players and packet interceptors
 
 `host.Players().All()` and `Find(id)` return copied `sdk/player.Player` values.
-`Message`, `Disconnect` and `HasPermission` are the only player actions in SDK
-1.x. `Message` renders as a Nitro system alert.
+`Message`, `Disconnect` and `HasPermission` are bounded player actions.
+`Message` renders as a Nitro system alert.
 
 `Intercept` registers global middleware when `Header` is nil, or middleware for
 one inbound packet header otherwise. Larger priorities execute first; equal
@@ -41,19 +41,40 @@ host.Players().Intercept(func(ctx context.Context, packet plugin.InterceptContex
 }, plugin.InterceptOptions{Priority: plugin.PriorityLow})
 ```
 
+## Economy, rooms, and trades
+
+SDK 2.x adds capability-scoped actions instead of exposing realm services:
+
+- `Economy().Grant`, `Set`, `Balance`, and `Types` use the configured currency
+  catalog. Plugin mutations are audited as actor `plugin` with a scoped reason.
+- `Rooms().Find`, `Update`, `Occupants`, and `SetMuteAll` return or accept SDK
+  snapshots only. Updates reuse native validation and optimistic locking.
+- `Trades().Active` returns copied participant/item state.
+  `ForceCancel` closes only an existing live trade with the plugin scope in the
+  audit reason.
+
+```go
+balance, err := host.Economy().Grant(playerID, -1, 25)
+room, found := host.Rooms().Find(roomID)
+trade, active := host.Trades().Active(playerID)
+```
+
+The host never exposes repositories, database transactions, active-room
+objects, or mutable player records.
+
 ## Events
 
 The plugin event hub is separate from Pixels' post-commit internal bus. A plugin
-can subscribe but cannot publish arbitrary realm events. SDK 1.x exposes:
-
-| Event | Behavior |
-|---|---|
-| `player.connected` | Notification after authentication |
-| `chat.send` | Mutable and cancellable event after native filtering and before WIRED or room delivery |
+can subscribe but cannot publish arbitrary realm events. SDK 2.x bridges every
+committed realm fact as immutable `event.Published`, provides typed lifecycle
+notifications such as `player.connected`, `inventory.currency_changed`, and
+`command.attempted`, and exposes the bounded pre-commit events listed in
+[[PLUGINS-LISTENERS]].
 
 Listeners run from larger to smaller priority. `IgnoreCancelled` skips a
 listener when a previous one already vetoed a cancellable event. A failure in
-one listener is logged and does not stop healthy listeners.
+one listener is logged and does not stop healthy listeners. Every mutable event
+is cloned per callback and revalidated by its owning realm before persistence.
 
 ## Chat commands
 

@@ -80,6 +80,25 @@ Events are the seam that lets unrelated realms react to each other without impor
 
 Subscriptions are registered at startup, usually from a realm's `module.go` or a dedicated wiring file, via an `fx.Invoke` that receives the `bus.Subscriber`. Handlers on the bus follow the same discipline as packet handlers: do bounded work, and if you need heavy lifting, load through a service rather than dragging state through the payload.
 
+## Dynamic-plugin projection
+
+The internal bus remains private. `internal/plugin/event/bridge` subscribes to
+every realm fact and projects a detached `sdk/event.Published` snapshot only
+when a plugin listener is active for that name. A test parses all
+`const Name bus.Name` declarations under `internal/realm` and requires the
+bridge catalog to match exactly, excluding the two richer projections
+`player.connected` and `inventory.currency_changed`.
+
+Plugin events that must run before a mutation do not use this bus. Their owning
+realm accepts a narrow optional dispatcher, validates native policy first,
+dispatches a callback-owned clone, checks cancellation, revalidates mutable
+fields, and only then persists. This separation keeps post-commit facts honest
+and makes pre-commit vetoes effective.
+
+`command.attempted` is a plugin-only notification rather than a realm fact. It
+fires for every command-prefixed chat input before parsing, including unknown
+and incomplete commands, and cannot cancel command handling.
+
 ## When to add an event, and when not to
 
 Add an event when something durable happened that code outside the current feature could legitimately care about. Don't add one for request/response flows that begin and end inside a single handler, and don't use events as a substitute for calling a service you're allowed to depend on directly. The test is direction: services are for asking another realm to do something; events are for telling anyone who cares that something already happened. If you find yourself publishing an event and then waiting for its effects, you wanted a service call.

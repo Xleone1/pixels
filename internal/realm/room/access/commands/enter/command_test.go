@@ -16,12 +16,30 @@ import (
 	outscore "github.com/niflaot/pixels/networking/outbound/room/score"
 	outdesktop "github.com/niflaot/pixels/networking/outbound/session/desktop"
 	outerror "github.com/niflaot/pixels/networking/outbound/session/error"
+	sdkplayer "github.com/niflaot/pixels/sdk/player"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 // voteReaderForTest returns fixed entry vote state.
 type voteReaderForTest struct{}
+
+// enterEventsForTest records and vetoes one room entry.
+type enterEventsForTest struct {
+	// calls stores dispatch count.
+	calls int
+	// currentRoomID stores the source room snapshot.
+	currentRoomID int64
+}
+
+// DispatchRoomEnterAttempt vetoes one authorized room entry.
+func (events *enterEventsForTest) DispatchRoomEnterAttempt(_ context.Context, player sdkplayer.Player, roomID int64, _ bool) bool {
+	if player.ID == 7 && roomID == 9 {
+		events.calls++
+		events.currentRoomID = player.RoomID
+	}
+	return true
+}
 
 // State returns a current score and eligible player.
 func (voteReaderForTest) State(context.Context, int64, int64) (roomvotes.State, error) {
@@ -103,6 +121,44 @@ func TestCommandEnvelopeValid(t *testing.T) {
 	envelope := command.Envelope[Command]{Command: Command{RoomID: 9}}
 	if !envelope.Valid() {
 		t.Fatal("expected valid command envelope")
+	}
+}
+
+// TestPluginRoomEntryVetoesBeforeRuntimeMutation verifies admission interception ordering.
+func TestPluginRoomEntryVetoesBeforeRuntimeMutation(t *testing.T) {
+	for _, previousRoomID := range []int64{0, 3} {
+		t.Run(string(rune('0'+previousRoomID)), func(t *testing.T) {
+			player := playerForTest(t)
+			connection, sent := sessionConnectionForTest(t)
+			events := &enterEventsForTest{}
+			runtime := roomlive.NewRegistry(nil)
+			if previousRoomID > 0 {
+				if _, err := runtime.Activate(roomlive.Snapshot{ID: previousRoomID, MaxUsers: 5}); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := runtime.Join(context.Background(), previousRoomID, occupantForTest(7)); err != nil {
+					t.Fatal(err)
+				}
+				if err := player.EnterRoom(previousRoomID); err != nil {
+					t.Fatal(err)
+				}
+			}
+			handler := Handler{
+				Players: playerRegistryForTest(t, player), Bindings: bindingRegistryForTest(t, 7),
+				Rooms:   roomManagerForTest{room: roomForTest(), found: true},
+				Layouts: layoutManagerForTest{roomLayout: layoutForTest(), found: true},
+				Runtime: runtime, PluginEvents: events,
+			}
+			err := handler.Handle(context.Background(), command.Envelope[Command]{Command: Command{Handler: connection, RoomID: 9}})
+			currentRoomID, inRoom := player.CurrentRoom()
+			if err != nil || events.calls != 1 || events.currentRoomID != previousRoomID ||
+				inRoom != (previousRoomID > 0) || currentRoomID != previousRoomID {
+				t.Fatalf("current=%d eventCurrent=%d inRoom=%v calls=%d err=%v", currentRoomID, events.currentRoomID, inRoom, events.calls, err)
+			}
+			if _, found := handler.Runtime.Find(9); found || len(*sent) != 1 {
+				t.Fatalf("room activated=%v packets=%#v", found, *sent)
+			}
+		})
 	}
 }
 

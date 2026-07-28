@@ -4,12 +4,14 @@ Pixels exposes two callback pipelines to plugins. Event listeners react to typed
 
 ## Event listeners
 
-A listener is registered by stable event name and receives an `sdk/event.Event`. SDK 1.x exposes these events:
+A listener is registered by stable event name and receives an `sdk/event.Event`.
+SDK 2.x exposes three shapes:
 
-| Event | Type | Moment |
+| Shape | Examples | Moment |
 |---|---|---|
-| `player.connected` | Notification | After authentication has produced a live player |
-| `chat.send` | Cancellable and mutable | After the word filter and before WIRED or room delivery |
+| Typed notification | `player.connected`, `inventory.currency_changed`, `command.attempted` | After a fact, or after a prefixed command is detected |
+| Published realm fact | `room.created`, `trade.completed`, `messenger.message.sent` | After the owning realm publishes the committed fact |
+| Cancellable/mutable event | `chat.send`, `currency.grant`, `room.update`, `catalog.purchase` | After native authorization and before mutation |
 
 The event name selects the stream. The concrete type provides the data.
 
@@ -30,7 +32,71 @@ err := host.Events().Listen(
 
 The internal realm bus is never exposed. A plugin can subscribe only to events the SDK deliberately projects and cannot publish arbitrary realm events.
 
-## Mutable and cancellable chat
+## Immutable realm facts
+
+Every event published below `internal/realm` is bridged by its stable name.
+The callback receives a `*event.Published`; `Fields()` returns a detached map
+and `Field(name)` returns one detached field. Composite values are normalized
+to maps and slices, so no internal realm type crosses the SDK boundary.
+
+```go
+host.Events().Listen("room.created", event.ListenerOptions{}, func(_ context.Context, current event.Event) error {
+	created, valid := current.(*event.Published)
+	if !valid {
+		return nil
+	}
+	roomID, _ := created.Field("RoomID")
+	log.Printf("room created: %v", roomID)
+	return nil
+})
+```
+
+The bridge registry is checked by an architecture test against every
+`const Name bus.Name` under `internal/realm`; adding an internal fact without
+registering it for plugins fails the test. See [[PLUGINS-EVENTS-REALMS]] for
+the complete name catalog.
+
+## Command attempts
+
+`command.attempted` detects every player message that starts with
+`PIXELS_COMMAND_PREFIX`, before Brigadier resolves the root. It is emitted for
+valid, malformed, incomplete, denied, and unknown commands. It is deliberately
+not cancellable: command ownership and execution remain with the command tree.
+
+```go
+host.Events().Listen(event.CommandAttemptName, event.ListenerOptions{
+	Priority: plugin.PriorityMonitor,
+}, func(_ context.Context, current event.Event) error {
+	attempt, valid := current.(*event.CommandAttempt)
+	if valid {
+		log.Printf("player=%d root=%q input=%q", attempt.Player.ID, attempt.Root, attempt.Input)
+	}
+	return nil
+})
+```
+
+## Mutable and cancellable operations
+
+Every pre-commit event owns `Clone()` and `Apply()`. Each callback receives its
+own deep copy; Pixels commits that copy only when the callback returns
+successfully. A timeout or panic cannot mutate the shared event later.
+
+SDK 2.x mutable events are:
+
+| Event | Mutable fields | Cancellation stops |
+|---|---|---|
+| `chat.send` | `Text` | Room delivery |
+| `currency.grant` | `Amount` | Balance persistence |
+| `room.update` | `Params` | Room settings persistence |
+| `room.enter.attempt` | none | Runtime room admission |
+| `room.unit.move` | `TargetX`, `TargetY` | Path acceptance |
+| `room.moderation.action` | none | Local kick/mute/unmute/ban/unban |
+| `sanction.apply` | `Reason`, `ExpiresAt` | Global sanction persistence/effect |
+| `trade.start` | none | Session creation |
+| `trade.confirm` | none | Item/currency settlement |
+| `trade.cancel` | none | Session closure |
+| `furniture.place` | coordinates, rotation, wall position | Furniture persistence |
+| `catalog.purchase` | credit/point price and point type | Charge and delivery |
 
 `chat.send` carries sanitized text. A listener may replace `Text`, cancel delivery, or do both.
 
@@ -54,8 +120,6 @@ err := host.Events().Listen(
 	},
 )
 ```
-
-Each callback receives its own event copy. Pixels applies that copy to the shared result only when the listener returns successfully. This prevents a timed out callback from changing chat later from a goroutine that outlived its deadline.
 
 `IgnoreCancelled` skips a listener when an earlier callback has already cancelled the event. Leave it false when the listener must observe cancellation or may restore it.
 

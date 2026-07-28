@@ -8,7 +8,7 @@ const (
 
 var (
 	// Version is the semantic project version set by release builds.
-	Version = "v0.1.1"
+	Version = "v0.2.0"
 	// CommitHash is the build commit hash set by linker flags.
 	CommitHash = "dev"
 )

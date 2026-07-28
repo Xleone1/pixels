@@ -11,6 +11,7 @@ import (
 	currencyrepo "github.com/niflaot/pixels/internal/realm/inventory/currency/repository"
 	"github.com/niflaot/pixels/pkg/bus"
 	"github.com/niflaot/pixels/pkg/postgres"
+	sdkplayer "github.com/niflaot/pixels/sdk/player"
 	"go.uber.org/zap"
 )
 
@@ -29,6 +30,14 @@ type Service struct {
 	log *zap.Logger
 	// permissions resolves infinite balance capability.
 	permissions permissionservice.Checker
+	// pluginEvents emits cancellable pre-persistence currency events.
+	pluginEvents EventDispatcher
+}
+
+// EventDispatcher emits cancellable pre-persistence currency events.
+type EventDispatcher interface {
+	// DispatchCurrencyGrant returns a possibly replaced delta and veto state.
+	DispatchCurrencyGrant(context.Context, sdkplayer.Player, int32, int64, string) (int64, bool)
 }
 
 // New creates a currency service.
@@ -44,6 +53,9 @@ func New(store currencyrepo.Store, catalog *currency.Catalog, events bus.Publish
 
 	return service
 }
+
+// SetPluginRuntime installs the optional plugin currency event seam.
+func (service *Service) SetPluginRuntime(events EventDispatcher) { service.pluginEvents = events }
 
 // Wallet returns every configured currency balance for a player.
 func (service *Service) Wallet(ctx context.Context, playerID int64) ([]currencymodel.Balance, error) {
@@ -91,6 +103,16 @@ func (service *Service) Grant(ctx context.Context, params GrantParams) (int64, e
 	definition, err := service.validateMutation(params.PlayerID, params.CurrencyType, params.Amount, params.ActorKind, false)
 	if err != nil {
 		return 0, err
+	}
+	if service.pluginEvents != nil {
+		var cancelled bool
+		params.Amount, cancelled = service.pluginEvents.DispatchCurrencyGrant(ctx, sdkplayer.Player{ID: params.PlayerID}, params.CurrencyType, params.Amount, params.ActorKind)
+		if cancelled {
+			return 0, ErrCancelledByPlugin
+		}
+		if params.Amount == 0 {
+			return 0, ErrInvalidAmount
+		}
 	}
 	infinite, err := service.infiniteBalance(ctx, params)
 	if err != nil {
@@ -180,7 +202,7 @@ func (service *Service) validateMutation(playerID int64, currencyType int32, amo
 	if (!absolute && amount == 0) || (absolute && amount < 0) {
 		return currencymodel.Definition{}, ErrInvalidAmount
 	}
-	if actor != ActorSystem && actor != ActorAdmin && actor != ActorPlayer {
+	if actor != ActorSystem && actor != ActorAdmin && actor != ActorPlayer && actor != ActorPlugin {
 		return currencymodel.Definition{}, ErrInvalidActor
 	}
 

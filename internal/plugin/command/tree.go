@@ -34,6 +34,8 @@ type Tree struct {
 	owners map[string]*pluginruntime.Scope
 	// players supplies sender permission and feedback operations.
 	players sdkcommand.PlayerAccess
+	// attempts publishes command-prefixed chat detections.
+	attempts AttemptDispatcher
 	// prefix marks command chat messages.
 	prefix string
 	// timeout bounds command callbacks.
@@ -42,6 +44,12 @@ type Tree struct {
 	translations i18n.Translator
 	// log records isolated command failures.
 	log *zap.Logger
+}
+
+// AttemptDispatcher publishes non-cancellable command attempt notifications.
+type AttemptDispatcher interface {
+	// DispatchCommandAttempt reports one prefixed command submission.
+	DispatchCommandAttempt(context.Context, sdkplugin.Player, string, string)
 }
 
 // NewTree creates an empty shared command dispatcher.
@@ -54,6 +62,9 @@ func NewTree(prefix string, timeout time.Duration, translations i18n.Translator,
 
 // SetPlayers installs bounded sender operations after backend composition.
 func (tree *Tree) SetPlayers(players sdkcommand.PlayerAccess) { tree.players = players }
+
+// SetAttemptDispatcher installs command-attempt event forwarding.
+func (tree *Tree) SetAttemptDispatcher(dispatcher AttemptDispatcher) { tree.attempts = dispatcher }
 
 // Access scopes root ownership to one plugin.
 type Access struct {
@@ -100,10 +111,16 @@ func (tree *Tree) Execute(ctx context.Context, player sdkplugin.Player, message 
 	}
 	input := strings.TrimSpace(strings.TrimPrefix(message, tree.prefix))
 	sender := sdkcommand.NewPlayerSender(player, tree.players)
+	rootName := ""
+	if fields := strings.Fields(input); len(fields) > 0 {
+		rootName = fields[0]
+	}
+	if tree.attempts != nil {
+		tree.attempts.DispatchCommandAttempt(ctx, player, input, rootName)
+	}
 	if input == "" {
 		return true, sender.Reply(ctx, tree.message("plugin.command.invalid", "Comando incompleto."))
 	}
-	rootName := strings.Fields(input)[0]
 	tree.mutex.RLock()
 	scope, found := tree.owners[rootName]
 	root := tree.dispatcher.Root.Literals()[rootName]

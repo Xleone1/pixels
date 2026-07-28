@@ -184,7 +184,7 @@ func handlerForTest(t *testing.T) (Handler, *playerlive.Player) {
 	if err != nil {
 		t.Fatalf("activate room: %v", err)
 	}
-	roomGrid, err := grid.Parse("00", grid.WithDoor(0, 0))
+	roomGrid, err := grid.Parse("000", grid.WithDoor(0, 0))
 	if err != nil {
 		t.Fatalf("parse grid: %v", err)
 	}

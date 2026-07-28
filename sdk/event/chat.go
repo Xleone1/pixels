@@ -30,3 +30,20 @@ func (event *ChatSend) Cancelled() bool { return event.cancelled }
 
 // SetCancelled changes whether room delivery is vetoed.
 func (event *ChatSend) SetCancelled(value bool) { event.cancelled = value }
+
+// Clone returns an isolated callback-owned chat event.
+func (event *ChatSend) Clone() Mutable {
+	cloned := NewChatSend(event.Player, event.RoomID, event.Text)
+	cloned.SetCancelled(event.Cancelled())
+	return cloned
+}
+
+// Apply copies this callback result onto the original chat event.
+func (event *ChatSend) Apply(original Mutable) {
+	target, ok := original.(*ChatSend)
+	if !ok {
+		return
+	}
+	target.Text = event.Text
+	target.SetCancelled(event.Cancelled())
+}

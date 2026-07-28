@@ -70,6 +70,8 @@ type Service struct {
 	trophies TrophyFormatter
 	// groups validates and commits group-aware products.
 	groups GroupCommerce
+	// pluginEvents intercepts catalog purchases before charging.
+	pluginEvents EventDispatcher
 }
 
 // WithGroups configures social-group catalog products.

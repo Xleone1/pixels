@@ -7,10 +7,32 @@ import (
 
 	roommodel "github.com/niflaot/pixels/internal/realm/room/record/model"
 	sharedmodel "github.com/niflaot/pixels/pkg/model"
+	sdkplayer "github.com/niflaot/pixels/sdk/player"
 )
 
 // profanityForTest reports configured prohibited content.
 type profanityForTest string
+
+// roomUpdateEventsForTest mutates or cancels one room update.
+type roomUpdateEventsForTest struct {
+	// name stores the replacement room name.
+	name string
+	// cancelled stores the veto decision.
+	cancelled bool
+	// actor stores the observed immutable mutation source.
+	actor *sdkplayer.Player
+}
+
+// DispatchRoomUpdate returns the configured plugin decision.
+func (events roomUpdateEventsForTest) DispatchRoomUpdate(_ context.Context, actor sdkplayer.Player, roomID int64, params UpdateParams) (UpdateParams, bool) {
+	if events.actor != nil {
+		*events.actor = actor
+	}
+	if roomID > 0 && events.name != "" {
+		params.Name = &events.name
+	}
+	return params, events.cancelled
+}
 
 // UpdateRoom updates a room for tests.
 func (store *fakeStore) UpdateRoom(_ context.Context, params UpdateRecordParams, tags []string) (roommodel.Room, bool, error) {
@@ -154,6 +176,38 @@ func TestCreateValidatesCategoryAndContent(t *testing.T) {
 	if _, err := New(store, fakeLayouts{found: true, enabled: true}).WithProfanity(profanityForTest("blocked")).Create(context.Background(), params); !errors.Is(err, ErrProhibitedName) {
 		t.Fatalf("prohibited name error=%v", err)
 	}
+}
+
+// TestPluginRoomUpdateMutatesAndCancelsBeforePersistence verifies settings interception ordering.
+func TestPluginRoomUpdateMutatesAndCancelsBeforePersistence(t *testing.T) {
+	t.Run("mutates", func(t *testing.T) {
+		store := newFakeStore()
+		store.room.MaxUsers = 25
+		service := New(store, fakeLayouts{})
+		actor := sdkplayer.Player{ID: 7, Username: "demo", RoomID: store.room.ID, Online: true}
+		observed := sdkplayer.Player{}
+		service.SetPluginRuntime(roomUpdateEventsForTest{name: "Plugin Room", actor: &observed})
+		requested := "Requested Room"
+
+		ctx := WithUpdateActor(context.Background(), actor)
+		updated, err := service.Update(ctx, store.room.ID, store.room.Version.Version, UpdateParams{Name: &requested})
+		if err != nil || updated.Name != "Plugin Room" || store.room.Name != "Plugin Room" || observed != actor {
+			t.Fatalf("updated=%#v stored=%#v actor=%#v err=%v", updated, store.room, observed, err)
+		}
+	})
+	t.Run("cancels", func(t *testing.T) {
+		store := newFakeStore()
+		store.room.MaxUsers = 25
+		original := store.room
+		service := New(store, fakeLayouts{})
+		service.SetPluginRuntime(roomUpdateEventsForTest{cancelled: true})
+		requested := "Requested Room"
+
+		_, err := service.Update(context.Background(), store.room.ID, store.room.Version.Version, UpdateParams{Name: &requested})
+		if !errors.Is(err, ErrCancelledByPlugin) || store.room != original {
+			t.Fatalf("stored=%#v original=%#v err=%v", store.room, original, err)
+		}
+	})
 }
 
 // BenchmarkUpdateValidation measures in-memory settings merge and validation.

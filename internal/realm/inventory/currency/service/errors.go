@@ -20,4 +20,7 @@ var (
 
 	// ErrIdempotencyConflict reports one key reused for different mutation input.
 	ErrIdempotencyConflict = errors.New("currency operation idempotency conflict")
+
+	// ErrCancelledByPlugin reports a vetoed signed balance mutation.
+	ErrCancelledByPlugin = errors.New("currency grant cancelled by plugin")
 )

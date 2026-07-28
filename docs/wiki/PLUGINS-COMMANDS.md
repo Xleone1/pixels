@@ -108,6 +108,17 @@ Only one plugin may own a root literal. Registering another `hello` root fails s
 
 Commands never echo the raw prefixed text to the room. This is important for administrative arguments that may contain player identifiers or operational data.
 
+## Detecting command attempts
+
+Listen to `event.CommandAttemptName` to observe every player input that begins
+with `PIXELS_COMMAND_PREFIX`. Detection happens before Brigadier parsing and
+therefore includes valid, denied, malformed, incomplete, and unknown commands.
+`CommandAttempt.Input` excludes the prefix and `Root` contains the first token
+when present.
+
+The detector is a notification, not a command interceptor. It cannot cancel or
+claim execution; register a Brigadier root when the plugin owns behavior.
+
 ## Permission resolution
 
 The command helper does not decide authorization itself. It delegates to the hotel wide algorithm documented in [[USERS-PERMISSIONS]]. Direct player overrides, group weights, inheritance, wildcard specificity, and deny precedence all apply to plugin nodes exactly as they apply to native nodes.

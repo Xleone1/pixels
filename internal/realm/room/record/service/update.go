@@ -87,6 +87,17 @@ func (service *Service) Update(ctx context.Context, roomID int64, expectedVersio
 	if err != nil {
 		return roommodel.Room{}, err
 	}
+	if service.pluginEvents != nil {
+		var cancelled bool
+		params, cancelled = service.pluginEvents.DispatchRoomUpdate(ctx, updateActor(ctx), roomID, params)
+		if cancelled {
+			return roommodel.Room{}, ErrCancelledByPlugin
+		}
+		updated, tags, err = service.mergeUpdate(ctx, current, params)
+		if err != nil {
+			return roommodel.Room{}, err
+		}
+	}
 	if params.Tags == nil {
 		existing, listErr := service.ListTags(ctx, roomID)
 		if listErr != nil {

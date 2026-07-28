@@ -3,6 +3,8 @@ package moderation
 import "errors"
 
 var (
+	// ErrCancelledByPlugin reports room moderation vetoed before mutation.
+	ErrCancelledByPlugin = errors.New("room moderation cancelled by plugin")
 	// ErrInvalidIdentity reports a non-positive room or player id.
 	ErrInvalidIdentity = errors.New("invalid room moderation identity")
 	// ErrRoomNotFound reports a missing room.
