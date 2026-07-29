@@ -2,6 +2,7 @@
 package condition
 
 import (
+	"context"
 	"time"
 
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/configuration"
@@ -11,6 +12,8 @@ import (
 
 // Context stores condition evaluation inputs.
 type Context struct {
+	// CallbackContext carries cancellation and deadlines into plugin callbacks.
+	CallbackContext context.Context
 	// Event stores the trigger event.
 	Event trigger.Event
 	// Now stores the injected wall and monotonic clock value.
@@ -55,8 +58,23 @@ type Result struct {
 	Valid bool
 }
 
-// Evaluator evaluates all canonical condition descriptors.
-type Evaluator struct{}
+// ExtensionEvaluator evaluates plugin-owned condition keys.
+type ExtensionEvaluator interface {
+	// EvaluateCondition returns a result, whether the key matched, and an error.
+	EvaluateCondition(*configuration.Node, Context) (Result, bool, error)
+}
 
-// New creates a stateless condition evaluator.
-func New() Evaluator { return Evaluator{} }
+// Evaluator evaluates canonical and plugin-owned condition descriptors.
+type Evaluator struct {
+	// extensions evaluates plugin-owned keys after native lookup.
+	extensions ExtensionEvaluator
+}
+
+// New creates a condition evaluator with an optional plugin fallback.
+func New(extensions ...ExtensionEvaluator) Evaluator {
+	result := Evaluator{}
+	if len(extensions) > 0 {
+		result.extensions = extensions[0]
+	}
+	return result
+}

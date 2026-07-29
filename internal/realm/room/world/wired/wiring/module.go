@@ -3,6 +3,7 @@ package wiring
 
 import (
 	permissionservice "github.com/niflaot/pixels/internal/permission/service"
+	pluginwired "github.com/niflaot/pixels/internal/plugin/wired"
 	botcore "github.com/niflaot/pixels/internal/realm/bot/core"
 	furnitureservice "github.com/niflaot/pixels/internal/realm/furniture/service"
 	playerachievement "github.com/niflaot/pixels/internal/realm/player/achievement"
@@ -70,8 +71,8 @@ func NewHighscoreStore(repository *wiredrepo.Repository) record.HighscoreStore {
 func NewRegistry() (*registry.Registry, error) { return registry.Canonical() }
 
 // NewCompiler creates the immutable WIRED configuration compiler.
-func NewCompiler(registered *registry.Registry, config roomwired.Config) *configuration.Compiler {
-	return configuration.NewCompiler(registered, config)
+func NewCompiler(registered *registry.Registry, extensions *pluginwired.Registry, config roomwired.Config) *configuration.Compiler {
+	return configuration.NewCompiler(registered, config).WithExtensions(extensions)
 }
 
 // NewAvatarEffects creates player-facing WIRED effects.
@@ -95,13 +96,13 @@ func NewEffects(furniture *furnitureeffect.Service, avatar *avatareffect.Service
 }
 
 // NewEffectsWithProgression composes every focused effect service.
-func NewEffectsWithProgression(furniture *furnitureeffect.Service, avatar *avatareffect.Service, bot *boteffect.Service, games *game.Service, rewards *rewardeffect.Service, progression *progressioneffect.Service) *effect.Executor {
-	return effect.New(effect.Services{Furniture: furniture, Avatar: avatar, Bot: bot, Game: games, Reward: rewards, Progression: progression})
+func NewEffectsWithProgression(furniture *furnitureeffect.Service, avatar *avatareffect.Service, bot *boteffect.Service, games *game.Service, rewards *rewardeffect.Service, progression *progressioneffect.Service, extensions *pluginwired.Registry) *effect.Executor {
+	return effect.New(effect.Services{Furniture: furniture, Avatar: avatar, Bot: bot, Game: games, Reward: rewards, Progression: progression}).WithExtensions(extensions)
 }
 
 // NewEngine creates the room WIRED engine.
-func NewEngine(config roomwired.Config, store record.Store, compiler *configuration.Compiler, effects *effect.Executor, views *conditionroom.Provider, scheduler *wiredruntime.RoomScheduler, furniture *furnitureeffect.Service) *wiredruntime.Engine {
-	return wiredruntime.New(config, store, compiler, effects, views, scheduler, furniture)
+func NewEngine(config roomwired.Config, store record.Store, compiler *configuration.Compiler, effects *effect.Executor, views *conditionroom.Provider, scheduler *wiredruntime.RoomScheduler, furniture *furnitureeffect.Service, extensions *pluginwired.Registry) *wiredruntime.Engine {
+	return wiredruntime.New(config, store, compiler, effects, views, scheduler, furniture, extensions)
 }
 
 // NewCommandHandler composes WIRED editor command behavior.

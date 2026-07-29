@@ -23,6 +23,18 @@ func (service *Service) commit(ctx context.Context, playerID int64, recipe craft
 		if err != nil {
 			return err
 		}
+		rewardDefinitionID := recipe.RewardDefinitionID
+		if service.pluginEvents != nil {
+			var cancelled bool
+			rewardDefinitionID, cancelled = service.pluginEvents.DispatchCraftingCraft(txCtx, playerID, recipe.ID, rewardDefinitionID)
+			if cancelled {
+				return ErrCancelledByPlugin
+			}
+			if rewardDefinitionID <= 0 {
+				return craftingrecord.ErrInvalid
+			}
+		}
+		result.Recipe.RewardDefinitionID = rewardDefinitionID
 		if recipe.Limited {
 			remaining, consumed, consumeErr := service.store.ConsumeLimited(txCtx, recipe.ID)
 			if consumeErr != nil {
@@ -38,7 +50,7 @@ func (service *Service) commit(ctx context.Context, playerID int64, recipe craft
 				return craftingrecord.ErrItemUnavailable
 			}
 		}
-		granted, err := service.granter.Grant(txCtx, furnitureservice.GrantParams{DefinitionID: recipe.RewardDefinitionID, OwnerPlayerID: playerID, Quantity: 1})
+		granted, err := service.granter.Grant(txCtx, furnitureservice.GrantParams{DefinitionID: rewardDefinitionID, OwnerPlayerID: playerID, Quantity: 1})
 		if err != nil {
 			return err
 		}
@@ -47,7 +59,7 @@ func (service *Service) commit(ctx context.Context, playerID int64, recipe craft
 		}
 		result.Removed = selected
 		result.Granted = granted[0]
-		result.Definition, _, err = service.furniture.FindDefinitionByID(txCtx, recipe.RewardDefinitionID)
+		result.Definition, _, err = service.furniture.FindDefinitionByID(txCtx, rewardDefinitionID)
 		if err != nil {
 			return err
 		}
@@ -62,7 +74,7 @@ func (service *Service) commit(ctx context.Context, playerID int64, recipe craft
 	if err != nil {
 		return Result{}, err
 	}
-	service.afterCommit(playerID, recipe, result)
+	service.afterCommit(playerID, result.Recipe, result)
 	return result, nil
 }
 func (service *Service) afterCommit(playerID int64, recipe craftingrecord.Recipe, result Result) {

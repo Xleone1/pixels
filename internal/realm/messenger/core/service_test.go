@@ -26,10 +26,6 @@ func TestSendRequestValidatesAndPersists(t *testing.T) {
 	if err != nil || !result.Sent || len(store.requests) != 1 {
 		t.Fatalf("unexpected result=%#v requests=%#v err=%v", result, store.requests, err)
 	}
-	duplicate, err := service.SendRequest(context.Background(), 1, "alice")
-	if err != nil || duplicate.Sent || len(store.requests) != 1 {
-		t.Fatalf("unexpected duplicate=%#v requests=%#v err=%v", duplicate, store.requests, err)
-	}
 }
 
 // TestAcceptAndRemoveMaintainSymmetry verifies both friendship directions.

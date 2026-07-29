@@ -25,8 +25,8 @@ func (handler Handler) HandleOpen(ctx context.Context, envelope command.Envelope
 	if err != nil || !found {
 		return handler.sendFailure(ctx, envelope.Command.Handler, "room.wired.save.target_missing")
 	}
-	descriptor, found := handler.Registry.Resolve(stored.Interaction)
-	if !found || (descriptor.Family != registry.FamilyTrigger && descriptor.Family != registry.FamilyEffect && descriptor.Family != registry.FamilyCondition) {
+	descriptor, found := handler.Compiler.ResolveDescriptor(stored.Interaction)
+	if !found || !descriptor.Editor || (descriptor.Family != registry.FamilyTrigger && descriptor.Family != registry.FamilyEffect && descriptor.Family != registry.FamilyCondition) {
 		return handler.sendFailure(ctx, envelope.Command.Handler, "room.wired.save.unsupported_editor")
 	}
 	opened, err := openedpacket.Encode(stored.ItemID)

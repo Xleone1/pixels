@@ -34,6 +34,11 @@ func (events roomUpdateEventsForTest) DispatchRoomUpdate(_ context.Context, acto
 	return params, events.cancelled
 }
 
+// DispatchRoomCreate returns unchanged creation input for update tests.
+func (events roomUpdateEventsForTest) DispatchRoomCreate(_ context.Context, params CreateParams) (CreateParams, bool) {
+	return params, events.cancelled
+}
+
 // UpdateRoom updates a room for tests.
 func (store *fakeStore) UpdateRoom(_ context.Context, params UpdateRecordParams, tags []string) (roommodel.Room, bool, error) {
 	if params.ExpectedVersion != store.room.Version.Version {
@@ -175,6 +180,12 @@ func TestCreateValidatesCategoryAndContent(t *testing.T) {
 	params.Name = "blocked"
 	if _, err := New(store, fakeLayouts{found: true, enabled: true}).WithProfanity(profanityForTest("blocked")).Create(context.Background(), params); !errors.Is(err, ErrProhibitedName) {
 		t.Fatalf("prohibited name error=%v", err)
+	}
+	cancelStore := newFakeStore()
+	cancelled := New(cancelStore, fakeLayouts{found: true, enabled: true})
+	cancelled.SetPluginRuntime(roomUpdateEventsForTest{cancelled: true})
+	if _, err := cancelled.Create(context.Background(), validCreateForTest()); !errors.Is(err, ErrCancelledByPlugin) || cancelStore.created || cancelStore.tags != nil {
+		t.Fatalf("created=%v tags=%v err=%v", cancelStore.created, cancelStore.tags, err)
 	}
 }
 

@@ -13,4 +13,6 @@ var (
 	ErrListingUnavailable = errors.New("marketplace listing unavailable")
 	// ErrOwnListing reports a buyer attempting to purchase their own listing.
 	ErrOwnListing = errors.New("cannot buy own marketplace listing")
+	// ErrCancelledByPlugin reports a marketplace mutation vetoed before persistence.
+	ErrCancelledByPlugin = errors.New("marketplace mutation cancelled by plugin")
 )

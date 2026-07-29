@@ -49,4 +49,41 @@ func TestRoomDispatchersApplyMutationsAndCancellation(t *testing.T) {
 	if !hub.DispatchRoomEnterAttempt(context.Background(), testPlayer(), 3, true) {
 		t.Fatal("room entry was not cancelled")
 	}
+	_ = hub.listen(scope, sdkevent.RoomCreateName, sdkevent.ListenerOptions{}, func(_ context.Context, current sdkevent.Event) error {
+		event := current.(*sdkevent.RoomCreate)
+		event.RoomName, event.ModelName = "plugin room", "model_b"
+		return nil
+	})
+	created, cancelled := hub.DispatchRoomCreate(context.Background(), roomservice.CreateParams{
+		OwnerPlayerID: 7, Name: "room", ModelName: "model_a",
+	})
+	if cancelled || created.Name != "plugin room" || created.ModelName != "model_b" {
+		t.Fatalf("created=%#v cancelled=%v", created, cancelled)
+	}
+}
+
+// BenchmarkRoomDispatchersWithoutListeners measures original event guard allocations.
+func BenchmarkRoomDispatchersWithoutListeners(b *testing.B) {
+	hub := NewHub(time.Second, zap.NewNop())
+	ctx := context.Background()
+	player := testPlayer()
+	params := roomservice.UpdateParams{}
+	b.Run("update", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_, _ = hub.DispatchRoomUpdate(ctx, player, 3, params)
+		}
+	})
+	b.Run("unit_move", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_, _, _ = hub.DispatchRoomUnitMove(ctx, player, 3, 1, 2)
+		}
+	})
+	b.Run("enter_attempt", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_ = hub.DispatchRoomEnterAttempt(ctx, player, 3, false)
+		}
+	})
 }

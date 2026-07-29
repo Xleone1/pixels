@@ -173,6 +173,20 @@ func (service *Service) Move(ctx context.Context, params MoveParams) (furniturem
 	if item.RoomID == nil || *item.RoomID != params.RoomID {
 		return furnituremodel.Item{}, ErrItemNotInRoom
 	}
+	if service.pluginEvents != nil {
+		var cancelled bool
+		params, cancelled = service.pluginEvents.DispatchFurnitureMove(ctx, params)
+		if cancelled {
+			return furnituremodel.Item{}, ErrCancelledByPlugin
+		}
+		if params.WallPosition == "" {
+			if err := validatePlacement(params.Placement); err != nil {
+				return furnituremodel.Item{}, err
+			}
+		} else if !furnituremodel.ValidWallPosition(params.WallPosition) {
+			return furnituremodel.Item{}, ErrInvalidPlacement
+		}
+	}
 
 	moved, updated, err := service.store.MoveItem(ctx, repository.MoveItemParams{
 		ID:           params.ItemID,
@@ -211,6 +225,9 @@ func (service *Service) Pickup(ctx context.Context, params PickupParams) (furnit
 	if item.RoomID == nil || *item.RoomID != params.RoomID {
 		return furnituremodel.Item{}, ErrItemNotPlaced
 	}
+	if service.pluginEvents != nil && service.pluginEvents.DispatchFurniturePickup(ctx, params) {
+		return furnituremodel.Item{}, ErrCancelledByPlugin
+	}
 
 	picked, updated, err := service.store.PickupItem(ctx, repository.PickupItemParams{
 		ID:            params.ItemID,
@@ -224,20 +241,4 @@ func (service *Service) Pickup(ctx context.Context, params PickupParams) (furnit
 	}
 
 	return picked, nil
-}
-
-// ownedItem finds an item and verifies the actor owns it.
-func (service *Service) ownedItem(ctx context.Context, itemID int64, actorPlayerID int64) (furnituremodel.Item, error) {
-	item, found, err := service.store.FindItemByID(ctx, itemID)
-	if err != nil {
-		return furnituremodel.Item{}, err
-	}
-	if !found {
-		return furnituremodel.Item{}, ErrItemNotFound
-	}
-	if item.OwnerPlayerID != actorPlayerID {
-		return furnituremodel.Item{}, ErrNotItemOwner
-	}
-
-	return item, nil
 }

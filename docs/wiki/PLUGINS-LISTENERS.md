@@ -5,7 +5,7 @@ Pixels exposes two callback pipelines to plugins. Event listeners react to typed
 ## Event listeners
 
 A listener is registered by stable event name and receives an `sdk/event.Event`.
-SDK 2.x exposes three shapes:
+SDK 3.x exposes three shapes:
 
 | Shape | Examples | Moment |
 |---|---|---|
@@ -81,7 +81,7 @@ Every pre-commit event owns `Clone()` and `Apply()`. Each callback receives its
 own deep copy; Pixels commits that copy only when the callback returns
 successfully. A timeout or panic cannot mutate the shared event later.
 
-SDK 2.x mutable events are:
+SDK 3.x mutable events are:
 
 | Event | Mutable fields | Cancellation stops |
 |---|---|---|
@@ -96,7 +96,18 @@ SDK 2.x mutable events are:
 | `trade.confirm` | none | Item/currency settlement |
 | `trade.cancel` | none | Session closure |
 | `furniture.place` | coordinates, rotation, wall position | Furniture persistence |
+| `furniture.move` | coordinates, rotation, wall position | Furniture movement |
+| `furniture.pickup` | none | Inventory return |
 | `catalog.purchase` | credit/point price and point type | Charge and delivery |
+| `room.create` | name, description, model, capacity, category, trade mode, tags | Room and tag insert |
+| `marketplace.list` | `RawPrice` | Token spend, reservation, and listing insert |
+| `marketplace.buy` | `BuyerPrice` | Charge, transfer, and sold state |
+| `player.profile.update` | optional motto, figure, and gender | Profile persistence |
+| `bot.speech` | `Message` | Bot chat broadcast |
+| `group.membership.change` | none | Join, add, or acceptance |
+| `messenger.friend.request` | none | Friend request insert |
+| `messenger.friend.accept` | none | Friendship insert |
+| `crafting.craft` | `RewardDefinitionID` | Ingredient consumption and reward grant |
 
 `chat.send` carries sanitized text. A listener may replace `Text`, cancel delivery, or do both.
 

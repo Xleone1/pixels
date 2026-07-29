@@ -8,10 +8,14 @@ import (
 	"github.com/niflaot/pixels/internal/realm/furniture/repository"
 )
 
-// EventDispatcher intercepts furniture placement before persistence.
+// EventDispatcher intercepts furniture room mutations before persistence.
 type EventDispatcher interface {
 	// DispatchFurniturePlace returns mutable placement and cancellation.
 	DispatchFurniturePlace(context.Context, PlaceParams) (PlaceParams, bool)
+	// DispatchFurnitureMove returns mutable movement and cancellation.
+	DispatchFurnitureMove(context.Context, MoveParams) (MoveParams, bool)
+	// DispatchFurniturePickup returns whether pickup was cancelled.
+	DispatchFurniturePickup(context.Context, PickupParams) bool
 }
 
 // Service validates and coordinates furniture persistence behavior.
@@ -22,11 +26,11 @@ type Service struct {
 	// staged reports inventory items temporarily locked by direct trades.
 	staged StagedChecker
 
-	// pluginEvents intercepts placement before persistence.
+	// pluginEvents intercepts room mutations before persistence.
 	pluginEvents EventDispatcher
 }
 
-// SetPluginRuntime installs the optional dynamic-plugin placement interceptor.
+// SetPluginRuntime installs the optional dynamic-plugin furniture interceptor.
 func (service *Service) SetPluginRuntime(events EventDispatcher) {
 	service.pluginEvents = events
 }
@@ -66,4 +70,19 @@ func validatePlacement(placement furnituremodel.Placement) error {
 	}
 
 	return nil
+}
+
+// ownedItem finds an item and verifies the actor owns it.
+func (service *Service) ownedItem(ctx context.Context, itemID int64, actorPlayerID int64) (furnituremodel.Item, error) {
+	item, found, err := service.store.FindItemByID(ctx, itemID)
+	if err != nil {
+		return furnituremodel.Item{}, err
+	}
+	if !found {
+		return furnituremodel.Item{}, ErrItemNotFound
+	}
+	if item.OwnerPlayerID != actorPlayerID {
+		return furnituremodel.Item{}, ErrNotItemOwner
+	}
+	return item, nil
 }

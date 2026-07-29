@@ -15,7 +15,14 @@ import (
 )
 
 // benchmarkStore provides deterministic search records.
-type benchmarkStore struct{ searches int }
+type benchmarkStore struct {
+	// searches counts storage-backed searches.
+	searches int
+	// listing stores the deterministic purchase target.
+	listing marketrecord.Listing
+	// marked reports whether a purchase committed.
+	marked bool
+}
 
 // WithinTransaction executes fixture work directly.
 func (*benchmarkStore) WithinTransaction(ctx context.Context, work func(context.Context) error) error {
@@ -36,9 +43,9 @@ func (*benchmarkStore) CreateListing(_ context.Context, value marketrecord.Listi
 	return value, nil
 }
 
-// FindListingForUpdate reports no fixture listing.
-func (*benchmarkStore) FindListingForUpdate(context.Context, int64) (marketrecord.Listing, bool, error) {
-	return marketrecord.Listing{}, false, nil
+// FindListingForUpdate returns the configured fixture listing.
+func (store *benchmarkStore) FindListingForUpdate(context.Context, int64) (marketrecord.Listing, bool, error) {
+	return store.listing, store.listing.ID > 0, nil
 }
 
 // FindCheapestListing reports no fixture replacement.
@@ -46,8 +53,11 @@ func (*benchmarkStore) FindCheapestListing(context.Context, int64) (marketrecord
 	return marketrecord.Listing{}, false, nil
 }
 
-// MarkSold accepts a fixture sale.
-func (*benchmarkStore) MarkSold(context.Context, int64, int64) (bool, error) { return true, nil }
+// MarkSold records a fixture sale.
+func (store *benchmarkStore) MarkSold(context.Context, int64, int64) (bool, error) {
+	store.marked = true
+	return true, nil
+}
 
 // CloseListing reports no fixture listing.
 func (*benchmarkStore) CloseListing(context.Context, int64, int64, bool) (marketrecord.Listing, bool, error) {
@@ -79,7 +89,10 @@ func (*benchmarkStore) DefinitionStats(context.Context, int64, int32) ([]marketr
 }
 
 // benchmarkFurniture provides one definition and item.
-type benchmarkFurniture struct{}
+type benchmarkFurniture struct {
+	// transferred reports whether ownership changed.
+	transferred bool
+}
 
 // FindDefinitionByID returns one fixture definition.
 func (*benchmarkFurniture) FindDefinitionByID(context.Context, int64) (furnituremodel.Definition, bool, error) {
@@ -115,7 +128,8 @@ func (*benchmarkFurniture) ReserveForMarketplace(context.Context, int64, int64) 
 func (*benchmarkFurniture) ReleaseFromMarketplace(context.Context, int64, int64) error { return nil }
 
 // TransferFromMarketplace accepts fixture transfer.
-func (*benchmarkFurniture) TransferFromMarketplace(context.Context, int64, int64, int64) error {
+func (furniture *benchmarkFurniture) TransferFromMarketplace(context.Context, int64, int64, int64) error {
+	furniture.transferred = true
 	return nil
 }
 

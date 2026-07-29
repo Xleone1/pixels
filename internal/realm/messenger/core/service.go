@@ -136,7 +136,20 @@ type Service struct {
 	followNode permission.Node
 	// messageLog queues optional private-message persistence.
 	messageLog MessageLogger
+	// pluginEvents intercepts friendship mutations before persistence.
+	pluginEvents EventDispatcher
 }
+
+// EventDispatcher intercepts friend request lifecycle mutations.
+type EventDispatcher interface {
+	// DispatchFriendRequest reports whether request creation was cancelled.
+	DispatchFriendRequest(context.Context, int64, int64) bool
+	// DispatchFriendAccept reports whether acceptance was cancelled.
+	DispatchFriendAccept(context.Context, int64, int64) bool
+}
+
+// SetPluginRuntime installs the optional friendship interceptor.
+func (service *Service) SetPluginRuntime(events EventDispatcher) { service.pluginEvents = events }
 
 // MessageLogger queues optional private-message persistence.
 type MessageLogger interface {
@@ -204,4 +217,6 @@ var (
 	ErrNoPopulatedRoom = errors.New("no populated messenger room available")
 	// ErrInvalidMessage reports empty private communication.
 	ErrInvalidMessage = errors.New("invalid messenger message")
+	// ErrCancelledByPlugin reports a friendship mutation vetoed before persistence.
+	ErrCancelledByPlugin = errors.New("messenger friendship mutation cancelled by plugin")
 )

@@ -64,7 +64,7 @@ The manifest name is also the permission and HTTP namespace. It accepts lowercas
 
 `Register` runs once during server startup. It is where the plugin declares permissions, command roots, event listeners, packet interceptors, routes, and an optional OpenAPI document. Registration should not start unmanaged goroutines or perform slow remote work.
 
-The host exposes five bounded capabilities:
+SDK 3 exposes nine bounded capabilities:
 
 | Capability | Purpose |
 |---|---|
@@ -73,6 +73,10 @@ The host exposes five bounded capabilities:
 | `Commands()` | Root registration in the shared Brigadier command tree |
 | `Permissions()` | Runtime declaration of namespaced permission nodes |
 | `Routes()` | Private Fiber routes and a plugin owned OpenAPI document |
+| `Economy()` | Bounded currency reads and mutations |
+| `Rooms()` | Bounded room reads and validated mutations |
+| `Trades()` | Live trade inspection and forced cancellation |
+| `Wired()` | Namespaced WIRED effect and condition registration |
 
 Return the first registration error. A failed registration disables that plugin and causes dependants to be skipped, while unrelated plugins continue loading.
 
@@ -116,7 +120,7 @@ if found {
 }
 ```
 
-`Message` sends a Nitro system alert. `Disconnect` closes the active session with a plugin authored reason. `HasPermission` resolves a concrete node through the same permission engine used by the emulator. Offline players are not returned because SDK 1.x deliberately exposes live operations, not repositories.
+`Message` sends a Nitro system alert. `Disconnect` closes the active session with a plugin authored reason. `HasPermission` resolves a concrete node through the same permission engine used by the emulator. Offline players are not returned because the SDK deliberately exposes live operations, not repositories.
 
 ## Private HTTP routes
 

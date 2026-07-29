@@ -25,7 +25,6 @@ func TestCreateValidatesLayoutAndNormalizesTags(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create room: %v", err)
 	}
-
 	if room.ID != 9 || len(store.tags) != 2 || store.tags[0] != "fun" {
 		t.Fatalf("unexpected create result room=%#v tags=%#v", room, store.tags)
 	}
@@ -116,6 +115,8 @@ func validCreateForTest() CreateParams {
 type fakeStore struct {
 	// room is the returned room.
 	room roommodel.Room
+	// created reports whether room persistence ran.
+	created bool
 	// found reports whether lookups succeed.
 	found bool
 	// deleted reports whether delete succeeds.
@@ -130,6 +131,7 @@ type fakeStore struct {
 
 // CreateRoom creates a room for tests.
 func (store *fakeStore) CreateRoom(context.Context, CreateRecordParams) (roommodel.Room, error) {
+	store.created = true
 	return store.room, nil
 }
 

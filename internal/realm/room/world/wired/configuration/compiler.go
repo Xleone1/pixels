@@ -26,11 +26,34 @@ type Compiler struct {
 	registry *registry.Registry
 	// config stores validated execution limits.
 	config roomwired.Config
+	// extensions resolves plugin-owned descriptors after native lookup.
+	extensions DescriptorResolver
+}
+
+// DescriptorResolver resolves plugin-owned WIRED descriptors.
+type DescriptorResolver interface {
+	// Resolve returns one plugin descriptor by exact key.
+	Resolve(string) (registry.Descriptor, bool)
 }
 
 // NewCompiler creates a WIRED compiler.
 func NewCompiler(registered *registry.Registry, config roomwired.Config) *Compiler {
 	return &Compiler{registry: registered, config: config.Normalize()}
+}
+
+// WithExtensions installs the optional plugin descriptor fallback.
+func (compiler *Compiler) WithExtensions(extensions DescriptorResolver) *Compiler {
+	compiler.extensions = extensions
+	return compiler
+}
+
+// ResolveDescriptor resolves native descriptors before plugin-owned fallbacks.
+func (compiler *Compiler) ResolveDescriptor(key string) (registry.Descriptor, bool) {
+	descriptor, found := compiler.registry.Resolve(key)
+	if !found && compiler.extensions != nil {
+		descriptor, found = compiler.extensions.Resolve(key)
+	}
+	return descriptor, found
 }
 
 // Compile creates one immutable room generation.
@@ -78,7 +101,7 @@ func (compiler *Compiler) Compile(roomID int64, generationID uint64, records []r
 
 // CompileNode validates and compiles one durable node.
 func (compiler *Compiler) CompileNode(stored record.Config) (*Node, error) {
-	descriptor, found := compiler.registry.Resolve(stored.Interaction)
+	descriptor, found := compiler.ResolveDescriptor(stored.Interaction)
 	if !found {
 		return nil, fmt.Errorf("%w: %s", ErrUnsupported, stored.Interaction)
 	}

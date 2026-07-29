@@ -7,8 +7,8 @@ trade-staging checks but before persistence. A listener can replace floor
 coordinates, height, rotation, or wall position. Pixels validates the final
 placement again; cancellation leaves the item in inventory.
 
-All other furniture, pet, plant, and bot events are immutable realm facts
-listed in [[PLUGINS-EVENTS-REALMS]].
+Movement and pickup now have equivalent pre-persistence gates; see
+[[PLUGINS-EVENT-FURNITURE-MOVE]] and [[PLUGINS-EVENT-FURNITURE-PICKUP]].
 
 ## Catalog purchase
 
@@ -21,6 +21,6 @@ Setting the final prices to zero is supported and still delivers the purchased
 product. When no listener is active, the dispatcher is skipped so native free
 mode and bulk-discount behavior remain unchanged.
 
-Marketplace, crafting, recycler, groups, messenger, navigator, subscription,
-guide, and moderation lifecycle events use immutable `event.Published`
-snapshots. Their full stable-name catalog is in [[PLUGINS-EVENTS-REALMS]].
+Marketplace and crafting expose both immutable committed facts and focused
+pre-commit gates. Their full stable-name catalog is in
+[[PLUGINS-EVENTS-REALMS]].

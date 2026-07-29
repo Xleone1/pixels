@@ -15,6 +15,7 @@ import (
 	pluginroute "github.com/niflaot/pixels/internal/plugin/route"
 	pluginruntime "github.com/niflaot/pixels/internal/plugin/runtime"
 	plugintrade "github.com/niflaot/pixels/internal/plugin/trade"
+	pluginwired "github.com/niflaot/pixels/internal/plugin/wired"
 	catalogservice "github.com/niflaot/pixels/internal/realm/catalog/service"
 	chatsend "github.com/niflaot/pixels/internal/realm/chat/send"
 	furnitureservice "github.com/niflaot/pixels/internal/realm/furniture/service"
@@ -59,6 +60,8 @@ type Backend struct {
 	liveRooms *roomlive.Registry
 	// trades owns live direct-trade behavior.
 	trades *tradecore.Service
+	// wired stores plugin-owned WIRED behavior.
+	wired *pluginwired.Registry
 	// realmEvents publishes plugin-triggered realm facts.
 	realmEvents bus.Publisher
 	// timeout bounds plugin callbacks.
@@ -66,6 +69,9 @@ type Backend struct {
 	// log records isolated plugin failures.
 	log *zap.Logger
 }
+
+// Events returns the shared realm event dispatcher for composition wiring.
+func (backend *Backend) Events() *pluginevent.Hub { return backend.events }
 
 // WithEconomy installs durable currency capabilities.
 func (backend *Backend) WithEconomy(service *currencyservice.Service) *Backend {
@@ -87,11 +93,11 @@ func (backend *Backend) WithTrades(service *tradecore.Service) *Backend {
 }
 
 // NewBackend creates the shared dynamic plugin host backend.
-func NewBackend(players *playerlive.Registry, bindings *binding.Registry, connections *netconn.Registry, inbound *netconn.HandlerRegistry, permissions permissionservice.Checker, routes *pluginroutes.Registry, events *pluginevent.Hub, commands *plugincommand.Tree, timeout time.Duration, log *zap.Logger) *Backend {
+func NewBackend(players *playerlive.Registry, bindings *binding.Registry, connections *netconn.Registry, inbound *netconn.HandlerRegistry, permissions permissionservice.Checker, routes *pluginroutes.Registry, events *pluginevent.Hub, commands *plugincommand.Tree, wired *pluginwired.Registry, timeout time.Duration, log *zap.Logger) *Backend {
 	if log == nil {
 		log = zap.NewNop()
 	}
-	return &Backend{players: players, bindings: bindings, connections: connections, inbound: inbound, permissions: permissions, routes: routes, events: events, commands: commands, timeout: timeout, log: log}
+	return &Backend{players: players, bindings: bindings, connections: connections, inbound: inbound, permissions: permissions, routes: routes, events: events, commands: commands, wired: wired, timeout: timeout, log: log}
 }
 
 // HostFor creates a namespace-enforcing facade for one plugin scope.
@@ -106,6 +112,7 @@ func (backend *Backend) HostFor(scope *pluginruntime.Scope) sdkplugin.Host {
 		economy:     plugineconomy.NewAccess(backend.economy, scope),
 		rooms:       pluginroom.NewAccess(backend.rooms, backend.liveRooms, backend.connections, backend.realmEvents, scope),
 		trades:      plugintrade.NewAccess(backend.trades, scope),
+		wired:       pluginwired.NewAccess(backend.wired, scope),
 	}
 }
 
@@ -177,6 +184,8 @@ type scopedHost struct {
 	rooms sdkplugin.RoomAccess
 	// trades exposes scoped live-trade behavior.
 	trades sdkplugin.TradeAccess
+	// wired exposes scoped WIRED registration.
+	wired sdkplugin.WiredAccess
 }
 
 // Players returns bounded live-player access.
@@ -202,3 +211,6 @@ func (host *scopedHost) Rooms() sdkplugin.RoomAccess { return host.rooms }
 
 // Trades returns bounded plugin live-trade behavior.
 func (host *scopedHost) Trades() sdkplugin.TradeAccess { return host.trades }
+
+// Wired returns namespaced WIRED behavior registration.
+func (host *scopedHost) Wired() sdkplugin.WiredAccess { return host.wired }

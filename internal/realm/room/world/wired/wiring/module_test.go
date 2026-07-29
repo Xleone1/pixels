@@ -15,13 +15,13 @@ func TestModuleConstructorsExposeFocusedBoundaries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	compiler := NewCompiler(registered, roomwired.Config{})
+	compiler := NewCompiler(registered, nil, roomwired.Config{})
 	games := NewGames(rooms, nil)
 	avatar := NewAvatarEffects(rooms, nil, nil, nil, nil)
 	furniture := NewFurnitureEffects(rooms, nil, nil)
 	bot := NewBotEffects(rooms, nil)
 	effects := NewEffects(furniture, avatar, bot, games, nil)
-	engine := NewEngine(roomwired.Config{}, nil, compiler, effects, nil, nil, furniture)
+	engine := NewEngine(roomwired.Config{}, nil, compiler, effects, nil, nil, furniture, nil)
 	if compiler == nil || games == nil || avatar == nil || furniture == nil || bot == nil || effects == nil || engine == nil {
 		t.Fatal("module constructor returned nil")
 	}

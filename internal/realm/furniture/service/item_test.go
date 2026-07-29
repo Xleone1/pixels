@@ -24,6 +24,19 @@ func (events furnitureEventsForTest) DispatchFurniturePlace(_ context.Context, p
 	return params, events.cancelled
 }
 
+// DispatchFurnitureMove returns the configured plugin decision.
+func (events furnitureEventsForTest) DispatchFurnitureMove(_ context.Context, params MoveParams) (MoveParams, bool) {
+	if events.placement.Rotation != 0 {
+		params.Placement = events.placement
+	}
+	return params, events.cancelled
+}
+
+// DispatchFurniturePickup returns the configured veto decision.
+func (events furnitureEventsForTest) DispatchFurniturePickup(_ context.Context, _ PickupParams) bool {
+	return events.cancelled
+}
+
 // TestFindDefinitionByIDRejectsInvalidID verifies definition id validation.
 func TestFindDefinitionByIDRejectsInvalidID(t *testing.T) {
 	_, _, err := New(newFakeStore()).FindDefinitionByID(context.Background(), 0)
@@ -72,12 +85,15 @@ func TestMoveRepositionsPlacedItem(t *testing.T) {
 	store := newFakeStore()
 	store.item = placedItemForTest()
 	store.item.OwnerPlayerID = 99
+	replacement := furnituremodel.Placement{X: 8, Y: 9, Rotation: furnituremodel.RotationSouth}
+	service := New(store)
+	service.SetPluginRuntime(furnitureEventsForTest{placement: replacement})
 
-	item, err := New(store).Move(context.Background(), MoveParams{ItemID: 1, ActorPlayerID: 7, RoomID: 1, Placement: validPlacementForTest()})
+	item, err := service.Move(context.Background(), MoveParams{ItemID: 1, ActorPlayerID: 7, RoomID: 1, Placement: validPlacementForTest()})
 	if err != nil {
 		t.Fatalf("move item: %v", err)
 	}
-	if !item.InRoom() || store.moveParams.RoomID != 1 {
+	if !item.InRoom() || store.moveParams.RoomID != 1 || store.moveParams.Placement != replacement {
 		t.Fatalf("unexpected moved item %#v", item)
 	}
 }
@@ -191,6 +207,11 @@ func TestPickupValidatesRoomAndForeignAuthority(t *testing.T) {
 				t.Fatalf("expected %v, got %v", test.want, err)
 			}
 		})
+	}
+	service.SetPluginRuntime(furnitureEventsForTest{cancelled: true})
+	_, err := service.Pickup(context.Background(), PickupParams{ItemID: 1, ActorPlayerID: 7, RoomID: 1})
+	if !errors.Is(err, ErrCancelledByPlugin) || store.pickupParams.ID != 0 {
+		t.Fatalf("pickup=%#v err=%v", store.pickupParams, err)
 	}
 }
 

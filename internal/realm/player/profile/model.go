@@ -2,9 +2,12 @@
 package profile
 
 import (
+	"context"
 	"errors"
 
 	"github.com/niflaot/pixels/internal/permission"
+	playermodel "github.com/niflaot/pixels/internal/realm/player/model"
+	playerwardrobe "github.com/niflaot/pixels/internal/realm/player/wardrobe"
 )
 
 const (
@@ -23,6 +26,33 @@ var (
 	RespectUnlimited = permission.RegisterNode("profile.respect.unlimited", "")
 )
 
+// figureAllowed resolves entitlement snapshots before immutable catalog validation.
+func (service *Service) figureAllowed(ctx context.Context, playerID int64, figure string, gender playermodel.Gender) (bool, error) {
+	club := playermodel.ClubLevelNone
+	previous := ""
+	if service.live != nil {
+		if player, found := service.live.Find(playerID); found {
+			snapshot := player.Snapshot()
+			club = snapshot.ClubLevelAt(service.now())
+			if snapshot.Gender == gender {
+				previous = snapshot.Look
+			}
+		}
+	}
+	unlocked := playerwardrobe.ClothingSnapshot{}
+	if service.unlocks != nil {
+		var err error
+		unlocked, err = service.unlocks.Clothing(ctx, playerID)
+		if err != nil {
+			return false, err
+		}
+	}
+	if previous != "" {
+		return service.figures.AllowedTransition(previous, figure, gender, club, unlocked.FigureSetIDs), nil
+	}
+	return service.figures.Allowed(figure, gender, club, unlocked.FigureSetIDs), nil
+}
+
 var (
 	// ErrInvalidFigure reports a malformed avatar figure or gender.
 	ErrInvalidFigure = errors.New("invalid player figure")
@@ -30,6 +60,8 @@ var (
 	ErrInvalidMotto = errors.New("invalid player motto")
 	// ErrInvalidTags reports an invalid public tag replacement.
 	ErrInvalidTags = errors.New("invalid player tags")
+	// ErrCancelledByPlugin reports a public profile mutation vetoed before persistence.
+	ErrCancelledByPlugin = errors.New("player profile mutation cancelled by plugin")
 	// ErrRespectNotAllowed reports an ineligible respect attempt.
 	ErrRespectNotAllowed = errors.New("player respect not allowed")
 	// ErrRespectExhausted reports a consumed daily respect allowance.

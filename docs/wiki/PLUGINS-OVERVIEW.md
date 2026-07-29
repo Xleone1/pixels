@@ -3,11 +3,13 @@
 First page of the Plugins section. Pixels can discover native Go shared
 objects at startup and give them a deliberately narrow SDK: live-player
 snapshots and actions, inbound packet interceptors, isolated private HTTP
-routes, typed events, chat commands, and namespaced permissions. Continue with
-[[PLUGINS-CREATING]] for the first complete plugin, [[PLUGINS-LISTENERS]] for
-events and packet middleware, [[PLUGINS-COMMANDS]] for Brigodier and permissions,
-[[PLUGINS-SDK]] for the capability reference, and [[PLUGINS-DEPLOYMENT]] for the
-build and operations contract.
+routes, typed events, chat commands, namespaced permissions, bounded
+economy/room/trade actions, and namespaced WIRED effect and condition
+registration. Continue with [[PLUGINS-CREATING]] for the first complete
+plugin, [[PLUGINS-LISTENERS]] for events and packet middleware,
+[[PLUGINS-COMMANDS]] for Brigodier and permissions, [[PLUGINS-SDK]] for the
+capability reference, [[PLUGINS-WIRED]] for registering server-side WIRED
+behavior, and [[PLUGINS-DEPLOYMENT]] for the build and operations contract.
 
 ## Startup model
 

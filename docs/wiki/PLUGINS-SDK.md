@@ -41,9 +41,9 @@ host.Players().Intercept(func(ctx context.Context, packet plugin.InterceptContex
 }, plugin.InterceptOptions{Priority: plugin.PriorityLow})
 ```
 
-## Economy, rooms, and trades
+## Economy, rooms, trades, and WIRED
 
-SDK 2.x adds capability-scoped actions instead of exposing realm services:
+The SDK exposes capability-scoped actions instead of realm services:
 
 - `Economy().Grant`, `Set`, `Balance`, and `Types` use the configured currency
   catalog. Plugin mutations are audited as actor `plugin` with a scoped reason.
@@ -52,6 +52,8 @@ SDK 2.x adds capability-scoped actions instead of exposing realm services:
 - `Trades().Active` returns copied participant/item state.
   `ForceCancel` closes only an existing live trade with the plugin scope in the
   audit reason.
+- `Wired().RegisterEffect` and `RegisterCondition` add namespaced server logic
+  while reusing a stock Nitro editor layout. See [[PLUGINS-WIRED]].
 
 ```go
 balance, err := host.Economy().Grant(playerID, -1, 25)
@@ -65,7 +67,7 @@ objects, or mutable player records.
 ## Events
 
 The plugin event hub is separate from Pixels' post-commit internal bus. A plugin
-can subscribe but cannot publish arbitrary realm events. SDK 2.x bridges every
+can subscribe but cannot publish arbitrary realm events. SDK 3.x bridges every
 committed realm fact as immutable `event.Published`, provides typed lifecycle
 notifications such as `player.connected`, `inventory.currency_changed`, and
 `command.attempted`, and exposes the bounded pre-commit events listed in

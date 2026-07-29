@@ -64,8 +64,8 @@ var (
 	// ErrInvalidCategory reports a missing or non-selectable room category.
 	ErrInvalidCategory = errors.New("invalid room category")
 
-	// ErrCancelledByPlugin reports a vetoed room settings mutation.
-	ErrCancelledByPlugin = errors.New("room update cancelled by plugin")
+	// ErrCancelledByPlugin reports a vetoed room persistence mutation.
+	ErrCancelledByPlugin = errors.New("room mutation cancelled by plugin")
 )
 
 const (

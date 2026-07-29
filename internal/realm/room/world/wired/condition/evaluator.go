@@ -8,11 +8,17 @@ import (
 )
 
 // Evaluate evaluates one canonical condition and fails closed on dependency errors.
-func (Evaluator) Evaluate(node *configuration.Node, context Context, view View) (Result, error) {
+func (evaluator Evaluator) Evaluate(node *configuration.Node, context Context, view View) (Result, error) {
 	if node == nil || view == nil {
 		return Result{}, nil
 	}
 	key, negative := positiveKey(node.Descriptor.Key)
+	if strings.HasPrefix(key, "plugin.") && evaluator.extensions != nil {
+		result, found, err := evaluator.extensions.EvaluateCondition(node, context)
+		if found {
+			return result, err
+		}
+	}
 	result, err := evaluatePositive(key, node, context, view)
 	if err != nil || !result.Valid {
 		return Result{Valid: result.Valid}, err

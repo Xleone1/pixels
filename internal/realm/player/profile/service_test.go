@@ -30,6 +30,24 @@ type profileAdmin struct {
 	record playerservice.Record
 	// err stores one injected mutation failure.
 	err error
+	// updates counts persistence calls.
+	updates int
+}
+
+// profileEvents returns one deterministic profile interception.
+type profileEvents struct {
+	// motto stores an optional replacement.
+	motto string
+	// cancelled stores the veto decision.
+	cancelled bool
+}
+
+// DispatchPlayerProfileUpdate applies the configured replacement and veto.
+func (events profileEvents) DispatchPlayerProfileUpdate(_ context.Context, _ int64, motto *string, figure *string, gender *string) (*string, *string, *string, bool) {
+	if motto != nil && events.motto != "" {
+		motto = &events.motto
+	}
+	return motto, figure, gender, events.cancelled
 }
 
 // profilePermissions returns one respect quota policy.
@@ -52,6 +70,7 @@ func (clothing profileClothing) Clothing(context.Context, int64) (playerwardrobe
 
 // Update applies figure, gender, and motto fields used by profile behavior.
 func (admin *profileAdmin) Update(_ context.Context, _ int64, params playerservice.UpdateParams) (playerservice.Record, error) {
+	admin.updates++
 	if admin.err != nil {
 		return playerservice.Record{}, admin.err
 	}
@@ -65,6 +84,21 @@ func (admin *profileAdmin) Update(_ context.Context, _ int64, params playerservi
 		admin.record.Profile.Motto = *params.Motto
 	}
 	return admin.record, nil
+}
+
+// TestPluginProfileUpdateMutatesAndCancelsBeforePersistence verifies the profile gate.
+func TestPluginProfileUpdateMutatesAndCancelsBeforePersistence(t *testing.T) {
+	admin := &profileAdmin{}
+	service := New(&profileStore{}, admin)
+	service.SetPluginRuntime(profileEvents{motto: "filtered"})
+	record, err := service.UpdateMotto(context.Background(), 1, "original")
+	if err != nil || record.Profile.Motto != "filtered" || admin.updates != 1 {
+		t.Fatalf("record=%#v updates=%d err=%v", record, admin.updates, err)
+	}
+	service.SetPluginRuntime(profileEvents{cancelled: true})
+	if _, err = service.UpdateMotto(context.Background(), 1, "blocked"); !errors.Is(err, ErrCancelledByPlugin) || admin.updates != 1 {
+		t.Fatalf("updates=%d err=%v", admin.updates, err)
+	}
 }
 
 // Tags returns stored tags.
