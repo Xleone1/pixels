@@ -21,13 +21,15 @@ type fakeExecutor struct {
 	arguments []any
 	// err stores the next executor failure.
 	err error
+	// tag stores the next executor command result.
+	tag pgconn.CommandTag
 }
 
 // Exec records one statement.
 func (executor *fakeExecutor) Exec(_ context.Context, query string, arguments ...any) (pgconn.CommandTag, error) {
 	executor.query = query
 	executor.arguments = arguments
-	return pgconn.CommandTag{}, executor.err
+	return executor.tag, executor.err
 }
 
 // Query records one collection query.

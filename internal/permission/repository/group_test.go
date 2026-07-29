@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	permissionmodel "github.com/niflaot/pixels/internal/permission/model"
 	sharedmodel "github.com/niflaot/pixels/pkg/model"
 )
@@ -53,6 +54,11 @@ func TestGroupPersistenceHandlesOptionalAndOptimisticResults(t *testing.T) {
 	_, changed, err := repository.UpdateGroup(context.Background(), group)
 	if err != nil || changed {
 		t.Fatalf("expected optimistic miss, changed=%v err=%v", changed, err)
+	}
+	executor.tag = pgconn.NewCommandTag("UPDATE 1")
+	changed, err = repository.SoftDeleteGroup(context.Background(), 2, 3)
+	if err != nil || !changed || len(executor.arguments) != 2 {
+		t.Fatalf("expected soft delete, changed=%v args=%#v err=%v", changed, executor.arguments, err)
 	}
 }
 

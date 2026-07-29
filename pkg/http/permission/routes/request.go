@@ -49,6 +49,12 @@ type GroupPatchRequest struct {
 	ClearParent bool `json:"clearParent"`
 }
 
+// GroupDeleteRequest contains optimistic locking state for one soft deletion.
+type GroupDeleteRequest struct {
+	// Version stores the last observed group version.
+	Version int64 `json:"version"`
+}
+
 // NodeRequest contains one permission grant mutation.
 type NodeRequest struct {
 	// Node identifies the capability or wildcard.

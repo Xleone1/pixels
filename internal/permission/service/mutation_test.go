@@ -128,6 +128,34 @@ func TestGroupUpdateInvalidatesAffectedMembershipCache(t *testing.T) {
 	}
 }
 
+// TestGroupDeletionEnforcesSafetyAndInvalidatesPlayers verifies soft deletion behavior.
+func TestGroupDeletionEnforcesSafetyAndInvalidatesPlayers(t *testing.T) {
+	store := newFakeStore()
+	store.groups[1] = groupForTest(1, defaultGroupName, 0, nil)
+	store.groups[2] = groupForTest(2, "moderator", 50, nil)
+	parentID := int64(2)
+	store.groups[3] = groupForTest(3, "helper", 25, &parentID)
+	store.memberships[7] = []int64{2}
+	events := &fakePublisher{}
+	service := newTestService(store, events)
+	if err := service.DeleteGroup(context.Background(), 1, 1); err != ErrProtectedGroup {
+		t.Fatalf("expected protected group, got %v", err)
+	}
+	if err := service.DeleteGroup(context.Background(), 2, 1); err != ErrGroupHasChildren {
+		t.Fatalf("expected child protection, got %v", err)
+	}
+	delete(store.groups, 3)
+	if err := service.DeleteGroup(context.Background(), 2, 2); err != ErrConflict {
+		t.Fatalf("expected version conflict, got %v", err)
+	}
+	if err := service.DeleteGroup(context.Background(), 2, 1); err != nil {
+		t.Fatalf("delete group: %v", err)
+	}
+	if _, found := store.groups[2]; found || len(events.events) != 1 {
+		t.Fatalf("expected deleted group and one player event")
+	}
+}
+
 // TestMutationValidationRejectsUnknownInputs verifies ids and node catalog boundaries.
 func TestMutationValidationRejectsUnknownInputs(t *testing.T) {
 	service := newTestService(newFakeStore(), nil)
@@ -161,6 +189,16 @@ func (store *fakeStore) UpdateGroup(_ context.Context, group permissionmodel.Gro
 	group.Version.Version++
 	store.groups[group.ID] = group
 	return group, true, nil
+}
+
+// SoftDeleteGroup removes one matching fixture group.
+func (store *fakeStore) SoftDeleteGroup(_ context.Context, groupID int64, version int64) (bool, error) {
+	group, found := store.groups[groupID]
+	if !found || group.Version.Version != version {
+		return false, nil
+	}
+	delete(store.groups, groupID)
+	return true, nil
 }
 
 // UpsertGroupNode creates or replaces one fixture group grant.

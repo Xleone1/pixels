@@ -21,6 +21,8 @@ var (
 	CMSPermissionGroupsCreate = RegisterNode("cms.permissions.groups.create", "")
 	// CMSPermissionGroupsUpdate allows editing permission group metadata.
 	CMSPermissionGroupsUpdate = RegisterNode("cms.permissions.groups.update", "")
+	// CMSPermissionGroupsDelete allows soft deleting permission groups.
+	CMSPermissionGroupsDelete = RegisterNode("cms.permissions.groups.delete", "")
 	// CMSPermissionGroupNodesManage allows changing group permission grants.
 	CMSPermissionGroupNodesManage = RegisterNode("cms.permissions.groups.nodes.manage", "")
 	// CMSPermissionGroupMembersManage allows changing direct group memberships.

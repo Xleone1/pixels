@@ -17,4 +17,8 @@ var (
 	ErrConflict = errors.New("permission group update conflict")
 	// ErrInheritanceCycle reports cyclic permission group inheritance.
 	ErrInheritanceCycle = errors.New("permission group inheritance cycle")
+	// ErrProtectedGroup reports an attempt to delete a required permission group.
+	ErrProtectedGroup = errors.New("protected permission group")
+	// ErrGroupHasChildren reports a group that still owns active descendants.
+	ErrGroupHasChildren = errors.New("permission group has active children")
 )

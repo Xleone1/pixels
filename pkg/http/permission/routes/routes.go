@@ -31,6 +31,7 @@ func Register(app *fiber.App, dependencies Dependencies) {
 	app.Get(basePath+"/groups", groupsHandler(dependencies))
 	app.Post(basePath+"/groups", createGroupHandler(dependencies))
 	app.Patch(basePath+"/groups/:id", updateGroupHandler(dependencies))
+	app.Delete(basePath+"/groups/:id", deleteGroupHandler(dependencies))
 	app.Post(basePath+"/groups/:id/nodes", grantGroupNodeHandler(dependencies))
 	app.Delete(basePath+"/groups/:id/nodes/:node", revokeGroupNodeHandler(dependencies))
 	app.Post(basePath+"/players/:playerId/groups/:groupId", addPlayerGroupHandler(dependencies))
@@ -47,6 +48,9 @@ func permissionError(err error) error {
 	case errors.Is(err, permissionservice.ErrGroupNotFound):
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	case errors.Is(err, permissionservice.ErrConflict):
+		return fiber.NewError(fiber.StatusConflict, err.Error())
+	case errors.Is(err, permissionservice.ErrProtectedGroup),
+		errors.Is(err, permissionservice.ErrGroupHasChildren):
 		return fiber.NewError(fiber.StatusConflict, err.Error())
 	case errors.Is(err, permissionservice.ErrInvalidPlayerID),
 		errors.Is(err, permissionservice.ErrInvalidGroupID),

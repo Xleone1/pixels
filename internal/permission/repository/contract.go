@@ -32,6 +32,8 @@ type Writer interface {
 	CreateGroup(ctx context.Context, group permissionmodel.Group) (permissionmodel.Group, error)
 	// UpdateGroup updates one permission group using optimistic locking.
 	UpdateGroup(ctx context.Context, group permissionmodel.Group) (permissionmodel.Group, bool, error)
+	// SoftDeleteGroup marks one permission group deleted using optimistic locking.
+	SoftDeleteGroup(ctx context.Context, groupID int64, version int64) (bool, error)
 	// UpsertGroupNode creates or replaces one group grant.
 	UpsertGroupNode(ctx context.Context, groupID int64, node permission.Node, allowed bool) error
 	// DeleteGroupNode deletes one group grant.

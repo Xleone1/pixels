@@ -59,6 +59,53 @@ func (service *Service) UpdateGroup(ctx context.Context, groupID int64, params U
 	return updated, nil
 }
 
+// DeleteGroup soft deletes one leaf permission group.
+func (service *Service) DeleteGroup(ctx context.Context, groupID int64, version int64) error {
+	if groupID <= 0 {
+		return ErrInvalidGroupID
+	}
+	if version <= 0 {
+		return ErrConflict
+	}
+	group, found, err := service.store.FindGroupByID(ctx, groupID)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return ErrGroupNotFound
+	}
+	if group.Name == defaultGroupName {
+		return ErrProtectedGroup
+	}
+	groups, err := service.store.ListGroups(ctx)
+	if err != nil {
+		return err
+	}
+	for _, candidate := range groups {
+		if candidate.ParentGroupID != nil && *candidate.ParentGroupID == groupID {
+			return ErrGroupHasChildren
+		}
+	}
+	affected, err := service.store.ListAffectedPlayerIDs(ctx, groupID)
+	if err != nil {
+		return err
+	}
+	changed, err := service.store.SoftDeleteGroup(ctx, groupID, version)
+	if err != nil {
+		return err
+	}
+	if !changed {
+		return ErrConflict
+	}
+	service.cache.InvalidateGroup(ctx, groupID)
+	for _, playerID := range affected {
+		service.cache.InvalidatePlayerGroups(ctx, playerID)
+		service.publish(ctx, permissionchanged.Payload{PlayerID: playerID})
+	}
+
+	return nil
+}
+
 // GrantGroupNode creates or replaces one group grant.
 func (service *Service) GrantGroupNode(ctx context.Context, groupID int64, node permission.Node, allowed bool) error {
 	if err := service.validateGroupNode(ctx, groupID, node); err != nil {

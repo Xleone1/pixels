@@ -66,6 +66,15 @@ type GroupPatchRequest struct {
 	ClearParent bool `json:"clearParent,omitempty"`
 }
 
+// GroupDeleteRequest identifies one versioned permission group deletion.
+type GroupDeleteRequest struct {
+	APIKeyRequest
+	// ID identifies the permission group.
+	ID int64 `path:"id" required:"true" minimum:"1"`
+	// Version stores the last observed optimistic locking state.
+	Version int64 `json:"version" required:"true" minimum:"1"`
+}
+
 // GroupNodeRequest grants or denies one node to a group.
 type GroupNodeRequest struct {
 	APIKeyRequest

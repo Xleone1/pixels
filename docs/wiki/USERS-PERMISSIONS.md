@@ -79,6 +79,7 @@ updated in the same change.
 | `cms.maintenance.manage` | Configure CMS maintenance windows |
 | `cms.news.manage` | Create, edit, and remove CMS news |
 | `cms.permissions.groups.create` | Create permission groups from the CMS |
+| `cms.permissions.groups.delete` | Soft delete permission groups from the CMS |
 | `cms.permissions.groups.members.manage` | Add and remove permission-group members |
 | `cms.permissions.groups.nodes.manage` | Grant, deny, and remove group nodes |
 | `cms.permissions.groups.update` | Update permission-group metadata |

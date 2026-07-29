@@ -97,6 +97,7 @@ func adminOperations() []operation {
 		adminPermission(http.MethodGet, "/api/admin/permissions/groups", "List permission groups", &permissionapi.APIKeyRequest{}, &permissionapi.GroupsResponse{}, http.StatusOK),
 		adminPermission(http.MethodPost, "/api/admin/permissions/groups", "Create permission group", &permissionapi.GroupCreateRequest{}, &permissionapi.GroupResponse{}, http.StatusCreated),
 		adminPermission(http.MethodPatch, "/api/admin/permissions/groups/{id}", "Update permission group", &permissionapi.GroupPatchRequest{}, &permissionapi.GroupResponse{}, http.StatusOK),
+		adminPermission(http.MethodDelete, "/api/admin/permissions/groups/{id}", "Soft delete permission group", &permissionapi.GroupDeleteRequest{}, nil, http.StatusNoContent),
 		adminPermission(http.MethodPost, "/api/admin/permissions/groups/{id}/nodes", "Grant group permission node", &permissionapi.GroupNodeRequest{}, &permissionapi.MutationResponse{}, http.StatusOK),
 		adminPermission(http.MethodDelete, "/api/admin/permissions/groups/{id}/nodes/{node}", "Revoke group permission node", &permissionapi.GroupNodeDeleteRequest{}, nil, http.StatusNoContent),
 		adminPermission(http.MethodPost, "/api/admin/permissions/players/{playerId}/groups/{groupId}", "Add player to permission group", &permissionapi.MembershipRequest{}, &permissionapi.MutationResponse{}, http.StatusOK),

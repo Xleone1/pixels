@@ -38,6 +38,8 @@ type Manager interface {
 	CreateGroup(ctx context.Context, params CreateGroupParams) (permissionmodel.Group, error)
 	// UpdateGroup applies a partial permission group mutation.
 	UpdateGroup(ctx context.Context, groupID int64, params UpdateGroupParams) (permissionmodel.Group, error)
+	// DeleteGroup soft deletes one permission group.
+	DeleteGroup(ctx context.Context, groupID int64, version int64) error
 	// GrantGroupNode creates or replaces one group grant.
 	GrantGroupNode(ctx context.Context, groupID int64, node permission.Node, allowed bool) error
 	// RevokeGroupNode removes one group grant.

@@ -66,6 +66,12 @@ func (manager *fakeManager) UpdateGroup(context.Context, int64, permissionservic
 	return fixtureGroup(), manager.err
 }
 
+// DeleteGroup records group soft deletion.
+func (manager *fakeManager) DeleteGroup(context.Context, int64, int64) error {
+	manager.calls = append(manager.calls, "delete")
+	return manager.err
+}
+
 // GrantGroupNode records a group node grant.
 func (manager *fakeManager) GrantGroupNode(context.Context, int64, permission.Node, bool) error {
 	manager.calls = append(manager.calls, "grant-group-node")
@@ -135,6 +141,7 @@ func TestPermissionRoutes(t *testing.T) {
 		{name: "groups", method: http.MethodGet, path: basePath + "/groups", status: http.StatusOK},
 		{name: "create group", method: http.MethodPost, path: basePath + "/groups", body: `{"name":"moderator","weight":50}`, status: http.StatusCreated},
 		{name: "update group", method: http.MethodPatch, path: basePath + "/groups/2", body: `{"weight":60}`, status: http.StatusOK},
+		{name: "delete group", method: http.MethodDelete, path: basePath + "/groups/2", body: `{"version":1}`, status: http.StatusNoContent},
 		{name: "grant group node", method: http.MethodPost, path: basePath + "/groups/2/nodes", body: `{"node":"catalog.admin.manage","allowed":true}`, status: http.StatusOK},
 		{name: "revoke group node", method: http.MethodDelete, path: basePath + "/groups/2/nodes/" + node, status: http.StatusNoContent},
 		{name: "add membership", method: http.MethodPost, path: basePath + "/players/3/groups/2", status: http.StatusOK},

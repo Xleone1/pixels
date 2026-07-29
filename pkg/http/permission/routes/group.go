@@ -66,6 +66,25 @@ func updateGroupHandler(dependencies Dependencies) fiber.Handler {
 	}
 }
 
+// deleteGroupHandler soft deletes one permission group.
+func deleteGroupHandler(dependencies Dependencies) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		groupID, err := routeID(ctx, "id")
+		if err != nil {
+			return err
+		}
+		var request GroupDeleteRequest
+		if err := ctx.BodyParser(&request); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "invalid permission group delete body")
+		}
+		if err := dependencies.Permissions.DeleteGroup(ctx.Context(), groupID, request.Version); err != nil {
+			return permissionError(err)
+		}
+
+		return ctx.SendStatus(fiber.StatusNoContent)
+	}
+}
+
 // grantGroupNodeHandler creates or replaces one group grant.
 func grantGroupNodeHandler(dependencies Dependencies) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {

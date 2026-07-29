@@ -27,6 +27,8 @@ const (
 	createGroupSQL = `insert into permission_groups (name, weight, prefix, prefix_color, badge_url, room_effect_id, parent_group_id) values ($1,$2,$3,$4,$5,$6,$7) returning ` + groupColumns
 	// updateGroupSQL updates one permission group with optimistic locking.
 	updateGroupSQL = `update permission_groups set name=$2, weight=$3, prefix=$4, prefix_color=$5, badge_url=$6, room_effect_id=$7, parent_group_id=$8, updated_at=now(), version=version+1 where id=$1 and version=$9 and deleted_at is null returning ` + groupColumns
+	// softDeleteGroupSQL marks one leaf permission group deleted.
+	softDeleteGroupSQL = `update permission_groups set deleted_at=now(), updated_at=now(), version=version+1 where id=$1 and version=$2 and deleted_at is null and not exists (select 1 from permission_groups child where child.parent_group_id=$1 and child.deleted_at is null)`
 )
 
 // ListGroups lists every active permission group.
@@ -73,6 +75,16 @@ func (repository *Repository) UpdateGroup(ctx context.Context, group permissionm
 	}
 
 	return updated, true, nil
+}
+
+// SoftDeleteGroup marks one permission group deleted using optimistic locking.
+func (repository *Repository) SoftDeleteGroup(ctx context.Context, groupID int64, version int64) (bool, error) {
+	tag, err := postgres.ExecutorFor(ctx, repository.executor).Exec(ctx, softDeleteGroupSQL, groupID, version)
+	if err != nil {
+		return false, fmt.Errorf("soft delete permission group %d: %w", groupID, err)
+	}
+
+	return tag.RowsAffected() == 1, nil
 }
 
 // queryGroup scans one optional permission group.
