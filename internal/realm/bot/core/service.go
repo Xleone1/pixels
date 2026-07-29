@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"math/rand/v2"
 	"sync"
 	"sync/atomic"
@@ -22,6 +23,12 @@ import (
 	sdkbot "github.com/niflaot/pixels/sdk/bot"
 	"go.uber.org/zap"
 )
+
+// EventDispatcher intercepts bot speech before delivery.
+type EventDispatcher interface {
+	// DispatchBotSpeech returns mutable message content and cancellation.
+	DispatchBotSpeech(context.Context, int64, int64, string, string) (string, bool)
+}
 
 // Source supplies deterministic random values in tests.
 type Source interface {
@@ -116,6 +123,8 @@ type Service struct {
 	behaviors *botbehavior.Registry
 	// speechInterceptor provides the explicit Wired speech extension boundary.
 	speechInterceptor sdkbot.SpeechInterceptor
+	// pluginEvents intercepts filtered bot speech before broadcast.
+	pluginEvents EventDispatcher
 	// connections sends Nitro projections.
 	connections *netconn.Registry
 	// globalFilter applies hotel chat moderation.
@@ -162,6 +171,9 @@ func (service *Service) SetSpeechInterceptor(interceptor sdkbot.SpeechIntercepto
 	}
 	service.speechInterceptor = interceptor
 }
+
+// SetPluginRuntime installs the optional bot-speech interceptor.
+func (service *Service) SetPluginRuntime(events EventDispatcher) { service.pluginEvents = events }
 
 // Start starts the fixed shared behavior worker pool.
 func (service *Service) Start() {

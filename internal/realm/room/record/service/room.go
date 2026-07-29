@@ -59,6 +59,31 @@ func (service *Service) Create(ctx context.Context, params CreateParams) (roommo
 	if !found || !roomLayout.Enabled {
 		return roommodel.Room{}, ErrLayoutNotAvailable
 	}
+	if service.pluginEvents != nil {
+		var cancelled bool
+		params, cancelled = service.pluginEvents.DispatchRoomCreate(ctx, params)
+		if cancelled {
+			return roommodel.Room{}, ErrCancelledByPlugin
+		}
+		params = normalizeCreate(params)
+		if err := validateCreate(params); err != nil {
+			return roommodel.Room{}, err
+		}
+		if err := service.validateCategory(ctx, params.CategoryID, false); err != nil {
+			return roommodel.Room{}, err
+		}
+		tags = normalizeTags(params.Tags)
+		if err := service.validateContent(ctx, roommodel.Room{Name: params.Name, Description: params.Description}, tags); err != nil {
+			return roommodel.Room{}, err
+		}
+		roomLayout, found, err = service.layouts.FindByName(ctx, params.ModelName)
+		if err != nil {
+			return roommodel.Room{}, fmt.Errorf("find room layout: %w", err)
+		}
+		if !found || !roomLayout.Enabled {
+			return roommodel.Room{}, ErrLayoutNotAvailable
+		}
+	}
 
 	room, err := service.store.CreateRoom(ctx, createRoomParams(params))
 	if err != nil {
@@ -212,16 +237,4 @@ func createRoomParams(params CreateParams) CreateRecordParams {
 		CategoryID:    params.CategoryID,
 		TradeMode:     params.TradeMode,
 	}
-}
-
-// normalizeLimit normalizes list limits.
-func normalizeLimit(limit int) int {
-	if limit <= 0 {
-		return 50
-	}
-	if limit > 100 {
-		return 100
-	}
-
-	return limit
 }

@@ -10,6 +10,9 @@ import (
 
 // DispatchTradeStart sends one cancellable trade opening request.
 func (hub *Hub) DispatchTradeStart(ctx context.Context, session *traderuntime.Session) bool {
+	if !hub.HasListeners(sdkevent.TradeStartName) {
+		return false
+	}
 	first, second := hub.tradeParticipants(session)
 	event := &sdkevent.TradeStart{RoomID: session.RoomID, First: first, Second: second}
 	return errors.Is(hub.Dispatch(ctx, event), ErrEventCancelled)
@@ -17,6 +20,9 @@ func (hub *Hub) DispatchTradeStart(ctx context.Context, session *traderuntime.Se
 
 // DispatchTradeConfirm sends one cancellable final trade settlement request.
 func (hub *Hub) DispatchTradeConfirm(ctx context.Context, session *traderuntime.Session) bool {
+	if !hub.HasListeners(sdkevent.TradeConfirmName) {
+		return false
+	}
 	first, second := hub.tradeParticipants(session)
 	event := &sdkevent.TradeConfirm{RoomID: session.RoomID, First: first, Second: second}
 	return errors.Is(hub.Dispatch(ctx, event), ErrEventCancelled)
@@ -24,6 +30,9 @@ func (hub *Hub) DispatchTradeConfirm(ctx context.Context, session *traderuntime.
 
 // DispatchTradeCancel sends one cancellable active trade closure request.
 func (hub *Hub) DispatchTradeCancel(ctx context.Context, playerID int64, session *traderuntime.Session, reason string) bool {
+	if !hub.HasListeners(sdkevent.TradeCancelName) {
+		return false
+	}
 	first, second := hub.tradeParticipants(session)
 	event := &sdkevent.TradeCancel{
 		RoomID: session.RoomID, Actor: hub.player(playerID), First: first, Second: second, Reason: reason,

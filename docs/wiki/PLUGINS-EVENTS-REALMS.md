@@ -1,6 +1,6 @@
 # Plugin Realm Event Catalog
 
-SDK 2.x projects every committed realm fact by its stable internal event name.
+SDK 3.x projects every committed realm fact by its stable internal event name.
 Listen with `Host.Events().Listen(name, options, listener)` and type assert the
 callback value to `*event.Published`. Field names match the exported payload
 field names; `Fields()` and `Field()` always return detached values.

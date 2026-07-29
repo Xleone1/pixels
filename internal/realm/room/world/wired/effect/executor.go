@@ -59,6 +59,12 @@ func (executor *Executor) Execute(ctx context.Context, node *configuration.Node,
 		}
 		return result, nil
 	default:
+		if executor.extensions != nil {
+			result, found, err := executor.extensions.ExecuteEffect(ctx, node, event)
+			if found {
+				return result, err
+			}
+		}
 		return Result{Status: Blocked}, fmt.Errorf("unsupported WIRED effect %s", key)
 	}
 }

@@ -3,8 +3,8 @@ package service
 import "errors"
 
 var (
-	// ErrCancelledByPlugin reports furniture placement vetoed before persistence.
-	ErrCancelledByPlugin = errors.New("furniture placement cancelled by plugin")
+	// ErrCancelledByPlugin reports a furniture mutation vetoed before persistence.
+	ErrCancelledByPlugin = errors.New("furniture mutation cancelled by plugin")
 	// ErrInvalidPlayerID reports a malformed player id.
 	ErrInvalidPlayerID = errors.New("invalid furniture player id")
 

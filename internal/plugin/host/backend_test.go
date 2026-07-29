@@ -7,6 +7,7 @@ import (
 	plugincommand "github.com/niflaot/pixels/internal/plugin/command"
 	pluginevent "github.com/niflaot/pixels/internal/plugin/event"
 	pluginruntime "github.com/niflaot/pixels/internal/plugin/runtime"
+	pluginwired "github.com/niflaot/pixels/internal/plugin/wired"
 	catalogservice "github.com/niflaot/pixels/internal/realm/catalog/service"
 	chatconfig "github.com/niflaot/pixels/internal/realm/chat/config"
 	chatsend "github.com/niflaot/pixels/internal/realm/chat/send"
@@ -34,7 +35,7 @@ func TestBackendBuildsEveryScopedCapability(t *testing.T) {
 	commands := plugincommand.NewTree(":", time.Second, nil, zap.NewNop())
 	backend := NewBackend(
 		players, bindings, connections, netconn.NewHandlerRegistry(), nil,
-		pluginroutes.New(), pluginevent.NewHub(time.Second, zap.NewNop()), plugincommand.NewTree(":", time.Second, nil, zap.NewNop()), time.Second, zap.NewNop(),
+		pluginroutes.New(), pluginevent.NewHub(time.Second, zap.NewNop()), plugincommand.NewTree(":", time.Second, nil, zap.NewNop()), pluginwired.NewRegistry(time.Second, nil), time.Second, zap.NewNop(),
 	)
 	currencies := &currencyservice.Service{}
 	rooms := roomservice.New(nil, nil)
@@ -45,7 +46,7 @@ func TestBackendBuildsEveryScopedCapability(t *testing.T) {
 	}
 	host := backend.HostFor(pluginruntime.NewScope("demo"))
 	if host.Players() == nil || host.Routes() == nil || host.Events() == nil || host.Commands() == nil || host.Permissions() == nil ||
-		host.Economy() == nil || host.Rooms() == nil || host.Trades() == nil {
+		host.Economy() == nil || host.Rooms() == nil || host.Trades() == nil || host.Wired() == nil {
 		t.Fatal("expected every scoped capability")
 	}
 	backend.events = events
@@ -67,7 +68,7 @@ func TestBackendConnectsEveryRealmSeam(t *testing.T) {
 	commands := plugincommand.NewTree(":", time.Second, nil, nil)
 	backend := NewBackend(
 		players, bindings, connections, netconn.NewHandlerRegistry(), nil,
-		pluginroutes.New(), events, commands, time.Second, nil,
+		pluginroutes.New(), events, commands, pluginwired.NewRegistry(time.Second, nil), time.Second, nil,
 	)
 	chat := chatsend.New(chatconfig.Config{}, players, bindings, roomlive.NewRegistry(nil), connections, nil, nil, nil, nil, local, nil, chatsend.Nodes{})
 	if err := backend.ConnectRealms(

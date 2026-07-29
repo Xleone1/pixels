@@ -39,6 +39,8 @@ type Service struct {
 	metrics *groupobservability.Metrics
 	// events publishes committed domain changes.
 	events bus.Publisher
+	// pluginEvents intercepts membership changes before persistence.
+	pluginEvents EventDispatcher
 }
 
 // New creates social-group membership behavior.
@@ -119,52 +121,6 @@ func (service *Service) MemberPage(ctx context.Context, actorID int64, groupID i
 	service.metrics.Observe(groupobservability.MemberList, time.Since(started))
 	service.record(groupobservability.KindList, err)
 	return result, canManage, err
-}
-
-// Join joins an open group or creates an exclusive-group request.
-func (service *Service) Join(ctx context.Context, playerID int64, groupID int64) (grouprecord.Membership, bool, error) {
-	member, pending, changed, err := service.store.Join(ctx, groupID, playerID, service.config.MembershipLimit, service.config.MemberLimit, service.config.PendingLimit)
-	if err == nil && changed {
-		service.projectChange(ctx, groupID, playerID, "join")
-	}
-	service.record(groupobservability.KindJoin, err)
-	return member, pending, err
-}
-
-// Add administratively inserts one member or admin idempotently.
-func (service *Service) Add(ctx context.Context, actorID int64, groupID int64, playerID int64, role grouprecord.Role) (grouprecord.Membership, bool, error) {
-	if err := service.requireRosterManager(ctx, actorID, groupID); err != nil {
-		return grouprecord.Membership{}, false, err
-	}
-	if role == grouprecord.Admin {
-		allowed, err := service.has(ctx, actorID, grouppolicy.RolesManageAny)
-		actor, found, memberErr := service.store.Membership(ctx, groupID, actorID)
-		if memberErr != nil {
-			return grouprecord.Membership{}, false, memberErr
-		}
-		if err != nil || !allowed && (!found || actor.Role != grouprecord.Owner) {
-			return grouprecord.Membership{}, false, grouprecord.ErrForbidden
-		}
-	}
-	member, created, err := service.store.AddMember(ctx, groupID, playerID, role, service.config.MembershipLimit, service.config.MemberLimit)
-	if err == nil {
-		service.projectChange(ctx, groupID, playerID, "add")
-	}
-	service.record(groupobservability.KindJoin, err)
-	return member, created, err
-}
-
-// Accept accepts one pending request after social-role authorization.
-func (service *Service) Accept(ctx context.Context, actorID int64, groupID int64, playerID int64) (grouprecord.Membership, error) {
-	if err := service.requireRosterManager(ctx, actorID, groupID); err != nil {
-		return grouprecord.Membership{}, err
-	}
-	member, err := service.store.AcceptRequest(ctx, groupID, playerID, service.config.MemberLimit)
-	if err == nil {
-		service.projectChange(ctx, groupID, playerID, "accept")
-	}
-	service.record(groupobservability.KindAccept, err)
-	return member, err
 }
 
 // Decline rejects one pending request after social-role authorization.

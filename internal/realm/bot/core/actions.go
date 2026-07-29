@@ -49,6 +49,19 @@ func (service *Service) Talk(ctx context.Context, view sdkbot.Bot, message strin
 			message = filtered
 		}
 	}
+	if service.pluginEvents != nil {
+		scopeName := "talk"
+		if scope == sdkbot.ScopeShout {
+			scopeName = "shout"
+		} else if scope == sdkbot.ScopeWhisper {
+			scopeName = "whisper"
+		}
+		var cancelled bool
+		message, cancelled = service.pluginEvents.DispatchBotSpeech(ctx, view.ID, view.RoomID, message, scopeName)
+		if cancelled {
+			return nil
+		}
+	}
 	if message == "" {
 		return nil
 	}

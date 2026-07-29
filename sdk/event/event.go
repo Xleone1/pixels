@@ -4,6 +4,7 @@ package event
 import (
 	"context"
 
+	sdkplayer "github.com/niflaot/pixels/sdk/player"
 	sdkpriority "github.com/niflaot/pixels/sdk/priority"
 )
 
@@ -95,4 +96,90 @@ func cloneValue(value any) any {
 	default:
 		return typed
 	}
+}
+
+// ChatSendName identifies the cancellable pre-delivery room chat event.
+const ChatSendName = "chat.send"
+
+// ChatSend fires before one sanitized room chat message is delivered.
+type ChatSend struct {
+	// Player stores the immutable speaker snapshot.
+	Player sdkplayer.Player
+	// RoomID identifies the room receiving the message.
+	RoomID int64
+	// Text stores the sanitized message and may be replaced by a listener.
+	Text string
+	// cancelled stores the current veto state.
+	cancelled bool
+}
+
+// NewChatSend creates a cancellable room chat event.
+func NewChatSend(player sdkplayer.Player, roomID int64, text string) *ChatSend {
+	return &ChatSend{Player: player, RoomID: roomID, Text: text}
+}
+
+// Name returns the stable chat event identifier.
+func (*ChatSend) Name() string { return ChatSendName }
+
+// Cancelled reports whether room delivery was vetoed.
+func (event *ChatSend) Cancelled() bool { return event.cancelled }
+
+// SetCancelled changes whether room delivery is vetoed.
+func (event *ChatSend) SetCancelled(value bool) { event.cancelled = value }
+
+// Clone returns an isolated callback-owned chat event.
+func (event *ChatSend) Clone() Mutable {
+	cloned := NewChatSend(event.Player, event.RoomID, event.Text)
+	cloned.SetCancelled(event.Cancelled())
+	return cloned
+}
+
+// Apply copies this callback result onto the original chat event.
+func (event *ChatSend) Apply(original Mutable) {
+	target, ok := original.(*ChatSend)
+	if !ok {
+		return
+	}
+	target.Text = event.Text
+	target.SetCancelled(event.Cancelled())
+}
+
+// CommandAttemptName identifies a prefixed command attempt.
+const CommandAttemptName = "command.attempted"
+
+// CommandAttempt fires whenever a player submits command-prefixed chat.
+type CommandAttempt struct {
+	// Player stores the immutable command sender snapshot.
+	Player sdkplayer.Player
+	// Input stores the command text without the configured prefix.
+	Input string
+	// Root stores the first command token when one was supplied.
+	Root string
+}
+
+// Name returns the stable command-attempt event identifier.
+func (*CommandAttempt) Name() string { return CommandAttemptName }
+
+// CloneEvent returns an isolated callback-owned notification.
+func (event *CommandAttempt) CloneEvent() Event {
+	cloned := *event
+	return &cloned
+}
+
+// PlayerConnectedName identifies the authenticated-player notification.
+const PlayerConnectedName = "player.connected"
+
+// PlayerConnected fires after a player has an authenticated live session.
+type PlayerConnected struct {
+	// Player stores the immutable connected-player snapshot.
+	Player sdkplayer.Player
+}
+
+// Name returns the stable player event identifier.
+func (*PlayerConnected) Name() string { return PlayerConnectedName }
+
+// CloneEvent returns an isolated callback-owned notification.
+func (event *PlayerConnected) CloneEvent() Event {
+	cloned := *event
+	return &cloned
 }

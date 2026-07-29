@@ -9,12 +9,13 @@ import (
 	sdkevent "github.com/niflaot/pixels/sdk/event"
 	sdkplayer "github.com/niflaot/pixels/sdk/player"
 	sdkpriority "github.com/niflaot/pixels/sdk/priority"
+	sdkwired "github.com/niflaot/pixels/sdk/wired"
 	"go.minekube.com/brigodier"
 )
 
 const (
 	// SDKVersion is the semantic version implemented by this host SDK.
-	SDKVersion = "2.0.0"
+	SDKVersion = "3.0.0"
 	// PriorityLowest runs before no lower-priority callback.
 	PriorityLowest Priority = sdkpriority.Lowest
 	// PriorityLow runs below normal callbacks.
@@ -80,6 +81,8 @@ type Host interface {
 	Rooms() RoomAccess
 	// Trades returns bounded live-trade operations.
 	Trades() TradeAccess
+	// Wired returns namespaced WIRED behavior registration.
+	Wired() WiredAccess
 }
 
 // CurrencyDefinition describes one configured plugin-visible currency.
@@ -158,6 +161,14 @@ type RouteRegistrar interface {
 type EventHub interface {
 	// Listen registers one listener by stable event name.
 	Listen(string, sdkevent.ListenerOptions, sdkevent.Listener) error
+}
+
+// WiredAccess registers plugin-owned WIRED effects and conditions.
+type WiredAccess interface {
+	// RegisterEffect adds one namespaced effect backed by plugin logic.
+	RegisterEffect(string, sdkwired.EffectExecutor, ...sdkwired.Option) error
+	// RegisterCondition adds one namespaced condition backed by plugin logic.
+	RegisterCondition(string, sdkwired.ConditionEvaluator, ...sdkwired.Option) error
 }
 
 // CommandTree registers root commands in the shared Brigadier dispatcher.

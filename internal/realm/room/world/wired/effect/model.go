@@ -180,7 +180,21 @@ type Services struct {
 type Executor struct {
 	// services stores effect realm boundaries.
 	services Services
+	// extensions executes plugin-owned effects after native lookup.
+	extensions ExtensionExecutor
+}
+
+// ExtensionExecutor executes plugin-owned effect keys.
+type ExtensionExecutor interface {
+	// ExecuteEffect returns one result, whether the key matched, and an error.
+	ExecuteEffect(context.Context, *configuration.Node, trigger.Event) (Result, bool, error)
 }
 
 // New creates an effect executor.
 func New(services Services) *Executor { return &Executor{services: services} }
+
+// WithExtensions installs the optional plugin effect fallback.
+func (executor *Executor) WithExtensions(extensions ExtensionExecutor) *Executor {
+	executor.extensions = extensions
+	return executor
+}

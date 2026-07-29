@@ -10,6 +10,9 @@ import (
 
 // DispatchSanctionApply sends one cancellable global sanction request.
 func (hub *Hub) DispatchSanctionApply(ctx context.Context, actorID *int64, targetID int64, kind string, reason string, expiresAt *time.Time) (string, *time.Time, bool) {
+	if !hub.HasListeners(sdkevent.SanctionApplyName) {
+		return reason, expiresAt, false
+	}
 	var actorIDValue int64
 	if actorID != nil {
 		actorIDValue = *actorID
@@ -24,6 +27,9 @@ func (hub *Hub) DispatchSanctionApply(ctx context.Context, actorID *int64, targe
 
 // DispatchRoomModerationAction sends one cancellable local moderation request.
 func (hub *Hub) DispatchRoomModerationAction(ctx context.Context, action string, roomID int64, actorID int64, targetID int64) bool {
+	if !hub.HasListeners(sdkevent.RoomModerationActionName) {
+		return false
+	}
 	event := &sdkevent.RoomModerationAction{
 		Action: action, RoomID: roomID, Actor: hub.player(actorID), Target: hub.player(targetID),
 	}

@@ -34,3 +34,21 @@ func TestModerationDispatchersApplyMutationsAndCancellation(t *testing.T) {
 		t.Fatal("room moderation was not cancelled")
 	}
 }
+
+// BenchmarkModerationDispatchersWithoutListeners measures original event guard allocations.
+func BenchmarkModerationDispatchersWithoutListeners(b *testing.B) {
+	hub := NewHub(time.Second, zap.NewNop())
+	ctx := context.Background()
+	b.Run("sanction", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_, _, _ = hub.DispatchSanctionApply(ctx, nil, 7, "warn", "reason", nil)
+		}
+	})
+	b.Run("room_action", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_ = hub.DispatchRoomModerationAction(ctx, "kick", 3, 7, 8)
+		}
+	})
+}

@@ -56,6 +56,9 @@ func (service *Service) SendRequest(ctx context.Context, fromID int64, username 
 		}
 		return result, ErrTargetListFull
 	}
+	if service.pluginEvents != nil && service.pluginEvents.DispatchFriendRequest(ctx, fromID, target.Player.ID) {
+		return result, ErrCancelledByPlugin
+	}
 	result.Sent, err = service.store.CreateRequest(ctx, fromID, target.Player.ID)
 	return result, err
 }
@@ -87,6 +90,9 @@ func (service *Service) Accept(ctx context.Context, actorID int64, requesterID i
 			return AcceptResult{}, fullErr
 		}
 		return AcceptResult{}, ErrTargetListFull
+	}
+	if service.pluginEvents != nil && service.pluginEvents.DispatchFriendAccept(ctx, actorID, requesterID) {
+		return AcceptResult{}, ErrCancelledByPlugin
 	}
 	accepted, err := service.store.AcceptRequest(ctx, actorID, requesterID)
 	if err != nil || !accepted {

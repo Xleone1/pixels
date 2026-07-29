@@ -236,12 +236,13 @@ minimum manual checks expected when touching it.
 ### FEATURE: Dynamic Plugins
 
 - Owns `internal/plugin`, `sdk/plugin`, `sdk/command`, `sdk/event`,
-  `sdk/player`, `sdk/priority`, plugin route registration, and the room-chat
-  plugin seams.
+  `sdk/player`, `sdk/priority`, `sdk/wired`, plugin route registration, and
+  realm plugin seams.
 - Uses capability-first packages below `internal/plugin`: `loader` owns native
   discovery and dependency ordering; `host` composes scoped capabilities;
-  `player`, `command`, `event`, `route`, and `permission` own their individual
-  SDK implementations; `runtime` owns only shared callback isolation state.
+  `player`, `command`, `event`, `route`, `permission`, and `wired` own their
+  individual SDK implementations; `runtime` owns only shared callback isolation
+  state.
   Do not collapse those capabilities back into one runtime package.
 - Loads embedded manifests from `plugins/<name>/*.so`, validates SDK majors,
   resolves dependencies before registration, and isolates plugin panics and
@@ -250,16 +251,28 @@ minimum manual checks expected when touching it.
   separate OpenAPI documents. Plugin permissions live below
   `plugin.<name>.*`. Commands use Brigodier and are consumed before normal room
   chat; typed plugin events remain separate from the internal post-commit bus.
+- SDK 3 exposes cancellable mutable pre-commit events for furniture movement
+  and pickup, room creation, marketplace listing and purchase, profile updates,
+  bot speech, group membership, Messenger friendship, and crafting. Realm
+  services must skip dispatch entirely when no listeners exist and must
+  revalidate mutations before persistence.
+- `Host.Wired()` registers plugin-owned condition and effect keys below
+  `plugin.<name>.*`. Native descriptors and execution always resolve first;
+  plugin callbacks use the same panic and timeout isolation as other plugin
+  capabilities, and editor descriptors must remain available to open and save.
 - Go native plugins must be rebuilt with the exact host Go version, platform,
   SDK checkout, and dependency graph. They are unsupported on Windows.
 - Test after changes:
   - `go test -race ./internal/plugin/... ./sdk/... ./networking/connection ./internal/realm/chat/send ./pkg/http/pluginroutes`
+  - `go test -race ./internal/realm/furniture/service ./internal/realm/room/record/service ./internal/realm/marketplace/core/... ./internal/realm/player/profile ./internal/realm/bot/core/... ./internal/realm/group/membership/... ./internal/realm/messenger/core/... ./internal/realm/crafting/recipe ./internal/realm/room/world/wired/...`
   - `go test ./internal/plugin/runtime ./networking/connection -run '^$' -bench . -benchmem`
   - Build the ignored `plan/demoplugin` fixture with `-buildmode=plugin`, run
     its native verifier, then follow its README with Nitro.
   - Verify plugin routes reject missing API keys, permission-gated commands do
     not leak into chat, `chat.send` cancellation prevents delivery, and a
     panicking plugin scope does not stop unrelated plugins or native handlers.
+  - Register one plugin WIRED effect and condition, configure the effect through
+    Nitro's editor, and verify native WIRED remains unchanged.
 
 ### FEATURE: Connection Sessions and WebSocket Transport
 

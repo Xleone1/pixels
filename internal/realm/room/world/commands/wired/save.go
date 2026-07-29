@@ -27,8 +27,8 @@ func (handler Handler) HandleSave(ctx context.Context, envelope command.Envelope
 	if err != nil || !found {
 		return handler.sendFailure(ctx, envelope.Command.Handler, "room.wired.save.target_missing")
 	}
-	descriptor, found := handler.Registry.Resolve(stored.Interaction)
-	if !found || familyOf(descriptor.Family) != envelope.Command.Family {
+	descriptor, found := handler.Compiler.ResolveDescriptor(stored.Interaction)
+	if !found || !descriptor.Editor || familyOf(descriptor.Family) != envelope.Command.Family {
 		return handler.sendFailure(ctx, envelope.Command.Handler, "room.wired.save.invalid_settings")
 	}
 	if privilegedProgression(descriptor.Key) {

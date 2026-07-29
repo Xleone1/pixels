@@ -39,6 +39,17 @@ func TestMutableEventsSatisfyTheExplicitCloneContract(t *testing.T) {
 		&TradeCancel{},
 		&FurniturePlace{},
 		&CatalogPurchase{},
+		&FurnitureMove{},
+		&FurniturePickup{},
+		&RoomCreate{},
+		&MarketplaceList{},
+		&MarketplaceBuy{},
+		&PlayerProfileUpdate{},
+		&BotSpeech{},
+		&GroupMembershipChange{},
+		&FriendRequest{},
+		&FriendAccept{},
+		&CraftingCraft{},
 	}
 	for _, event := range events {
 		cloned := event.Clone()

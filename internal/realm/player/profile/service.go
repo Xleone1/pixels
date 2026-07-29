@@ -16,6 +16,12 @@ import (
 	"github.com/niflaot/pixels/pkg/redis"
 )
 
+// EventDispatcher intercepts public profile mutations before persistence.
+type EventDispatcher interface {
+	// DispatchPlayerProfileUpdate returns mutable profile fields and cancellation.
+	DispatchPlayerProfileUpdate(context.Context, int64, *string, *string, *string) (*string, *string, *string, bool)
+}
+
 // Service coordinates cold-path public profile mutations.
 type Service struct {
 	// store persists tags and respect grants.
@@ -38,6 +44,8 @@ type Service struct {
 	unlocks ClothingFinder
 	// live reads current club entitlement without a database query.
 	live *playerlive.Registry
+	// pluginEvents intercepts figure and motto persistence.
+	pluginEvents EventDispatcher
 }
 
 // ClothingFinder reads one player's complete clothing unlock snapshot.
@@ -57,6 +65,9 @@ func NewConfigured(store Store, players playerservice.AdminManager, permissions 
 	service.figures, service.unlocks, service.live = figures, unlocks, live
 	return service
 }
+
+// SetPluginRuntime installs the optional public-profile interceptor.
+func (service *Service) SetPluginRuntime(events EventDispatcher) { service.pluginEvents = events }
 
 // newService normalizes public-profile policy once during construction.
 func newService(store Store, players playerservice.AdminManager, permissions permissionservice.Checker, throttles *redis.Client, config Config) *Service {
@@ -86,6 +97,30 @@ func (service *Service) UpdateFigure(ctx context.Context, playerID int64, gender
 			return playerservice.Record{}, ErrInvalidFigure
 		}
 	}
+	if service.pluginEvents != nil {
+		genderValue := string(value)
+		_, changedFigure, changedGender, cancelled := service.pluginEvents.DispatchPlayerProfileUpdate(ctx, playerID, nil, &figure, &genderValue)
+		if cancelled {
+			return playerservice.Record{}, ErrCancelledByPlugin
+		}
+		if changedFigure == nil || changedGender == nil {
+			return playerservice.Record{}, ErrInvalidFigure
+		}
+		figure = strings.TrimSpace(*changedFigure)
+		value = playermodel.Gender(strings.ToUpper(strings.TrimSpace(*changedGender)))
+		if !value.Valid() || !playerfigure.Valid(figure) {
+			return playerservice.Record{}, ErrInvalidFigure
+		}
+		if service.figures != nil {
+			allowed, err := service.figureAllowed(ctx, playerID, figure, value)
+			if err != nil {
+				return playerservice.Record{}, err
+			}
+			if !allowed {
+				return playerservice.Record{}, ErrInvalidFigure
+			}
+		}
+	}
 	return service.players.Update(ctx, playerID, playerservice.UpdateParams{Look: &figure, Gender: &value})
 }
 
@@ -94,6 +129,19 @@ func (service *Service) UpdateMotto(ctx context.Context, playerID int64, motto s
 	motto = strings.TrimSpace(motto)
 	if utf8.RuneCountInString(motto) > service.config.MottoMaximumRunes {
 		return playerservice.Record{}, ErrInvalidMotto
+	}
+	if service.pluginEvents != nil {
+		changed, _, _, cancelled := service.pluginEvents.DispatchPlayerProfileUpdate(ctx, playerID, &motto, nil, nil)
+		if cancelled {
+			return playerservice.Record{}, ErrCancelledByPlugin
+		}
+		if changed == nil {
+			return playerservice.Record{}, ErrInvalidMotto
+		}
+		motto = strings.TrimSpace(*changed)
+		if utf8.RuneCountInString(motto) > service.config.MottoMaximumRunes {
+			return playerservice.Record{}, ErrInvalidMotto
+		}
 	}
 	return service.players.Update(ctx, playerID, playerservice.UpdateParams{Motto: &motto})
 }
@@ -181,31 +229,4 @@ func (service *Service) unlimited(ctx context.Context, playerID int64) bool {
 	}
 	allowed, err := service.permissions.HasPermission(ctx, playerID, RespectUnlimited)
 	return err == nil && allowed
-}
-
-// figureAllowed resolves entitlement snapshots before immutable catalog validation.
-func (service *Service) figureAllowed(ctx context.Context, playerID int64, figure string, gender playermodel.Gender) (bool, error) {
-	club := playermodel.ClubLevelNone
-	previous := ""
-	if service.live != nil {
-		if player, found := service.live.Find(playerID); found {
-			snapshot := player.Snapshot()
-			club = snapshot.ClubLevelAt(service.now())
-			if snapshot.Gender == gender {
-				previous = snapshot.Look
-			}
-		}
-	}
-	unlocked := playerwardrobe.ClothingSnapshot{}
-	if service.unlocks != nil {
-		var err error
-		unlocked, err = service.unlocks.Clothing(ctx, playerID)
-		if err != nil {
-			return false, err
-		}
-	}
-	if previous != "" {
-		return service.figures.AllowedTransition(previous, figure, gender, club, unlocked.FigureSetIDs), nil
-	}
-	return service.figures.Allowed(figure, gender, club, unlocked.FigureSetIDs), nil
 }

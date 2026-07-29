@@ -48,8 +48,8 @@ type Engine struct {
 }
 
 // New creates a WIRED runtime engine.
-func New(config roomwired.Config, store record.Store, compiler *configuration.Compiler, effects *effect.Executor, views ViewProvider, scheduler Scheduler, activator Activator) *Engine {
-	return &Engine{config: config.Normalize(), store: store, compiler: compiler, matcher: trigger.New(), conditions: condition.New(), effects: effects, views: views, scheduler: scheduler, activator: activator}
+func New(config roomwired.Config, store record.Store, compiler *configuration.Compiler, effects *effect.Executor, views ViewProvider, scheduler Scheduler, activator Activator, extensions ...condition.ExtensionEvaluator) *Engine {
+	return &Engine{config: config.Normalize(), store: store, compiler: compiler, matcher: trigger.New(), conditions: condition.New(extensions...), effects: effects, views: views, scheduler: scheduler, activator: activator}
 }
 
 // Reload loads, compiles, and atomically replaces one room generation.

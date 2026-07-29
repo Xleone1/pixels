@@ -29,6 +29,8 @@ resulting balance, delta, currency type, actor kind, and player snapshot.
 updates validated settings with optimistic locking, and controls active-room
 mute-all state.
 
+- `room.create` runs after native layout and content validation and before the
+  room and its tags are inserted. See [[PLUGINS-EVENT-ROOM-CREATE]].
 - `room.update` can replace any optional `Params` field or cancel persistence.
   Pixels reapplies native normalization, category policy, profanity policy,
   password hashing, and value validation after callbacks.

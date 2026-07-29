@@ -108,7 +108,7 @@ func (engine *Engine) conditionsPass(execution *execution, stack *configuration.
 	}
 	matched := false
 	for _, node := range stack.Conditions {
-		result, err := engine.conditions.Evaluate(node, condition.Context{Event: execution.event, Now: execution.now, ResetAt: execution.state.resetAt, Effects: stack.Effects}, view)
+		result, err := engine.conditions.Evaluate(node, condition.Context{CallbackContext: execution.context, Event: execution.event, Now: execution.now, ResetAt: execution.state.resetAt, Effects: stack.Effects}, view)
 		if err != nil {
 			return false, err
 		}

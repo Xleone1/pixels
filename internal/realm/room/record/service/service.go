@@ -33,6 +33,8 @@ type Service struct {
 type EventDispatcher interface {
 	// DispatchRoomUpdate returns possibly replaced settings and veto state.
 	DispatchRoomUpdate(context.Context, sdkplayer.Player, int64, UpdateParams) (UpdateParams, bool)
+	// DispatchRoomCreate returns possibly replaced creation input and veto state.
+	DispatchRoomCreate(context.Context, CreateParams) (CreateParams, bool)
 }
 
 // New creates a room service.
@@ -65,4 +67,15 @@ func (service *Service) WithProfanity(checker ProfanityChecker) *Service {
 	service.profanity = checker
 
 	return service
+}
+
+// normalizeLimit normalizes list limits.
+func normalizeLimit(limit int) int {
+	if limit <= 0 {
+		return 50
+	}
+	if limit > 100 {
+		return 100
+	}
+	return limit
 }

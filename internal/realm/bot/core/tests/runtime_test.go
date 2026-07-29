@@ -16,6 +16,7 @@ import (
 	"github.com/niflaot/pixels/internal/realm/room/world/grid"
 	worldpath "github.com/niflaot/pixels/internal/realm/room/world/path"
 	worldunit "github.com/niflaot/pixels/internal/realm/room/world/unit"
+	"github.com/niflaot/pixels/pkg/bus"
 	sdkbot "github.com/niflaot/pixels/sdk/bot"
 	"go.uber.org/zap"
 )
@@ -195,8 +196,12 @@ func serviceFixture(t testing.TB, behaviors *botbehavior.Registry, bots []botrec
 }
 
 // serviceFixtureWithStore creates a loaded bot core with a configurable store.
-func serviceFixtureWithStore(t testing.TB, behaviors *botbehavior.Registry, store *roomStore) (*botcore.Service, *roomlive.Room) {
+func serviceFixtureWithStore(t testing.TB, behaviors *botbehavior.Registry, store *roomStore, publishers ...bus.Publisher) (*botcore.Service, *roomlive.Room) {
 	t.Helper()
+	var events bus.Publisher
+	if len(publishers) > 0 {
+		events = publishers[0]
+	}
 	rooms := roomlive.NewRegistry(nil)
 	active, err := rooms.Activate(roomlive.Snapshot{ID: 9, OwnerPlayerID: 1, MaxUsers: 100})
 	if err != nil {
@@ -210,7 +215,7 @@ func serviceFixtureWithStore(t testing.TB, behaviors *botbehavior.Registry, stor
 	if err = active.LoadWorld(roomlive.WorldConfig{Grid: roomGrid, Door: worldpath.Position{Point: grid.MustPoint(9, 2)}, Body: worldunit.RotationSouth, Head: worldunit.RotationSouth}); err != nil {
 		t.Fatalf("load world: %v", err)
 	}
-	service := botcore.New(botpolicy.Config{}, store, rooms, nil, playerlive.NewRegistry(), nil, nil, behaviors, nil, nil, nil, nil, nil, zap.NewNop())
+	service := botcore.New(botpolicy.Config{}, store, rooms, nil, playerlive.NewRegistry(), nil, nil, behaviors, nil, nil, nil, events, nil, zap.NewNop())
 	return service, active
 }
 

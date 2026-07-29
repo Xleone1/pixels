@@ -12,6 +12,7 @@ import (
 	pluginconfig "github.com/niflaot/pixels/internal/plugin/config"
 	pluginevent "github.com/niflaot/pixels/internal/plugin/event"
 	pluginhost "github.com/niflaot/pixels/internal/plugin/host"
+	pluginwired "github.com/niflaot/pixels/internal/plugin/wired"
 	sdkplugin "github.com/niflaot/pixels/sdk/plugin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -97,7 +98,7 @@ func TestLoadIsolatesInvalidAndPanickingPlugins(t *testing.T) {
 		createObjectPath(t, directory, filename)
 		opener.objects[filename] = fixtureObject{symbol: sdkplugin.Plugin(plugin)}
 	}
-	backend := pluginhost.NewBackend(nil, nil, nil, nil, nil, nil, pluginevent.NewHub(time.Second, zap.NewNop()), plugincommand.NewTree(":", time.Second, nil, zap.NewNop()), time.Second, zap.NewNop())
+	backend := pluginhost.NewBackend(nil, nil, nil, nil, nil, nil, pluginevent.NewHub(time.Second, zap.NewNop()), plugincommand.NewTree(":", time.Second, nil, zap.NewNop()), pluginwired.NewRegistry(time.Second, nil), time.Second, zap.NewNop())
 	loader := New(pluginconfig.Config{Directory: directory, CallbackTimeout: time.Second}, backend, opener, zap.NewNop())
 
 	if err := loader.Load(context.Background()); err != nil {
@@ -116,7 +117,7 @@ func TestLoadIsolatesInvalidAndPanickingPlugins(t *testing.T) {
 func TestLoadLogsEmptySummary(t *testing.T) {
 	core, logs := observer.New(zap.InfoLevel)
 	log := zap.New(core)
-	backend := pluginhost.NewBackend(nil, nil, nil, nil, nil, nil, pluginevent.NewHub(time.Second, log), plugincommand.NewTree(":", time.Second, nil, log), time.Second, log)
+	backend := pluginhost.NewBackend(nil, nil, nil, nil, nil, nil, pluginevent.NewHub(time.Second, log), plugincommand.NewTree(":", time.Second, nil, log), pluginwired.NewRegistry(time.Second, nil), time.Second, log)
 	loader := New(pluginconfig.Config{Directory: t.TempDir(), CallbackTimeout: time.Second}, backend, fixtureOpener{}, log)
 
 	if err := loader.Load(context.Background()); err != nil {
@@ -172,7 +173,7 @@ func (panicObject) Lookup(string) (any, error) { panic("lookup panic") }
 // TestReadMetadataRejectsIncompatibleSDK verifies explicit SDK major validation.
 func TestReadMetadataRejectsIncompatibleSDK(t *testing.T) {
 	entry := &fixturePlugin{metadata: fixtureMetadata("fixture")}
-	entry.metadata.SDKVersion = "3.0.0"
+	entry.metadata.SDKVersion = "4.0.0"
 	_, err := readMetadata(context.Background(), time.Second, entry, "fixture.so", zap.NewNop())
 	if !errors.Is(err, ErrIncompatibleSDK) {
 		t.Fatalf("expected incompatible SDK, got %v", err)

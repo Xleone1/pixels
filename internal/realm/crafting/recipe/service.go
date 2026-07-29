@@ -2,6 +2,7 @@ package recipe
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	craftingconfig "github.com/niflaot/pixels/internal/realm/crafting/config"
@@ -11,6 +12,17 @@ import (
 	playerachievement "github.com/niflaot/pixels/internal/realm/player/achievement"
 	"github.com/niflaot/pixels/pkg/bus"
 )
+
+var (
+	// ErrCancelledByPlugin reports a crafting transaction vetoed before mutation.
+	ErrCancelledByPlugin = errors.New("crafting transaction cancelled by plugin")
+)
+
+// EventDispatcher intercepts crafting before ingredient consumption.
+type EventDispatcher interface {
+	// DispatchCraftingCraft returns a mutable reward definition and cancellation.
+	DispatchCraftingCraft(context.Context, int64, int64, int64) (int64, bool)
+}
 
 // AchievementGranter grants optional post-commit crafting badges.
 type AchievementGranter interface {
@@ -31,11 +43,16 @@ type Service struct {
 	achievements AchievementGranter
 	// events publishes committed crafting outcomes.
 	events bus.Publisher
+	// pluginEvents intercepts crafting transactions before mutation.
+	pluginEvents EventDispatcher
 	// mutex protects current altar sessions.
 	mutex sync.RWMutex
 	// altars stores the most recently opened valid altar per player.
 	altars map[int64]int64
 }
+
+// SetPluginRuntime installs the optional crafting interceptor.
+func (service *Service) SetPluginRuntime(events EventDispatcher) { service.pluginEvents = events }
 
 // Result stores one committed craft projection.
 type Result struct {

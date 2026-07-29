@@ -37,3 +37,28 @@ func TestTradeDispatchersCancelEveryLifecycleGate(t *testing.T) {
 		t.Fatal("trade cancel was not cancelled")
 	}
 }
+
+// BenchmarkTradeDispatchersWithoutListeners measures original event guard allocations.
+func BenchmarkTradeDispatchersWithoutListeners(b *testing.B) {
+	hub := NewHub(time.Second, zap.NewNop())
+	ctx := context.Background()
+	session := &traderuntime.Session{}
+	b.Run("start", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_ = hub.DispatchTradeStart(ctx, session)
+		}
+	})
+	b.Run("confirm", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_ = hub.DispatchTradeConfirm(ctx, session)
+		}
+	})
+	b.Run("cancel", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_ = hub.DispatchTradeCancel(ctx, 7, session, "manual")
+		}
+	})
+}

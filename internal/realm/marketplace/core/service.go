@@ -17,6 +17,14 @@ import (
 
 const creditsType int32 = -1
 
+// EventDispatcher intercepts marketplace mutations before persistence.
+type EventDispatcher interface {
+	// DispatchMarketplaceList returns a mutable raw price and cancellation.
+	DispatchMarketplaceList(context.Context, int64, int64, int64) (int64, bool)
+	// DispatchMarketplaceBuy returns a mutable buyer price and cancellation.
+	DispatchMarketplaceBuy(context.Context, int64, int64, int64, int64) (int64, bool)
+}
+
 // Service implements Marketplace business behavior.
 type Service struct {
 	// config stores immutable Marketplace policy.
@@ -33,12 +41,17 @@ type Service struct {
 	now func() time.Time
 	// events publishes committed Marketplace facts.
 	events bus.Publisher
+	// pluginEvents intercepts listing and purchase mutations.
+	pluginEvents EventDispatcher
 }
 
 // New creates a Marketplace service.
 func New(config Options, store marketrecord.Store, furniture furnitureservice.TradingManager, currencies currencyservice.Granter, cache *redis.Client, events bus.Publisher) *Service {
 	return &Service{config: config, store: store, furniture: furniture, currencies: currencies, cache: cache, now: time.Now, events: events}
 }
+
+// SetPluginRuntime installs the optional marketplace interceptor.
+func (service *Service) SetPluginRuntime(events EventDispatcher) { service.pluginEvents = events }
 
 // BuyerPrice adds commission with integer ceiling semantics.
 func (service *Service) BuyerPrice(raw int64) int64 {
@@ -81,6 +94,16 @@ func (service *Service) List(ctx context.Context, playerID int64, itemID int64, 
 	if rawPrice < service.config.MinimumPrice || rawPrice > service.config.MaximumPrice {
 		return marketrecord.Listing{}, ErrInvalidPrice
 	}
+	if service.pluginEvents != nil {
+		var cancelled bool
+		rawPrice, cancelled = service.pluginEvents.DispatchMarketplaceList(ctx, playerID, itemID, rawPrice)
+		if cancelled {
+			return marketrecord.Listing{}, ErrCancelledByPlugin
+		}
+		if rawPrice < service.config.MinimumPrice || rawPrice > service.config.MaximumPrice {
+			return marketrecord.Listing{}, ErrInvalidPrice
+		}
+	}
 	var listing marketrecord.Listing
 	err := service.store.WithinTransaction(ctx, func(txCtx context.Context) error {
 		spent, err := service.store.SpendToken(txCtx, playerID)
@@ -110,6 +133,7 @@ func (service *Service) Buy(ctx context.Context, buyerID int64, listingID int64)
 		return marketrecord.Listing{}, ErrDisabled
 	}
 	var listing marketrecord.Listing
+	var buyerPrice int64
 	err := service.store.WithinTransaction(ctx, func(txCtx context.Context) error {
 		var found bool
 		var err error
@@ -123,7 +147,18 @@ func (service *Service) Buy(ctx context.Context, buyerID int64, listingID int64)
 		if listing.SellerPlayerID == buyerID {
 			return ErrOwnListing
 		}
-		if _, err = service.currencies.Grant(txCtx, currencyservice.GrantParams{PlayerID: buyerID, CurrencyType: creditsType, Amount: -service.BuyerPrice(listing.RawPrice), Reason: "marketplace_purchase", ActorKind: currencyservice.ActorPlayer}); err != nil {
+		buyerPrice = service.BuyerPrice(listing.RawPrice)
+		if service.pluginEvents != nil {
+			var cancelled bool
+			buyerPrice, cancelled = service.pluginEvents.DispatchMarketplaceBuy(txCtx, buyerID, listing.ID, listing.SellerPlayerID, buyerPrice)
+			if cancelled {
+				return ErrCancelledByPlugin
+			}
+			if buyerPrice < 0 {
+				return ErrInvalidPrice
+			}
+		}
+		if _, err = service.currencies.Grant(txCtx, currencyservice.GrantParams{PlayerID: buyerID, CurrencyType: creditsType, Amount: -buyerPrice, Reason: "marketplace_purchase", ActorKind: currencyservice.ActorPlayer}); err != nil {
 			return err
 		}
 		if err = service.furniture.TransferFromMarketplace(txCtx, listing.FurnitureItemID, listing.SellerPlayerID, buyerID); err != nil {
@@ -140,7 +175,7 @@ func (service *Service) Buy(ctx context.Context, buyerID int64, listingID int64)
 	})
 	service.invalidate(ctx)
 	if err == nil && service.events != nil {
-		_ = service.events.Publish(ctx, bus.Event{Name: marketsold.Name, Payload: marketsold.Payload{ListingID: listing.ID, SellerPlayerID: listing.SellerPlayerID, BuyerPlayerID: buyerID, FurnitureItemID: listing.FurnitureItemID, RawPrice: listing.RawPrice, BuyerPrice: service.BuyerPrice(listing.RawPrice)}})
+		_ = service.events.Publish(ctx, bus.Event{Name: marketsold.Name, Payload: marketsold.Payload{ListingID: listing.ID, SellerPlayerID: listing.SellerPlayerID, BuyerPlayerID: buyerID, FurnitureItemID: listing.FurnitureItemID, RawPrice: listing.RawPrice, BuyerPrice: buyerPrice}})
 	}
 	return listing, err
 }
