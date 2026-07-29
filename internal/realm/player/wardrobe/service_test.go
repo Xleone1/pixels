@@ -11,7 +11,12 @@ import (
 )
 
 // wardrobeStore records focused wardrobe mutations.
-type wardrobeStore struct{ outfit Outfit }
+type wardrobeStore struct {
+	// outfit stores the latest saved outfit.
+	outfit Outfit
+	// redeem stores an optional deterministic redemption.
+	redeem RedeemResult
+}
 
 // Outfits returns the stored outfit.
 func (store *wardrobeStore) Outfits(context.Context, int64) ([]Outfit, error) {
@@ -30,7 +35,10 @@ func (*wardrobeStore) Clothing(context.Context, int64) (ClothingSnapshot, error)
 }
 
 // RedeemClothing returns one deterministic unlock.
-func (*wardrobeStore) RedeemClothing(context.Context, int64, int64) (RedeemResult, error) {
+func (store *wardrobeStore) RedeemClothing(context.Context, int64, int64) (RedeemResult, error) {
+	if store.redeem.Applied {
+		return store.redeem, nil
+	}
 	return RedeemResult{Applied: true, Snapshot: ClothingSnapshot{FigureSetIDs: []int32{3356}}}, nil
 }
 

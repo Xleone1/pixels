@@ -4,6 +4,10 @@ import (
 	"context"
 	"testing"
 
+	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
+	worldfurniture "github.com/niflaot/pixels/internal/realm/room/world/furniture"
+	"github.com/niflaot/pixels/internal/realm/room/world/grid"
+	worldpath "github.com/niflaot/pixels/internal/realm/room/world/path"
 	"github.com/niflaot/pixels/internal/realm/session/binding"
 	"github.com/niflaot/pixels/networking/codec"
 	netconn "github.com/niflaot/pixels/networking/connection"
@@ -31,6 +35,43 @@ func TestWardrobeHandlersSaveGetAndRedeem(t *testing.T) {
 	redeemPacket, _ := codec.NewPacket(inredeem.Header, inredeem.Definition, codec.Int32(99))
 	if err := handler.redeem(connection, redeemPacket); err != nil || len(*packets) != 3 || (*packets)[1].Header != outremove.Header || (*packets)[2].Header != outclothing.Header {
 		t.Fatalf("redeem packets=%#v err=%v", *packets, err)
+	}
+}
+
+// TestRedeemPlacedClothingRemovesTheRoomItem verifies Nitro's placed-item redemption flow.
+func TestRedeemPlacedClothingRemovesTheRoomItem(t *testing.T) {
+	store := &wardrobeStore{redeem: RedeemResult{
+		Applied: true, RoomID: 9, Snapshot: ClothingSnapshot{FigureSetIDs: []int32{3356}},
+	}}
+	handler, connection, packets := wardrobeFixture(t, New(store))
+	rooms := roomlive.NewRegistry(nil)
+	active, err := rooms.Activate(roomlive.Snapshot{ID: 9, OwnerPlayerID: 7, MaxUsers: 25})
+	if err != nil {
+		t.Fatalf("activate room: %v", err)
+	}
+	roomGrid, err := grid.Parse("000", grid.WithDoor(0, 0))
+	if err != nil {
+		t.Fatalf("parse room grid: %v", err)
+	}
+	item := worldfurniture.Item{
+		ID: 99, OwnerPlayerID: 7, Point: grid.MustPoint(1, 0),
+		Definition: worldfurniture.Definition{Width: 1, Length: 1, InteractionType: "clothing"},
+	}
+	if err = active.LoadWorld(roomlive.WorldConfig{
+		Grid: roomGrid, Furniture: []worldfurniture.Item{item}, Door: worldpath.Position{Point: grid.MustPoint(0, 0)},
+	}); err != nil {
+		t.Fatalf("load room world: %v", err)
+	}
+	handler.Rooms = rooms
+	redeemPacket, _ := codec.NewPacket(inredeem.Header, inredeem.Definition, codec.Int32(99))
+	if err = handler.redeem(connection, redeemPacket); err != nil {
+		t.Fatalf("redeem placed clothing: %v", err)
+	}
+	if _, found := active.FurnitureItem(99); found {
+		t.Fatal("redeemed clothing remained in the active room")
+	}
+	if len(*packets) != 1 || (*packets)[0].Header != outclothing.Header {
+		t.Fatalf("unexpected direct packets %#v", *packets)
 	}
 }
 

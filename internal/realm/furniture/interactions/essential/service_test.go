@@ -81,6 +81,29 @@ func TestUsePostureWalksToImportedFurnitureSlot(t *testing.T) {
 	}
 }
 
+// TestUsePostureAdvancesMultiStateSeat verifies visual seats retain their use action.
+func TestUsePostureAdvancesMultiStateSeat(t *testing.T) {
+	item := essentialItem("default", 2)
+	item.Definition.AllowSit = true
+	item.Definition.Slots = []worldfurniture.SlotDefinition{{
+		Status: worldfurniture.SlotStatusSit, BodyRotation: worldunit.RotationNorth,
+	}}
+	active := essentialRoom(t, item, 1)
+	states := &stateRecorder{}
+	service := New(states, nil, nil, nil, nil, bus.New(), nil, nil)
+	handled, err := service.Use(context.Background(), Request{PlayerID: 1, Room: active, Item: item})
+	if err != nil || !handled {
+		t.Fatalf("multi-state seat use handled=%t err=%v", handled, err)
+	}
+	if len(states.params) != 1 || states.params[0].Expected != "0" || states.params[0].Next != "1" {
+		t.Fatalf("unexpected seat state mutations: %#v", states.params)
+	}
+	updated, found := active.FurnitureItem(item.ID)
+	if !found || updated.ExtraData != "1" {
+		t.Fatalf("updated seat=%#v found=%t", updated, found)
+	}
+}
+
 // TestMovementSubscriptionsProjectPlateState verifies bus registration and walk routing.
 func TestMovementSubscriptionsProjectPlateState(t *testing.T) {
 	item := essentialItem("colorplate", 3)

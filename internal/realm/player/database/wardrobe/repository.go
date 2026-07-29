@@ -71,12 +71,13 @@ func (repository *Repository) Clothing(ctx context.Context, playerID int64) (pla
 	return snapshot, rows.Err()
 }
 
-// RedeemClothing consumes one inventory item only when it adds an unlock.
+// RedeemClothing consumes one owned clothing item only when it adds an unlock.
 func (repository *Repository) RedeemClothing(ctx context.Context, playerID int64, itemID int64) (result playerwardrobe.RedeemResult, err error) {
 	err = postgres.WithinScope(ctx, repository.pool, func(txCtx context.Context) error {
 		executor := postgres.ExecutorFor(txCtx, repository.pool)
 		var productCode string
-		findErr := executor.QueryRow(txCtx, `select cp.product_code from furniture_items fi join clothing_products cp on cp.definition_id=fi.definition_id and cp.enabled where fi.id=$1 and fi.owner_player_id=$2 and fi.room_id is null and fi.deleted_at is null and not fi.marketplace_reserved for update of fi`, itemID, playerID).Scan(&productCode)
+		var roomID *int64
+		findErr := executor.QueryRow(txCtx, `select cp.product_code,fi.room_id from furniture_items fi join clothing_products cp on cp.definition_id=fi.definition_id and cp.enabled where fi.id=$1 and fi.owner_player_id=$2 and fi.deleted_at is null and not fi.marketplace_reserved for update of fi`, itemID, playerID).Scan(&productCode, &roomID)
 		if errors.Is(findErr, pgx.ErrNoRows) {
 			return playerwardrobe.ErrInvalidClothingItem
 		}
@@ -94,6 +95,9 @@ func (repository *Repository) RedeemClothing(ctx context.Context, playerID int64
 			return insertErr
 		}
 		result.Applied = true
+		if roomID != nil {
+			result.RoomID = *roomID
+		}
 		return nil
 	})
 	if err != nil {

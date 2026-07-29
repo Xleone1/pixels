@@ -47,6 +47,19 @@ func (service *Service) usePosture(request Request, slots []worldfurniture.Slot)
 	return err
 }
 
+// usePostureFurniture routes movement and advances one multi-state seat or bed.
+func (service *Service) usePostureFurniture(ctx context.Context, request Request, slots []worldfurniture.Slot) error {
+	if err := service.usePosture(request, slots); err != nil {
+		return err
+	}
+	switch request.Item.Definition.InteractionType {
+	case "default", "toggle":
+		return service.toggleFinal(ctx, request)
+	default:
+		return nil
+	}
+}
+
 // useSwitch toggles immediately or after walking to the nearest activator.
 func (service *Service) useSwitch(ctx context.Context, request Request, remote bool) error {
 	if remote {

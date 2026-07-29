@@ -100,11 +100,13 @@ func RegisterPlayerProfileHandlers(handlers *Handlers, profiles *playerprofile.S
 }
 
 // RegisterPlayerWardrobeHandlers installs persistent wardrobe adapters.
-func RegisterPlayerWardrobeHandlers(handlers *Handlers, wardrobe *playerwardrobe.Service, bindings *binding.Registry, translations i18n.Translator) {
+func RegisterPlayerWardrobeHandlers(handlers *Handlers, wardrobe *playerwardrobe.Service, bindings *binding.Registry, rooms *roomlive.Registry, connections *netconn.Registry, translations i18n.Translator) {
 	if handlers == nil {
 		return
 	}
-	playerwardrobe.RegisterHandlers(handlers.Inbound, playerwardrobe.Handler{Service: wardrobe, Bindings: bindings, Translations: translations})
+	playerwardrobe.RegisterHandlers(handlers.Inbound, playerwardrobe.Handler{
+		Service: wardrobe, Bindings: bindings, Rooms: rooms, Connections: connections, Translations: translations,
+	})
 }
 
 // RegisterPlayerIdentityHandlers installs username reservation and rename adapters.

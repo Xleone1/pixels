@@ -21,4 +21,5 @@
     <include file="migrations/0014_clothing_products.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0015_add_room_final_interactions.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0016_validate_room_footprints.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0017_fix_rainbow_sofa_footprint.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

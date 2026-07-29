@@ -106,7 +106,7 @@ func (service *Service) Use(ctx context.Context, request Request) (bool, error) 
 	}
 	if request.Item.Definition.AllowSit || request.Item.Definition.AllowLay {
 		if slots := worldfurniture.Slots(request.Item); len(slots) > 0 {
-			return true, service.usePosture(request, slots)
+			return true, service.usePostureFurniture(ctx, request, slots)
 		}
 	}
 	switch request.Item.Definition.InteractionType {

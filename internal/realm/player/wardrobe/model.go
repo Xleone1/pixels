@@ -39,6 +39,8 @@ type ClothingSnapshot struct {
 type RedeemResult struct {
 	// Applied reports whether the inventory item was consumed.
 	Applied bool
+	// RoomID identifies the active room that contained the consumed item.
+	RoomID int64
 	// Snapshot stores complete unlock state after the attempt.
 	Snapshot ClothingSnapshot
 }
