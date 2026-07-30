@@ -55,6 +55,15 @@ func (service *Service) usePostureFurniture(ctx context.Context, request Request
 	switch request.Item.Definition.InteractionType {
 	case "default", "toggle":
 		return service.toggleFinal(ctx, request)
+	case "multiheight":
+		allowed, err := access.CanManage(ctx, service.permissions, request.Room, request.PlayerID)
+		if err != nil {
+			return err
+		}
+		if !allowed {
+			return nil
+		}
+		return service.advanceMultiheight(ctx, request)
 	default:
 		return nil
 	}
@@ -169,6 +178,12 @@ func (service *Service) useMultiheight(ctx context.Context, request Request) err
 	if !allowed {
 		return ErrNoRights
 	}
+
+	return service.advanceMultiheight(ctx, request)
+}
+
+// advanceMultiheight changes one authorized physical furniture height.
+func (service *Service) advanceMultiheight(ctx context.Context, request Request) error {
 	heights := strings.Split(request.Item.Definition.Multiheight, ";")
 	if len(heights) < 2 || !request.Room.CanChangeFurnitureHeight(request.Item.ID) {
 		return nil

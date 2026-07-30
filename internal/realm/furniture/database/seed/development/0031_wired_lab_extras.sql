@@ -1,7 +1,7 @@
 --liquibase formatted sql
 
 --changeset pixels:pixels-furniture-seed-development-0031-wired-lab-extras context:development
---validCheckSum:ANY
+--validCheckSum: 9:0dae3cea4def6e5dda16b4afa31e8ac3
 -- Room 116: cases the six original labs never covered — roller-driven walk-on/off,
 -- multi-tile carpet footprints, username-filtered room entry and per-minute rewards.
 insert into furniture_items(id,definition_id,owner_player_id,room_id,x,y,z,rotation,extra_data)

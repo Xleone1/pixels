@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	worldfurniture "github.com/niflaot/pixels/internal/realm/room/world/furniture"
 	"github.com/niflaot/pixels/internal/realm/room/world/grid"
 	worldunit "github.com/niflaot/pixels/internal/realm/room/world/unit"
 )
@@ -114,5 +115,43 @@ func TestMultiheightRejectsSingleState(t *testing.T) {
 	updated, _ := active.FurnitureItem(item.ID)
 	if updated.ExtraData != "0" {
 		t.Fatalf("unexpected state %q", updated.ExtraData)
+	}
+}
+
+// TestPostureMultiheightSeparatesUseFromHeightAuthority verifies every player can sit while only room managers change the physical state.
+func TestPostureMultiheightSeparatesUseFromHeightAuthority(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		playerID   int64
+		wantState  string
+		wantHeight grid.Height
+		wantWrites int
+	}{
+		{name: "owner changes height", playerID: 1, wantState: "1", wantHeight: grid.HeightFromUnits(1.5), wantWrites: 1},
+		{name: "guest only sits", playerID: 2, wantState: "0", wantHeight: grid.HeightFromUnits(0.5)},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			item := essentialItem("multiheight", 2)
+			item.Definition.AllowSit = true
+			item.Definition.Multiheight = "0.50;1.50"
+			item.Definition.StackHeight = grid.HeightFromUnits(0.5)
+			item.Definition.Slots = []worldfurniture.SlotDefinition{{
+				Status: worldfurniture.SlotStatusSit, BodyRotation: worldunit.RotationNorth,
+			}}
+			active := essentialRoom(t, item, test.playerID)
+			states := &stateRecorder{}
+			service := &Service{states: states}
+			handled, err := service.Use(context.Background(), Request{PlayerID: test.playerID, Room: active, Item: item})
+			if err != nil || !handled {
+				t.Fatalf("use posture multiheight handled=%t err=%v", handled, err)
+			}
+			updated, found := active.FurnitureItem(item.ID)
+			if !found || updated.ExtraData != test.wantState || updated.Definition.StackHeight != test.wantHeight {
+				t.Fatalf("updated=%#v found=%t", updated, found)
+			}
+			if len(states.params) != test.wantWrites {
+				t.Fatalf("state writes=%d want=%d", len(states.params), test.wantWrites)
+			}
+		})
 	}
 }
