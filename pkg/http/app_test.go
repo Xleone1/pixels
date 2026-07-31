@@ -168,9 +168,6 @@ func TestCreateSSOTicketRoute(t *testing.T) {
 	if !strings.Contains(body, `"ticket"`) {
 		t.Fatalf("expected ticket response, got %s", body)
 	}
-	if !strings.Contains(body, `"playerId":2`) {
-		t.Fatalf("expected ticket response to echo the bound player id, got %s", body)
-	}
 }
 
 // TestCreateSSOTicketRouteReplaysIdempotentResponse verifies transport retries reuse one ticket.

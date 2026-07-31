@@ -196,7 +196,6 @@ func createSSOTicketHandler(service *sso.Service, redisClient *redispkg.Client) 
 
 		response := CreateSSOTicketResponse{
 			Ticket:    ticket.Value,
-			PlayerID:  ticket.PlayerID,
 			ExpiresAt: ticket.ExpiresAt.UTC().Format(time.RFC3339),
 		}
 		if idempotencyKey != "" {
