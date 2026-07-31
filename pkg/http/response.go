@@ -31,6 +31,8 @@ type CreateSSOTicketRequest struct {
 type CreateSSOTicketResponse struct {
 	// Ticket stores the opaque one-time SSO ticket.
 	Ticket string `json:"ticket"`
+	// PlayerID stores the player bound to the ticket.
+	PlayerID int64 `json:"playerId"`
 	// ExpiresAt stores the ticket expiration in RFC3339 format.
 	ExpiresAt string `json:"expiresAt"`
 }
