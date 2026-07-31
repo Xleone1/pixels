@@ -6,6 +6,7 @@ import (
 
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/configuration"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/trigger"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/variable"
 )
 
 // Status classifies one effect execution result.
@@ -52,6 +53,10 @@ const (
 	ToggleRandomState
 	// MoveFurnitureTo moves furniture relative to a target.
 	MoveFurnitureTo
+	// SetAltitude sets one furniture base height.
+	SetAltitude
+	// MoveFurnitureToFurniture moves selected furniture toward another target.
+	MoveFurnitureToFurniture
 )
 
 // AvatarOperation identifies a player-facing room mutation.
@@ -74,6 +79,12 @@ const (
 	GiveHanditem
 	// GiveEffect changes the actor's room-scoped effect.
 	GiveEffect
+	// FreezeAvatar prevents actor movement for a bounded duration.
+	FreezeAvatar
+	// UnfreezeAvatar releases WIRED movement control.
+	UnfreezeAvatar
+	// MoveRotateAvatar moves and rotates the actor atomically.
+	MoveRotateAvatar
 )
 
 // BotOperation identifies a bot realm action.
@@ -110,6 +121,10 @@ const (
 	GiveTeamScore
 	// ResetHighscore clears selected durable boards.
 	ResetHighscore
+	// ControlClock starts, stops, pauses, or resumes the room clock.
+	ControlClock
+	// AdjustClock changes the room clock counter.
+	AdjustClock
 )
 
 // ProgressionOperation identifies a durable progression mutation.
@@ -174,6 +189,8 @@ type Services struct {
 	Reward RewardService
 	// Progression owns achievement and quest lifecycle.
 	Progression ProgressionService
+	// Variables owns durable WIRED variable mutations.
+	Variables *variable.Service
 }
 
 // Executor dispatches compiled effects to focused boundaries.

@@ -32,4 +32,5 @@
     <include file="development/0030_catalog_compatibility.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="development/0031_room_ads_recovery.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="development/0032_complete_layout_support.sql" relativeToChangelogFile="true" contextFilter="development"/>
+    <include file="development/0033_wired_catalog.sql" relativeToChangelogFile="true" contextFilter="development"/>
 </databaseChangeLog>

@@ -7,7 +7,9 @@ import (
 
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/configuration"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/selection"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/trigger"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/variable"
 )
 
 // Context stores condition evaluation inputs.
@@ -22,6 +24,10 @@ type Context struct {
 	ResetAt time.Time
 	// Effects stores the current stack's immutable effects for compatibility simulation.
 	Effects []*configuration.Node
+	// Selection stores dynamic WIRED targets resolved for this stack.
+	Selection selection.Selection
+	// Variables resolves warmed WIRED values.
+	Variables *variable.Service
 }
 
 // View exposes read-only room facts required by canonical conditions.
@@ -48,6 +54,10 @@ type View interface {
 	HasHanditem(int64, int32) (bool, bool, error)
 	// ValidMoves simulates the stack's movement effects without durable mutation.
 	ValidMoves([]*configuration.Node, trigger.Event) (bool, error)
+	// FurnitureAltitude returns one furniture base height in hundredths.
+	FurnitureAltitude(int64) (int32, bool)
+	// ClockCounter returns the room WIRED clock counter.
+	ClockCounter() int64
 }
 
 // Result stores a condition result and whether its predicate domain existed.

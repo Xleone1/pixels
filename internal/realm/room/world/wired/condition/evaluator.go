@@ -71,6 +71,21 @@ func evaluatePositive(key string, node *configuration.Node, context Context, vie
 	case "wf_cnd_has_handitem":
 		pass, valid, err := view.HasHanditem(context.Event.PlayerID, first(node.Parameters.Values))
 		return Result{Pass: pass, Valid: valid}, err
+	case "wf_cnd_has_altitude":
+		return altitudeMatches(node, view)
+	case "wf_cnd_actor_dir":
+		return Result{Pass: context.Event.ActorID > 0 && context.Event.Direction == first(node.Parameters.Values), Valid: context.Event.ActorID > 0}, nil
+	case "wf_cnd_slc_quantity":
+		count := int64(len(context.Selection.Furni) + len(context.Selection.Actors))
+		return Result{Pass: compare(count, int64(value(node.Parameters.Values, 1)), first(node.Parameters.Values)), Valid: true}, nil
+	case "wf_cnd_clock_matches":
+		return Result{Pass: compare(view.ClockCounter(), int64(value(node.Parameters.Values, 1)), first(node.Parameters.Values)), Valid: true}, nil
+	case "wf_cnd_has_var":
+		return variableExists(node, context)
+	case "wf_cnd_var_val_match":
+		return variableValueMatches(node, context, false)
+	case "wf_cnd_var_age_match":
+		return variableValueMatches(node, context, true)
 	case "wf_cnd_valid_moves":
 		pass, err := view.ValidMoves(context.Effects, context.Event)
 		return Result{Pass: pass, Valid: true}, err
@@ -102,6 +117,10 @@ func positiveKey(key string) (string, bool) {
 		return "wf_cnd_wearing_badge", true
 	case "wf_cnd_not_wearing_fx":
 		return "wf_cnd_wearing_effect", true
+	case "wf_cnd_not_has_altitude":
+		return "wf_cnd_has_altitude", true
+	case "wf_cnd_neg_has_var":
+		return "wf_cnd_has_var", true
 	default:
 		return key, false
 	}

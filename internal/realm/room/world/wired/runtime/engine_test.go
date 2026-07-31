@@ -122,6 +122,34 @@ func TestRuntimeHelpersCoverStableOrdering(t *testing.T) {
 	}
 }
 
+// TestExecutionInlineBuffersPreserveOrder verifies queue overflow and visit promotion.
+func TestExecutionInlineBuffersPreserveOrder(t *testing.T) {
+	var current execution
+	for index := range 12 {
+		current.enqueue(eventQueue{depth: index})
+		if current.markVisited(configuration.Point{X: index}) {
+			t.Fatalf("point %d was marked visited before insertion", index)
+		}
+	}
+	if current.queueSize() != 12 {
+		t.Fatalf("queue size=%d", current.queueSize())
+	}
+	for index := range 12 {
+		request, found := current.dequeue()
+		if !found || request.depth != index {
+			t.Fatalf("queue index=%d request=%+v found=%v", index, request, found)
+		}
+	}
+	if _, found := current.dequeue(); found || current.queueSize() != 0 {
+		t.Fatal("drained queue retained work")
+	}
+	for index := range 12 {
+		if !current.markVisited(configuration.Point{X: index}) {
+			t.Fatalf("point %d was lost during visited promotion", index)
+		}
+	}
+}
+
 // TestRoomSchedulerQueuesOnlyActiveRooms verifies delayed work stays owned by active room lifecycle.
 func TestRoomSchedulerQueuesOnlyActiveRooms(t *testing.T) {
 	rooms := roomlive.NewRegistry(nil)

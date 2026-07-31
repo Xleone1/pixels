@@ -15,7 +15,14 @@ func TestCanonicalInventory(t *testing.T) {
 	for _, descriptor := range manifest {
 		counts[descriptor.Family]++
 	}
-	if len(manifest) != 76 || counts[registry.FamilyTrigger] != 17 || counts[registry.FamilyEffect] != 30 || counts[registry.FamilyCondition] != 24 || counts[registry.FamilyExtra] != 4 || counts[registry.FamilyHighscore] != 1 {
+	if len(manifest) != 130 ||
+		counts[registry.FamilyTrigger] != 22 ||
+		counts[registry.FamilyEffect] != 43 ||
+		counts[registry.FamilyCondition] != 33 ||
+		counts[registry.FamilyExtra] != 7 ||
+		counts[registry.FamilyHighscore] != 1 ||
+		counts[registry.FamilySelector] != 20 ||
+		counts[registry.FamilyVariable] != 4 {
 		t.Fatalf("unexpected manifest totals: total=%d families=%v", len(manifest), counts)
 	}
 	registered, err := registry.Canonical()

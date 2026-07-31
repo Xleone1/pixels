@@ -9,6 +9,12 @@ type Config struct {
 	Enabled bool `env:"PIXELS_WIRED_ENABLED" envDefault:"true"`
 	// MaxSelection bounds furniture targets stored by one node.
 	MaxSelection int `env:"PIXELS_WIRED_MAX_SELECTION" envDefault:"20"`
+	// MaxSelectionResolution bounds dynamic targets produced by one stack.
+	MaxSelectionResolution int `env:"PIXELS_WIRED_MAX_SELECTION_RESOLUTION" envDefault:"1000"`
+	// MaxVariablesPerRoom bounds durable variable assignments in one room.
+	MaxVariablesPerRoom int `env:"PIXELS_WIRED_MAX_VARIABLES_PER_ROOM" envDefault:"10000"`
+	// MaxSignalsPerTick bounds ephemeral signals emitted in one execution trace.
+	MaxSignalsPerTick int `env:"PIXELS_WIRED_MAX_SIGNALS_PER_TICK" envDefault:"256"`
 	// MaxDelayPulses bounds a delayed action in 500 millisecond pulses.
 	MaxDelayPulses int32 `env:"PIXELS_WIRED_MAX_DELAY_PULSES" envDefault:"7200"`
 	// MaxEventsPerTrace bounds derived events in one execution trace.
@@ -32,6 +38,15 @@ func LoadConfig() (Config, error) { return env.ParseAs[Config]() }
 func (config Config) Normalize() Config {
 	if config.MaxSelection <= 0 {
 		config.MaxSelection = 20
+	}
+	if config.MaxSelectionResolution <= 0 {
+		config.MaxSelectionResolution = 1000
+	}
+	if config.MaxVariablesPerRoom <= 0 {
+		config.MaxVariablesPerRoom = 10000
+	}
+	if config.MaxSignalsPerTick <= 0 {
+		config.MaxSignalsPerTick = 256
 	}
 	if config.MaxDelayPulses <= 0 {
 		config.MaxDelayPulses = 7200

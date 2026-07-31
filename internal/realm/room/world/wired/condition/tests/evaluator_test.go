@@ -74,6 +74,14 @@ func (value view) ValidMoves([]*configuration.Node, trigger.Event) (bool, error)
 	return value.predicate, value.err
 }
 
+// FurnitureAltitude returns the shared predicate as a found altitude.
+func (value view) FurnitureAltitude(int64) (int32, bool) {
+	return 1, value.valid
+}
+
+// ClockCounter returns a deterministic test counter.
+func (value view) ClockCounter() int64 { return 4 }
+
 // TestNegativeFailsClosed verifies invalid/error domains never pass negation.
 func TestNegativeFailsClosed(t *testing.T) {
 	evaluator := condition.New()
@@ -129,7 +137,7 @@ func TestAllCanonicalConditionsEvaluateValid(t *testing.T) {
 			t.Fatalf("condition %s result=%+v err=%v", descriptor.Key, result, err)
 		}
 	}
-	if count != 24 {
+	if count != 33 {
 		t.Fatalf("condition count=%d", count)
 	}
 }

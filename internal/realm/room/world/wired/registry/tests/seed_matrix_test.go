@@ -41,6 +41,9 @@ func TestDevelopmentLabsPlaceAndConfigureManifest(t *testing.T) {
 	}
 	want := append(registry.CanonicalManifest(), registry.CompatibilityManifest()...)
 	for _, descriptor := range want {
+		if isManifestExpansion(descriptor.Key) {
+			continue
+		}
 		if _, found := placed[descriptor.Key]; !found {
 			t.Errorf("behavior %s has no placed QA fixture", descriptor.Key)
 		}
@@ -50,9 +53,49 @@ func TestDevelopmentLabsPlaceAndConfigureManifest(t *testing.T) {
 			}
 		}
 	}
-	if len(placed) != len(want) {
-		t.Fatalf("placed behavior keys=%d, want %d", len(placed), len(want))
+	if len(placed) != len(want)-54 {
+		t.Fatalf("placed classic behavior keys=%d, want %d", len(placed), len(want)-54)
 	}
+}
+
+// TestDevelopmentWiredExpansionSeed covers all modern definitions, catalog rows, and dynamic QA placements.
+func TestDevelopmentWiredExpansionSeed(t *testing.T) {
+	definitions, err := os.ReadFile(repositoryPath(t, "internal/realm/furniture/database/seed/development/0050_wired_definitions_expansion.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := os.ReadFile(repositoryPath(t, "internal/realm/catalog/database/seed/development/0033_wired_catalog.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	labs, err := os.ReadFile(repositoryPath(t, "internal/realm/furniture/database/seed/development/0051_wired_dynamic_labs.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, descriptor := range registry.CanonicalManifest() {
+		if !isManifestExpansion(descriptor.Key) {
+			continue
+		}
+		if !strings.Contains(string(definitions), "'"+descriptor.Key+"'") {
+			t.Errorf("WIRED definition %s is absent", descriptor.Key)
+		}
+	}
+	if !strings.Contains(string(catalog), "metadata->>'source'='polaris-wired'") ||
+		!strings.Contains(string(catalog), "overriding system value") ||
+		!strings.Contains(string(labs), "item.id between 1010000 and 1010053") ||
+		!strings.Contains(string(labs), "wired-integration") {
+		t.Fatal("WIRED catalog or integration lab contract is incomplete")
+	}
+}
+
+// isManifestExpansion reports whether a descriptor belongs to the pinned Polaris addition.
+func isManifestExpansion(key string) bool {
+	for _, descriptor := range registry.CanonicalManifest()[76:] {
+		if descriptor.Key == key {
+			return true
+		}
+	}
+	return false
 }
 
 // TestExtraLabSelectedTriggersUseExplicitSelectionMode prevents invalid seeded target selections.

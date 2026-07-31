@@ -19,6 +19,12 @@ func furnitureOperation(key string) (FurnitureOperation, bool) {
 		return ToggleRandomState, true
 	case "wf_act_move_furni_to":
 		return MoveFurnitureTo, true
+	case "wf_act_furni_to_user":
+		return ChaseActor, true
+	case "wf_act_furni_to_furni":
+		return MoveFurnitureToFurniture, true
+	case "wf_act_set_altitude":
+		return SetAltitude, true
 	default:
 		return 0, false
 	}
@@ -43,6 +49,14 @@ func avatarOperation(key string) (AvatarOperation, bool) {
 		return GiveHanditem, true
 	case "wf_act_give_effect":
 		return GiveEffect, true
+	case "wf_act_freeze":
+		return FreezeAvatar, true
+	case "wf_act_unfreeze":
+		return UnfreezeAvatar, true
+	case "wf_act_move_rotate_user":
+		return MoveRotateAvatar, true
+	case "wf_act_user_to_furni":
+		return TeleportAvatar, true
 	default:
 		return 0, false
 	}
@@ -83,6 +97,10 @@ func gameOperation(key string) (GameOperation, bool) {
 		return GiveTeamScore, true
 	case "wf_act_reset_highscore":
 		return ResetHighscore, true
+	case "wf_act_control_clock":
+		return ControlClock, true
+	case "wf_act_control_clock_counter":
+		return AdjustClock, true
 	default:
 		return 0, false
 	}

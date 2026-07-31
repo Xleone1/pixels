@@ -43,7 +43,7 @@ func TestEnteredHandlerWarmsDependenciesAndSchedulesTrigger(t *testing.T) {
 	avatar := &wiringAvatar{}
 	engine := wiringEngine(t, store, avatar)
 	groups := socialgroup.New(wiringGroups{})
-	handler := enteredHandler(rooms, playerlive.NewRegistry(), engine, groups, nil)
+	handler := enteredHandler(rooms, playerlive.NewRegistry(), engine, groups, nil, nil)
 	if err := handler(context.Background(), bus.Event{Payload: "foreign"}); err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestRegisterRuntimeSubscribesAndReleasesLifecycle(t *testing.T) {
 	}
 	lifecycle := &wiringLifecycle{}
 	local := bus.New()
-	if err := RegisterRuntime(lifecycle, local, rooms, playerlive.NewRegistry(), nil, engine, game.New(), nil, groups, store, nil); err != nil {
+	if err := RegisterRuntime(lifecycle, local, rooms, playerlive.NewRegistry(), nil, engine, game.New(), nil, groups, nil, nil, store, nil); err != nil {
 		t.Fatal(err)
 	}
 	if len(lifecycle.hooks) != 1 || lifecycle.hooks[0].OnStop == nil {

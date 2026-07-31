@@ -34,6 +34,34 @@ func TestCompileBuildsStableStack(t *testing.T) {
 	}
 }
 
+// TestCompileRoutesDynamicFamilies verifies selectors, variables, and ordered extras.
+func TestCompileRoutesDynamicFamilies(t *testing.T) {
+	registered, err := registry.Canonical()
+	if err != nil {
+		t.Fatal(err)
+	}
+	compiler := configuration.NewCompiler(registered, roomwired.Config{})
+	generation, err := compiler.Compile(1, 9, []record.Config{
+		{
+			ItemID: 1, RoomID: 1, Interaction: "wf_slc_users_area",
+			X: 4, Y: 5, IntParams: []int32{0, 0, 10, 10},
+		},
+		{
+			ItemID: 2, RoomID: 1, Interaction: "wf_var_room",
+			X: 4, Y: 5, StringParam: " Score ",
+		},
+		{ItemID: 3, RoomID: 1, Interaction: "wf_xtra_exec_in_order", X: 4, Y: 5},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	stack := generation.Stacks[configuration.Point{X: 4, Y: 5}]
+	if stack == nil || len(stack.Selectors) != 1 || len(stack.Variables) != 1 ||
+		!stack.ExecuteInOrder || stack.Variables[0].Parameters.Text != "score" {
+		t.Fatalf("stack=%+v", stack)
+	}
+}
+
 // TestCompileRejectsEveryStrictBehaviorBoundary verifies editor-specific schema constraints.
 func TestCompileRejectsEveryStrictBehaviorBoundary(t *testing.T) {
 	registered, err := registry.Canonical()
@@ -51,6 +79,13 @@ func TestCompileRejectsEveryStrictBehaviorBoundary(t *testing.T) {
 		{ItemID: 1, RoomID: 1, Interaction: "wf_trg_enter_room", SelectionMode: 1},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_act_toggle_state", SelectionMode: 1, Targets: []record.Target{{ItemID: -1}}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_act_toggle_state", SelectionMode: 1, Targets: []record.Target{{ItemID: 2}, {ItemID: 2}}},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_slc_users_area", IntParams: []int32{-1, 0, 1, 1}},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_slc_users_team", IntParams: []int32{5}},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_act_freeze", IntParams: []int32{0}},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_act_set_altitude", IntParams: []int32{10001}},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_act_send_signal", StringParam: ""},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_var_room", StringParam: ""},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_cnd_slc_quantity", IntParams: []int32{6, 1}},
 	}
 	for _, stored := range cases {
 		if _, compileErr := compiler.CompileNode(stored); !errors.Is(compileErr, configuration.ErrInvalid) {

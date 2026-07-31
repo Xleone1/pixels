@@ -48,6 +48,9 @@ func (service *Service) ExecuteFurniture(ctx context.Context, operation effect.F
 	if !found {
 		return effect.Result{Status: effect.Skipped}, nil
 	}
+	if operation == effect.MoveFurnitureToFurniture {
+		return service.moveFurnitureToFurniture(ctx, active, node, event)
+	}
 	var result effect.Result
 	result.Status = effect.Skipped
 	for _, target := range node.Targets {
@@ -101,6 +104,9 @@ func (service *Service) executeTarget(ctx context.Context, active *roomlive.Room
 		return mutation{changed: changed}, err
 	case effect.MatchSnapshot:
 		changed, err := service.restore(ctx, active, target, event.PlayerID)
+		return mutation{changed: changed}, err
+	case effect.SetAltitude:
+		changed, err := service.setAltitude(ctx, active, target.ItemID, node, event.PlayerID)
 		return mutation{changed: changed}, err
 	default:
 		return service.move(ctx, active, target.ItemID, operation, node, event)

@@ -114,3 +114,24 @@ func avatarRoom(t *testing.T) (*roomlive.Registry, *roomlive.Room) {
 	t.Cleanup(func() { _, _, _ = rooms.Close(context.Background(), active.ID()) })
 	return rooms, active
 }
+
+// TestFreezeGenerationsReleaseRoomOwnedHeap verifies invalidation and close cleanup.
+func TestFreezeGenerationsReleaseRoomOwnedHeap(t *testing.T) {
+	service := &Service{freezeTokens: make(map[freezeKey]uint64)}
+	first := service.nextFreeze(1, 10)
+	second := service.nextFreeze(1, 10)
+	service.nextFreeze(2, 20)
+	if service.releaseFreeze(1, 10, first) {
+		t.Fatal("stale freeze generation released newer control")
+	}
+	if !service.releaseFreeze(1, 10, second) {
+		t.Fatal("current freeze generation was not released")
+	}
+	service.invalidateFreeze(2, 20)
+	service.nextFreeze(1, 11)
+	service.nextFreeze(2, 21)
+	service.CleanupRoom(1)
+	if len(service.freezeTokens) != 1 {
+		t.Fatalf("freeze tokens=%v", service.freezeTokens)
+	}
+}

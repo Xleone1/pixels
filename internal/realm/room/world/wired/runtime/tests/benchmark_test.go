@@ -28,12 +28,15 @@ func BenchmarkIndexedDispatch(benchmark *testing.B) {
 		{ItemID: 1, RoomID: 1, Interaction: "wf_trg_enter_room", X: 1, Y: 1},
 		{ItemID: 2, RoomID: 1, Interaction: "wf_act_show_message", X: 1, Y: 1, StringParam: "hello"},
 	}
-	engine := newEngineForBenchmark(benchmark, records, &avatar{})
+	service := &avatar{items: make([]int64, 0, 1)}
+	engine := newEngineForBenchmark(benchmark, records, service)
 	event := trigger.Event{Kind: trigger.EnterRoom, RoomID: 1, ActorKind: trigger.ActorPlayer, PlayerID: 4}
 	now := time.Now()
 	benchmark.ReportAllocs()
 	benchmark.ResetTimer()
 	for benchmark.Loop() {
+		service.items = service.items[:0]
+		service.actors = service.actors[:0]
 		_, _ = engine.Process(context.Background(), event, now)
 	}
 }

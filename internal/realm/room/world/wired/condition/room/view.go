@@ -11,6 +11,7 @@ import (
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/game"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/trigger"
+	wiredvariable "github.com/niflaot/pixels/internal/realm/room/world/wired/variable"
 )
 
 // Provider resolves active-room condition views.
@@ -23,11 +24,18 @@ type Provider struct {
 	achievements *playerachievement.Service
 	// groups resolves room-linked social membership.
 	groups *socialgroup.Service
+	// variables resolves warmed WIRED variable assignments.
+	variables *wiredvariable.Service
 }
 
 // New creates an active-room view provider.
 func New(rooms *roomlive.Registry, games *game.Service, achievements *playerachievement.Service, groups *socialgroup.Service) *Provider {
 	return &Provider{rooms: rooms, games: games, achievements: achievements, groups: groups}
+}
+
+// NewWithVariables creates an active-room provider with WIRED variable lookups.
+func NewWithVariables(rooms *roomlive.Registry, games *game.Service, achievements *playerachievement.Service, groups *socialgroup.Service, variables *wiredvariable.Service) *Provider {
+	return &Provider{rooms: rooms, games: games, achievements: achievements, groups: groups, variables: variables}
 }
 
 // View returns one active-room condition adapter.
@@ -36,7 +44,7 @@ func (provider *Provider) View(roomID int64) (condition.View, bool) {
 	if !found {
 		return nil, false
 	}
-	return &View{active: active, games: provider.games, achievements: provider.achievements, groups: provider.groups}, true
+	return &View{active: active, games: provider.games, achievements: provider.achievements, groups: provider.groups, variables: provider.variables}, true
 }
 
 // View reads authoritative live room facts.
@@ -49,6 +57,8 @@ type View struct {
 	achievements *playerachievement.Service
 	// groups resolves room-linked social membership.
 	groups *socialgroup.Service
+	// variables resolves warmed WIRED variable assignments.
+	variables *wiredvariable.Service
 }
 
 // UserCount returns player occupancy excluding bot and pet units.
@@ -145,6 +155,20 @@ func (view *View) WearingEffect(playerID int64, effectID int32) (bool, bool, err
 func (view *View) HasHanditem(playerID int64, itemID int32) (bool, bool, error) {
 	unit, found := view.active.Unit(playerID)
 	return found && unit.HandItem == itemID, found, nil
+}
+
+// FurnitureAltitude returns one furniture base height in hundredths.
+func (view *View) FurnitureAltitude(itemID int64) (int32, bool) {
+	item, found := view.active.FurnitureItem(itemID)
+	return int32(item.Z.Units() * 100), found
+}
+
+// ClockCounter returns the room WIRED clock counter.
+func (view *View) ClockCounter() int64 {
+	if view.games == nil {
+		return 0
+	}
+	return view.games.Counter(view.active.ID())
 }
 
 // footprintContains reports whether a point occupies a furniture footprint.

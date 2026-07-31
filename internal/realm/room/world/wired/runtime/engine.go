@@ -14,7 +14,9 @@ import (
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/configuration"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/effect"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/selection"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/trigger"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/variable"
 )
 
 // Engine owns compiled generations and bounded room execution.
@@ -37,6 +39,10 @@ type Engine struct {
 	scheduler Scheduler
 	// activator projects executed-box animation without generating furniture events.
 	activator Activator
+	// selections resolves dynamic WIRED stack targets.
+	selections *selection.Resolver
+	// variables resolves warmed WIRED state.
+	variables *variable.Service
 	// rooms stores state pointers by room id.
 	rooms sync.Map
 	// generationID allocates unique generation identifiers.
@@ -50,6 +56,13 @@ type Engine struct {
 // New creates a WIRED runtime engine.
 func New(config roomwired.Config, store record.Store, compiler *configuration.Compiler, effects *effect.Executor, views ViewProvider, scheduler Scheduler, activator Activator, extensions ...condition.ExtensionEvaluator) *Engine {
 	return &Engine{config: config.Normalize(), store: store, compiler: compiler, matcher: trigger.New(), conditions: condition.New(extensions...), effects: effects, views: views, scheduler: scheduler, activator: activator}
+}
+
+// WithDynamicDependencies installs dynamic selection and variable dependencies.
+func (engine *Engine) WithDynamicDependencies(selections *selection.Resolver, variables *variable.Service) *Engine {
+	engine.selections = selections
+	engine.variables = variables
+	return engine
 }
 
 // Reload loads, compiles, and atomically replaces one room generation.
@@ -106,13 +119,19 @@ func (engine *Engine) Process(ctx context.Context, event trigger.Event, now time
 	if !found || !engine.config.Enabled {
 		return Trace{}, nil
 	}
-	if event.ID == 0 {
-		event.ID = engine.eventID.Add(1)
+	loaded := value.(*state)
+	if int(event.Kind) < 0 || int(event.Kind) >= len(loaded.byKind) {
+		return Trace{}, nil
 	}
 	if int(event.Kind) < len(engine.metrics.events) {
 		engine.metrics.events[event.Kind].Add(1)
 	}
-	loaded := value.(*state)
+	if len(loaded.byKind[event.Kind]) == 0 {
+		return Trace{}, nil
+	}
+	if event.ID == 0 {
+		event.ID = engine.eventID.Add(1)
+	}
 	loaded.mutex.Lock()
 	defer loaded.mutex.Unlock()
 	return engine.processLocked(ctx, loaded, event, now)
@@ -180,46 +199,6 @@ func (engine *Engine) ResetTimers(roomID int64, now time.Time) bool {
 func (engine *Engine) IsCurrent(roomID int64, generationID uint64) bool {
 	value, found := engine.rooms.Load(roomID)
 	return found && value.(*state).generation.ID == generationID
-}
-
-// Matches reports whether an active generation has a matching trigger candidate.
-func (engine *Engine) Matches(event trigger.Event) bool {
-	value, found := engine.rooms.Load(event.RoomID)
-	if !found || !engine.config.Enabled {
-		return false
-	}
-	loaded := value.(*state)
-	loaded.mutex.Lock()
-	defer loaded.mutex.Unlock()
-	for _, candidate := range loaded.byKind[event.Kind] {
-		if engine.matcher.Match(candidate, event) {
-			return true
-		}
-	}
-	return false
-}
-
-// Conflicts returns trigger sprites incompatible with one effect's actor requirements.
-func (engine *Engine) Conflicts(roomID int64, itemID int64) []int32 {
-	value, found := engine.rooms.Load(roomID)
-	if !found {
-		return nil
-	}
-	loaded := value.(*state)
-	loaded.mutex.Lock()
-	defer loaded.mutex.Unlock()
-	node := loaded.generation.Nodes[itemID]
-	if node == nil {
-		return nil
-	}
-	stack := loaded.generation.Stacks[node.Point]
-	result := make([]int32, 0)
-	for _, candidate := range stack.Triggers {
-		if node.Descriptor.Actor != 0 && candidate.Descriptor.Actor == 0 {
-			result = append(result, candidate.SpriteID)
-		}
-	}
-	return result
 }
 
 // joined joins non-nil execution errors.

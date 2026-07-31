@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/niflaot/pixels/internal/realm/room/world/wired/condition"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/configuration"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/effect"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/registry"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/selection"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/trigger"
 )
 
@@ -19,12 +20,13 @@ func (engine *Engine) processLocked(ctx context.Context, loaded *state, event tr
 	started := time.Now()
 	execution := execution{
 		context: ctx, state: loaded, event: event, now: now,
-		queue: make([]eventQueue, 0, len(candidates)), visited: make(map[configuration.Point]struct{}, len(candidates)),
 		trace: Trace{ID: event.ID, Kind: event.Kind, StartedAt: started},
 	}
 	for _, node := range candidates {
 		if engine.matcher.Match(node, event) {
-			execution.queue = append(execution.queue, eventQueue{stack: loaded.generation.Stacks[node.Point], trigger: node})
+			execution.enqueue(eventQueue{
+				stack: loaded.generation.Stacks[node.Point], trigger: node,
+			})
 		}
 	}
 	err := engine.run(&execution)
@@ -39,9 +41,11 @@ func (engine *Engine) processTriggerLocked(ctx context.Context, loaded *state, n
 	started := time.Now()
 	execution := execution{
 		context: ctx, state: loaded, event: event, now: now,
-		queue: []eventQueue{{stack: loaded.generation.Stacks[node.Point], trigger: node}}, visited: make(map[configuration.Point]struct{}, 1),
 		trace: Trace{ID: event.ID, Kind: event.Kind, StartedAt: started},
 	}
+	execution.enqueue(eventQueue{
+		stack: loaded.generation.Stacks[node.Point], trigger: node,
+	})
 	err := engine.run(&execution)
 	execution.trace.Duration = time.Since(started)
 	engine.recordTrace(execution.trace)
@@ -52,23 +56,37 @@ func (engine *Engine) processTriggerLocked(ctx context.Context, loaded *state, n
 // run drains one breadth-first trace within configured budgets.
 func (engine *Engine) run(execution *execution) error {
 	var result error
-	for len(execution.queue) > 0 {
-		request := execution.queue[0]
-		execution.queue = execution.queue[1:]
+	for execution.queueSize() > 0 {
+		request, _ := execution.dequeue()
 		if request.stack == nil || request.depth > engine.config.MaxCallDepth {
 			continue
 		}
-		if _, visited := execution.visited[request.stack.Point]; visited {
+		if request.event == nil {
+			execution.event.ReferenceRoomID = 0
+			execution.event.ReferenceVariable = ""
+		} else {
+			execution.event = *request.event
+		}
+		execution.event = withVariableReference(request.stack, execution.event)
+		if execution.markVisited(request.stack.Point) {
 			continue
 		}
 		if execution.trace.Stacks >= engine.config.MaxStacksPerTrace {
 			execution.trace.BudgetExhausted = true
 			break
 		}
-		execution.visited[request.stack.Point] = struct{}{}
 		execution.trace.Stacks++
 		engine.activateNode(execution.context, execution.event.RoomID, request.trigger)
-		passed, err := engine.conditionsPass(execution, request.stack)
+		resolved, err := engine.resolveSelection(execution, request.stack)
+		result = joined(result, err)
+		if err != nil {
+			engine.metrics.stackResults[2].Add(1)
+			continue
+		}
+		resolved = selection.FilterVariables(
+			request.stack, resolved, execution.event, engine.variables,
+		)
+		passed, err := engine.conditionsPass(execution, request.stack, resolved)
 		result = joined(result, err)
 		if err != nil {
 			engine.metrics.stackResults[2].Add(1)
@@ -83,44 +101,68 @@ func (engine *Engine) run(execution *execution) error {
 		engine.activateNodes(execution.context, execution.event.RoomID, request.stack.Extras)
 		effects := engine.selectEffects(execution.state, request.stack, execution.event.ID)
 		for _, node := range effects {
-			if execution.trace.Effects >= engine.config.MaxEffectsPerTrace {
-				execution.trace.BudgetExhausted = true
+			if !engine.executeSelected(execution, node, request.depth, resolved, &result) {
 				break
 			}
-			execution.trace.Effects++
-			result = joined(result, engine.execute(execution, node, request.depth))
 		}
 	}
 	return result
 }
 
-// conditionsPass applies whole-stack AND or OR semantics.
-func (engine *Engine) conditionsPass(execution *execution, stack *configuration.Stack) (bool, error) {
-	if len(stack.Conditions) == 0 {
-		return true, nil
+// resolveSelection evaluates selectors only when the stack owns any.
+func (engine *Engine) resolveSelection(execution *execution, stack *configuration.Stack) (selection.Selection, error) {
+	if len(stack.Selectors) == 0 || engine.selections == nil {
+		return selection.Selection{}, nil
 	}
-	if engine.views == nil {
-		return false, nil
+	provider, supported := engine.views.(selection.Provider)
+	if !supported {
+		return selection.Selection{}, nil
 	}
-	view, found := engine.views.View(execution.event.RoomID)
+	view, found := provider.SelectionView(execution.event.RoomID)
 	if !found {
-		return false, nil
+		return selection.Selection{}, nil
 	}
-	matched := false
-	for _, node := range stack.Conditions {
-		result, err := engine.conditions.Evaluate(node, condition.Context{CallbackContext: execution.context, Event: execution.event, Now: execution.now, ResetAt: execution.state.resetAt, Effects: stack.Effects}, view)
-		if err != nil {
-			return false, err
-		}
-		matched = matched || result.Pass
-		if stack.Or && result.Pass {
-			return true, nil
-		}
-		if !stack.Or && !result.Pass {
-			return false, nil
+	return engine.selections.ResolveStack(execution.context, stack, execution.event, execution.state.generation, view)
+}
+
+// executeSelected executes one effect for each selected actor with dynamic furniture targets.
+func (engine *Engine) executeSelected(execution *execution, node *configuration.Node, depth int, resolved selection.Selection, aggregate *error) bool {
+	selectedNode := node
+	if resolved.FurniResolved {
+		copied := *node
+		copied.Targets = resolved.Furni
+		selectedNode = &copied
+	}
+	event := execution.event
+	event.ActorIDs, event.FurniTargets = resolved.Actors, resolved.Furni
+	if resolved.ActorsResolved && len(resolved.Actors) == 0 &&
+		node.Descriptor.Actor != registry.ActorOptional {
+		return true
+	}
+	if len(resolved.Actors) == 0 {
+		return engine.executeOne(execution, selectedNode, event, depth, aggregate)
+	}
+	for _, actorID := range resolved.Actors {
+		event.ActorID, event.PlayerID = actorID, actorID
+		if !engine.executeOne(execution, selectedNode, event, depth, aggregate) {
+			return false
 		}
 	}
-	return matched, nil
+	return true
+}
+
+// executeOne applies the trace budget around one resolved effect invocation.
+func (engine *Engine) executeOne(execution *execution, node *configuration.Node, event trigger.Event, depth int, aggregate *error) bool {
+	if execution.trace.Effects >= engine.config.MaxEffectsPerTrace {
+		execution.trace.BudgetExhausted = true
+		return false
+	}
+	execution.trace.Effects++
+	original := execution.event
+	execution.event = event
+	*aggregate = joined(*aggregate, engine.execute(execution, node, depth))
+	execution.event = original
+	return true
 }
 
 // selectEffects applies random or unseen stack selectors.
@@ -168,70 +210,4 @@ func (engine *Engine) execute(execution *execution, node *configuration.Node, de
 	}
 	engine.applyResult(execution, result, depth)
 	return nil
-}
-
-// executeDelayed executes one effect only against the generation that scheduled it.
-func (engine *Engine) executeDelayed(ctx context.Context, event trigger.Event, node *configuration.Node, generationID uint64, now time.Time, depth int) error {
-	value, found := engine.rooms.Load(event.RoomID)
-	if !found {
-		return nil
-	}
-	loaded := value.(*state)
-	loaded.mutex.Lock()
-	defer loaded.mutex.Unlock()
-	if loaded.generation.ID != generationID {
-		return nil
-	}
-	if loaded.delayed > 0 {
-		loaded.delayed--
-		engine.metrics.delayedTasks.Add(-1)
-	}
-	started := time.Now()
-	execution := execution{context: ctx, state: loaded, event: event, now: now, visited: make(map[configuration.Point]struct{}), trace: Trace{ID: event.ID, Kind: event.Kind, StartedAt: started}}
-	result, err := engine.effects.Execute(ctx, node, event)
-	if err == nil {
-		engine.recordEffect(result.Status)
-		if result.Status == effect.Applied {
-			engine.activateNode(ctx, event.RoomID, node)
-		}
-		execution.trace.Effects++
-		engine.applyResult(&execution, result, depth)
-		err = engine.run(&execution)
-	}
-	execution.trace.Duration = time.Since(started)
-	engine.recordTrace(execution.trace)
-	loaded.appendTrace(execution.trace)
-	return err
-}
-
-// applyResult applies engine-owned effect directives.
-func (engine *Engine) applyResult(execution *execution, result effect.Result, depth int) {
-	if result.ResetTimers {
-		execution.state.resetAt = execution.now
-		execution.state.timers = buildTimers(execution.state.generation, execution.now)
-	}
-	for _, targetID := range result.CallTargets {
-		target := execution.state.generation.Nodes[targetID]
-		if target != nil {
-			execution.queue = append(execution.queue, eventQueue{stack: execution.state.generation.Stacks[target.Point], depth: depth + 1})
-		}
-	}
-	for _, derived := range result.Derived {
-		if derived.RoomID == execution.event.RoomID && len(execution.queue) < engine.config.MaxEventsPerTrace {
-			for _, candidate := range execution.state.byKind[derived.Kind] {
-				if engine.matcher.Match(candidate, derived) {
-					execution.queue = append(execution.queue, eventQueue{stack: execution.state.generation.Stacks[candidate.Point], trigger: candidate, depth: depth + 1})
-				}
-			}
-		}
-	}
-}
-
-// appendTrace appends one trace to the fixed ring.
-func (loaded *state) appendTrace(trace Trace) {
-	loaded.traces[loaded.traceNext] = trace
-	loaded.traceNext = (loaded.traceNext + 1) % len(loaded.traces)
-	if loaded.traceCount < len(loaded.traces) {
-		loaded.traceCount++
-	}
 }

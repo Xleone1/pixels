@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/configuration"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
 )
 
 // Kind classifies one triggerable room event.
@@ -45,6 +46,16 @@ const (
 	TeamWon
 	// TeamLost reports one losing team member.
 	TeamLost
+	// ReceiveSignal reports an intra-room WIRED signal.
+	ReceiveSignal
+	// LeaveRoom reports a player leaving an active room.
+	LeaveRoom
+	// UserPerformsAction reports a wave, dance, posture, or gesture action.
+	UserPerformsAction
+	// ClockCounter reports a WIRED clock counter mutation.
+	ClockCounter
+	// VariableChanged reports a WIRED variable mutation.
+	VariableChanged
 )
 
 // ActorKind classifies an event actor.
@@ -89,6 +100,30 @@ type Event struct {
 	PreviousScore int64
 	// Team stores a game team from one through four.
 	Team int32
+	// Action stores the actor action identifier.
+	Action int32
+	// Direction stores the actor facing direction.
+	Direction int32
+	// Signal stores an intra-room signal name.
+	Signal string
+	// Counter stores the current WIRED clock counter value.
+	Counter int64
+	// PreviousCounter stores the prior WIRED clock counter value.
+	PreviousCounter int64
+	// VariableName stores the mutated variable definition name.
+	VariableName string
+	// VariableValue stores the current integer variable value.
+	VariableValue int64
+	// PreviousVariableValue stores the prior integer variable value.
+	PreviousVariableValue int64
+	// ReferenceRoomID identifies a remote room variable definition.
+	ReferenceRoomID int64
+	// ReferenceVariable stores the remote room variable name.
+	ReferenceVariable string
+	// ActorIDs stores actors carried by a WIRED signal.
+	ActorIDs []int64
+	// FurniTargets stores furniture carried by a WIRED signal.
+	FurniTargets []record.Target
 }
 
 // Matcher matches one compiled trigger without allocation.
@@ -113,6 +148,14 @@ func (Matcher) Match(node *configuration.Node, event Event) bool {
 		return node.Parameters.Text == "" || strings.EqualFold(node.Parameters.Text, event.Username)
 	case "wf_trg_score_achieved":
 		return len(node.Parameters.Values) > 0 && event.PreviousScore < int64(node.Parameters.Values[0]) && event.Score >= int64(node.Parameters.Values[0])
+	case "wf_trg_clock_counter":
+		return len(node.Parameters.Values) > 0 && event.PreviousCounter < int64(node.Parameters.Values[0]) && event.Counter >= int64(node.Parameters.Values[0])
+	case "wf_trg_user_performs_action":
+		return len(node.Parameters.Values) > 0 && event.Action == node.Parameters.Values[0]
+	case "wf_trg_recv_signal":
+		return node.Parameters.Text != "" && strings.EqualFold(node.Parameters.Text, event.Signal)
+	case "wf_trg_var_changed":
+		return node.Parameters.Text == "" || strings.EqualFold(node.Parameters.Text, event.VariableName)
 	case "wf_trg_bot_reached_stf":
 		return botNameMatches(node, event) && targetMatches(node, event.SourceItem, event.SourceSprite)
 	case "wf_trg_bot_reached_avtr":

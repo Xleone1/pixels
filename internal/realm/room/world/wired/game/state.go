@@ -23,6 +23,12 @@ type State struct {
 	TeamScores [5]int64
 	// WiredUses counts each score effect per player in the current match.
 	WiredUses map[int64]map[int64]int32
+	// ClockCounter stores the room WIRED clock counter.
+	ClockCounter int64
+	// ClockRunning reports whether the room WIRED clock is active.
+	ClockRunning bool
+	// ClockPaused reports whether an active clock is paused.
+	ClockPaused bool
 }
 
 // Service stores game states by active room.
@@ -100,6 +106,46 @@ func (service *Service) Team(roomID int64, playerID int64) (int32, bool) {
 	team, found := state.Teams[playerID]
 	service.mutex.RUnlock()
 	return team, found
+}
+
+// Counter returns one room's current WIRED clock counter.
+func (service *Service) Counter(roomID int64) int64 {
+	service.mutex.RLock()
+	state := service.rooms[roomID]
+	value := int64(0)
+	if state != nil {
+		value = state.ClockCounter
+	}
+	service.mutex.RUnlock()
+	return value
+}
+
+// controlClock applies start, stop, pause, and resume commands under lock.
+func controlClock(state *State, command int32) bool {
+	switch command {
+	case 0:
+		changed := state.ClockRunning || state.ClockPaused || state.ClockCounter != 0
+		state.ClockRunning, state.ClockPaused, state.ClockCounter = false, false, 0
+		return changed
+	case 1:
+		changed := !state.ClockRunning || state.ClockPaused
+		state.ClockRunning, state.ClockPaused = true, false
+		return changed
+	case 2:
+		if !state.ClockRunning || state.ClockPaused {
+			return false
+		}
+		state.ClockPaused = true
+		return true
+	case 3:
+		if !state.ClockRunning || !state.ClockPaused {
+			return false
+		}
+		state.ClockPaused = false
+		return true
+	default:
+		return false
+	}
 }
 
 // JoinTeam assigns one player before a match starts.

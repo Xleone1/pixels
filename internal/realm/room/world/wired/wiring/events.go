@@ -12,7 +12,9 @@ import (
 	furnitureused "github.com/niflaot/pixels/internal/realm/furniture/events/used"
 	furnitureoff "github.com/niflaot/pixels/internal/realm/furniture/events/walkedoff"
 	furnitureon "github.com/niflaot/pixels/internal/realm/furniture/events/walkedon"
+	roomleft "github.com/niflaot/pixels/internal/realm/room/access/events/left"
 	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
+	roomacted "github.com/niflaot/pixels/internal/realm/room/world/events/acted"
 	roommoved "github.com/niflaot/pixels/internal/realm/room/world/events/moved"
 	"github.com/niflaot/pixels/internal/realm/room/world/grid"
 	worldunit "github.com/niflaot/pixels/internal/realm/room/world/unit"
@@ -23,6 +25,42 @@ import (
 	"github.com/niflaot/pixels/pkg/bus"
 	"go.uber.org/zap"
 )
+
+// leftHandler emits a player leave trigger before the room runtime disappears.
+func leftHandler(rooms *roomlive.Registry, engine *wiredruntime.Engine) bus.Handler {
+	return func(_ context.Context, event bus.Event) error {
+		payload, ok := event.Payload.(roomleft.Payload)
+		if ok {
+			scheduleEvent(rooms, engine, trigger.Event{
+				Kind: trigger.LeaveRoom, RoomID: payload.RoomID,
+				ActorKind: trigger.ActorPlayer, ActorID: payload.PlayerID,
+				PlayerID: payload.PlayerID,
+			})
+		}
+		return nil
+	}
+}
+
+// actedHandler emits a normalized user-performs-action trigger.
+func actedHandler(rooms *roomlive.Registry, engine *wiredruntime.Engine) bus.Handler {
+	return func(_ context.Context, event bus.Event) error {
+		payload, ok := event.Payload.(roomacted.Payload)
+		if ok && payload.Action > 0 {
+			wiredEvent := trigger.Event{
+				Kind: trigger.UserPerformsAction, RoomID: payload.RoomID,
+				ActorKind: trigger.ActorPlayer, ActorID: payload.PlayerID,
+				PlayerID: payload.PlayerID, Action: payload.Action,
+			}
+			if active, found := rooms.Find(payload.RoomID); found {
+				if actor, exists := active.UnitMotion(payload.PlayerID); exists {
+					wiredEvent.Direction = int32(actor.BodyRotation)
+				}
+			}
+			scheduleEvent(rooms, engine, wiredEvent)
+		}
+		return nil
+	}
+}
 
 // usedHandler emits state-changed after non-WIRED furniture interactions.
 func usedHandler(rooms *roomlive.Registry, engine *wiredruntime.Engine) bus.Handler {
@@ -74,6 +112,7 @@ func unitEvent(rooms *roomlive.Registry, kind trigger.Kind, roomID int64, player
 			event.ActorKind = actorKind(actor.Kind)
 			event.ActorID = actor.EntityKey
 			event.PlayerID = actor.PlayerID
+			event.Direction = int32(actor.BodyRotation)
 		}
 		if item, exists := active.FurnitureItem(itemID); exists {
 			event.SourceSprite = int32(item.Definition.SpriteID)

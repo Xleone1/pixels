@@ -14,19 +14,23 @@ import (
 	socialgroup "github.com/niflaot/pixels/internal/realm/group"
 	playerlive "github.com/niflaot/pixels/internal/realm/player/live"
 	roomentered "github.com/niflaot/pixels/internal/realm/room/access/events/entered"
+	roomleft "github.com/niflaot/pixels/internal/realm/room/access/events/left"
 	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
+	roomacted "github.com/niflaot/pixels/internal/realm/room/world/events/acted"
 	roommoved "github.com/niflaot/pixels/internal/realm/room/world/events/moved"
+	avatareffect "github.com/niflaot/pixels/internal/realm/room/world/wired/effect/avatar"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/game"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
 	wiredruntime "github.com/niflaot/pixels/internal/realm/room/world/wired/runtime"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/trigger"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/variable"
 	"github.com/niflaot/pixels/pkg/bus"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
 // RegisterRuntime connects WIRED to room lifecycle and realm events.
-func RegisterRuntime(lifecycle fx.Lifecycle, subscriber bus.Subscriber, rooms *roomlive.Registry, players *playerlive.Registry, bots *botcore.Service, engine *wiredruntime.Engine, games *game.Service, coordinator *game.Coordinator, groups *socialgroup.Service, store record.Store, log *zap.Logger) error {
+func RegisterRuntime(lifecycle fx.Lifecycle, subscriber bus.Subscriber, rooms *roomlive.Registry, players *playerlive.Registry, bots *botcore.Service, engine *wiredruntime.Engine, games *game.Service, coordinator *game.Coordinator, groups *socialgroup.Service, variables *variable.Service, avatars *avatareffect.Service, store record.Store, log *zap.Logger) error {
 	rooms.AddCyclePublisher(func(ctx context.Context, active *roomlive.Room, now time.Time) error {
 		return engine.Cycle(ctx, active.ID(), now)
 	})
@@ -34,8 +38,14 @@ func RegisterRuntime(lifecycle fx.Lifecycle, subscriber bus.Subscriber, rooms *r
 		engine.Close(roomID)
 		games.Close(roomID)
 		groups.CloseRoom(roomID)
+		if avatars != nil {
+			avatars.CleanupRoom(roomID)
+		}
+		if variables != nil {
+			variables.Close(roomID)
+		}
 	})
-	subscriptions, err := subscribeRuntime(subscriber, rooms, players, bots, engine, coordinator, groups, store, log)
+	subscriptions, err := subscribeRuntime(subscriber, rooms, players, bots, engine, coordinator, groups, variables, store, log)
 	if err != nil {
 		return err
 	}
@@ -49,12 +59,14 @@ func RegisterRuntime(lifecycle fx.Lifecycle, subscriber bus.Subscriber, rooms *r
 }
 
 // subscribeRuntime registers cold reloads and hot event adapters.
-func subscribeRuntime(subscriber bus.Subscriber, rooms *roomlive.Registry, players *playerlive.Registry, bots *botcore.Service, engine *wiredruntime.Engine, coordinator *game.Coordinator, groups *socialgroup.Service, store record.Store, log *zap.Logger) ([]*bus.Subscription, error) {
+func subscribeRuntime(subscriber bus.Subscriber, rooms *roomlive.Registry, players *playerlive.Registry, bots *botcore.Service, engine *wiredruntime.Engine, coordinator *game.Coordinator, groups *socialgroup.Service, variables *variable.Service, store record.Store, log *zap.Logger) ([]*bus.Subscription, error) {
 	registrations := []struct {
 		name   bus.Name
 		handle bus.Handler
 	}{
-		{name: roomentered.Name, handle: enteredHandler(rooms, players, engine, groups, log)},
+		{name: roomentered.Name, handle: enteredHandler(rooms, players, engine, groups, variables, log)},
+		{name: roomleft.Name, handle: leftHandler(rooms, engine)},
+		{name: roomacted.Name, handle: actedHandler(rooms, engine)},
 		{name: furnitureused.Name, handle: usedHandler(rooms, engine)},
 		{name: furnitureon.Name, handle: walkOnHandler(rooms, engine, coordinator)},
 		{name: furnitureoff.Name, handle: walkOffHandler(rooms, engine)},
@@ -78,7 +90,7 @@ func subscribeRuntime(subscriber bus.Subscriber, rooms *roomlive.Registry, playe
 }
 
 // enteredHandler loads a generation once and emits the completed entry event.
-func enteredHandler(rooms *roomlive.Registry, players *playerlive.Registry, engine *wiredruntime.Engine, groups *socialgroup.Service, log *zap.Logger) bus.Handler {
+func enteredHandler(rooms *roomlive.Registry, players *playerlive.Registry, engine *wiredruntime.Engine, groups *socialgroup.Service, variables *variable.Service, log *zap.Logger) bus.Handler {
 	return func(ctx context.Context, event bus.Event) error {
 		payload, ok := event.Payload.(roomentered.Payload)
 		if !ok {
@@ -88,6 +100,12 @@ func enteredHandler(rooms *roomlive.Registry, players *playerlive.Registry, engi
 			if err := groups.PrepareRoom(ctx, payload.RoomID); err != nil {
 				logError(log, "load room social group", payload.RoomID, err)
 				return nil
+			}
+			if variables != nil {
+				if err := variables.LoadRoom(ctx, payload.RoomID); err != nil {
+					logError(log, "load room WIRED variables", payload.RoomID, err)
+					return nil
+				}
 			}
 			if err := engine.Reload(ctx, payload.RoomID, time.Now()); err != nil {
 				logError(log, "load room WIRED", payload.RoomID, err)

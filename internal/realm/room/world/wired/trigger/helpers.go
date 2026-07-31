@@ -102,6 +102,16 @@ func kindFor(key string) Kind {
 		return TeamWon
 	case "wf_trg_game_team_lose":
 		return TeamLost
+	case "wf_trg_recv_signal":
+		return ReceiveSignal
+	case "wf_trg_leave_room":
+		return LeaveRoom
+	case "wf_trg_user_performs_action":
+		return UserPerformsAction
+	case "wf_trg_clock_counter":
+		return ClockCounter
+	case "wf_trg_var_changed":
+		return VariableChanged
 	default:
 		return 0
 	}

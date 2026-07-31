@@ -11,21 +11,38 @@ import (
 
 // ExecuteGame executes team and score effects.
 func (service *Service) ExecuteGame(ctx context.Context, operation effect.GameOperation, node *configuration.Node, event trigger.Event) (effect.Result, error) {
-	if event.PlayerID <= 0 {
-		return effect.Result{Status: effect.Skipped}, nil
-	}
 	service.mutex.Lock()
 	defer service.mutex.Unlock()
 	state := service.stateLocked(event.RoomID)
 	switch operation {
+	case effect.ControlClock:
+		if !controlClock(state, first(node.Parameters.Values)) {
+			return effect.Result{Status: effect.Skipped}, nil
+		}
+	case effect.AdjustClock:
+		previous := state.ClockCounter
+		state.ClockCounter = saturatedAdd(previous, int64(first(node.Parameters.Values)))
+		derived := event
+		derived.ID, derived.Kind = 0, trigger.ClockCounter
+		derived.PreviousCounter, derived.Counter = previous, state.ClockCounter
+		return effect.Result{Status: effect.Applied, Derived: []trigger.Event{derived}}, nil
 	case effect.JoinTeam:
+		if event.PlayerID <= 0 {
+			return effect.Result{Status: effect.Skipped}, nil
+		}
 		team := first(node.Parameters.Values)
 		state.Teams[event.PlayerID] = team
 		service.projectTeam(event.RoomID, event.PlayerID, team)
 	case effect.LeaveTeam:
+		if event.PlayerID <= 0 {
+			return effect.Result{Status: effect.Skipped}, nil
+		}
 		delete(state.Teams, event.PlayerID)
 		service.projectTeam(event.RoomID, event.PlayerID, 0)
 	case effect.GiveScore:
+		if event.PlayerID <= 0 {
+			return effect.Result{Status: effect.Skipped}, nil
+		}
 		return service.giveWiredScore(event, node, state), nil
 	case effect.GiveTeamScore:
 		return service.giveTeamScore(event, node, state), nil

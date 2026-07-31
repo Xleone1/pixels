@@ -84,7 +84,8 @@ func familyOf(family registry.Family) Family {
 	switch family {
 	case registry.FamilyTrigger:
 		return TriggerFamily
-	case registry.FamilyEffect:
+	case registry.FamilyEffect, registry.FamilyExtra, registry.FamilySelector,
+		registry.FamilyVariable:
 		return EffectFamily
 	case registry.FamilyCondition:
 		return ConditionFamily

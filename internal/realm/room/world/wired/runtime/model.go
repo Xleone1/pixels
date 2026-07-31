@@ -52,7 +52,7 @@ type Trace struct {
 // MetricsSnapshot contains low-cardinality WIRED runtime counters.
 type MetricsSnapshot struct {
 	// Events stores processed events indexed by trigger kind.
-	Events [18]uint64 `json:"events"`
+	Events [23]uint64 `json:"events"`
 	// StackResults stores passed, failed, and errored stack evaluations.
 	StackResults [3]uint64 `json:"stackResults"`
 	// EffectResults stores applied, skipped, and blocked effect results by status value.
@@ -76,7 +76,7 @@ type MetricsSnapshot struct {
 // metrics stores lock-free low-cardinality execution counters.
 type metrics struct {
 	// events stores counters indexed by trigger kind.
-	events [18]atomic.Uint64
+	events [23]atomic.Uint64
 	// stackResults stores pass, fail, and error counters.
 	stackResults [3]atomic.Uint64
 	// effectResults stores counters indexed by effect status.
@@ -104,7 +104,7 @@ type state struct {
 	// generation stores immutable compiled room nodes.
 	generation *configuration.Generation
 	// byKind indexes triggers without per-event allocation.
-	byKind [18][]*configuration.Node
+	byKind [23][]*configuration.Node
 	// resetAt stores timer origin.
 	resetAt time.Time
 	// timers stores deadline-ordered triggers.
@@ -127,6 +127,8 @@ type eventQueue struct {
 	stack *configuration.Stack
 	// trigger stores the matched trigger when the request originated from an event.
 	trigger *configuration.Node
+	// event points to derived context or stays nil for the root event.
+	event *trigger.Event
 	// depth stores call-stack depth.
 	depth int
 }
@@ -139,12 +141,30 @@ type execution struct {
 	state *state
 	// event stores immutable trigger context.
 	event trigger.Event
+	// derivedEvents lazily stores common queued event contexts.
+	derivedEvents *[8]trigger.Event
+	// derivedCount stores populated inline event contexts.
+	derivedCount int
+	// derivedOverflow retains exceptional event pointers beyond the inline budget.
+	derivedOverflow []*trigger.Event
 	// now stores injected execution time.
 	now time.Time
-	// queue stores breadth-first stack requests.
-	queue []eventQueue
-	// visited stores stacks already executed in this trace.
-	visited map[configuration.Point]struct{}
+	// queue stores the common breadth-first trace inline.
+	queue [8]eventQueue
+	// queueHead stores the first inline queue entry.
+	queueHead int
+	// queueLength stores populated inline queue entries.
+	queueLength int
+	// queueOverflow stores exceptional traces beyond the inline budget.
+	queueOverflow []eventQueue
+	// visited stores the common small trace inline.
+	visited [8]configuration.Point
+	// visitedCount stores populated inline visited entries.
+	visitedCount int
+	// visitedOverflow indexes traces that exceed the small visited buffer.
+	visitedOverflow map[configuration.Point]struct{}
+	// signals stores derived signals accepted in this trace.
+	signals int
 	// trace stores execution counters.
 	trace Trace
 }

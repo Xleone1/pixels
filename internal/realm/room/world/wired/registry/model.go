@@ -15,6 +15,10 @@ const (
 	FamilyExtra
 	// FamilyHighscore projects durable game scores.
 	FamilyHighscore
+	// FamilySelector resolves dynamic furniture and room-unit targets.
+	FamilySelector
+	// FamilyVariable defines a named WIRED variable scope.
+	FamilyVariable
 )
 
 // SelectionPolicy describes whether a descriptor accepts furniture targets.
@@ -62,4 +66,4 @@ type Descriptor struct {
 }
 
 // ManifestSource identifies the audited upstream inventory revision.
-const ManifestSource = "ArcturusMorningstar/Arcturus-Community master ItemManager + Nitro wired enums, audited 2026-07-15"
+const ManifestSource = "duckietm/Polaris-Emulator WIRED ItemManager and enums, audited 2026-07-30"

@@ -54,6 +54,8 @@
     <include file="development/0047_restore_gray_sofa.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="development/0048_fix_wired_selection_modes.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="development/0049_fix_multiheight_posture.sql" relativeToChangelogFile="true" contextFilter="development"/>
+    <include file="development/0050_wired_definitions_expansion.sql" relativeToChangelogFile="true" contextFilter="development"/>
+    <include file="development/0051_wired_dynamic_labs.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="test/0001_test_furniture_definitions.sql" relativeToChangelogFile="true" contextFilter="test"/>
     <include file="test/0002_test_furniture_items.sql" relativeToChangelogFile="true" contextFilter="test"/>
 </databaseChangeLog>

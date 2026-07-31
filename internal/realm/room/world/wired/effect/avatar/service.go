@@ -5,6 +5,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	playerachievement "github.com/niflaot/pixels/internal/realm/player/achievement"
@@ -36,11 +37,19 @@ type Service struct {
 	moderation *roommoderation.Service
 	// achievements grants durable respect.
 	achievements *playerachievement.Service
+	// freezeMutex protects scheduled freeze generations.
+	freezeMutex sync.Mutex
+	// freezeTokens prevents an older timer from releasing a newer freeze.
+	freezeTokens map[freezeKey]uint64
 }
 
 // New creates a player-facing WIRED effect service.
 func New(rooms *roomlive.Registry, players *playerlive.Registry, connections *netconn.Registry, moderation *roommoderation.Service, achievements *playerachievement.Service) *Service {
-	return &Service{rooms: rooms, players: players, connections: connections, moderation: moderation, achievements: achievements}
+	return &Service{
+		rooms: rooms, players: players, connections: connections,
+		moderation: moderation, achievements: achievements,
+		freezeTokens: make(map[freezeKey]uint64),
+	}
 }
 
 // ExecuteAvatar executes one validated player-facing operation.
@@ -59,6 +68,9 @@ func (service *Service) ExecuteAvatar(ctx context.Context, operation effect.Avat
 			return effect.Result{Status: effect.Skipped}, nil
 		}
 		return service.teleport(active, node, entityKey, unit)
+	}
+	if operation == effect.FreezeAvatar || operation == effect.UnfreezeAvatar || operation == effect.MoveRotateAvatar {
+		return service.executeControl(ctx, active, operation, node, event)
 	}
 	if operation == effect.ShowMessage && event.PlayerID <= 0 {
 		return service.sendRoomMessage(ctx, active, node.Parameters.Text, event)

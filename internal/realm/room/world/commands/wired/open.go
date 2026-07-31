@@ -26,7 +26,7 @@ func (handler Handler) HandleOpen(ctx context.Context, envelope command.Envelope
 		return handler.sendFailure(ctx, envelope.Command.Handler, "room.wired.save.target_missing")
 	}
 	descriptor, found := handler.Compiler.ResolveDescriptor(stored.Interaction)
-	if !found || !descriptor.Editor || (descriptor.Family != registry.FamilyTrigger && descriptor.Family != registry.FamilyEffect && descriptor.Family != registry.FamilyCondition) {
+	if !found || !descriptor.Editor || !editableFamily(descriptor.Family) {
 		return handler.sendFailure(ctx, envelope.Command.Handler, "room.wired.save.unsupported_editor")
 	}
 	opened, err := openedpacket.Encode(stored.ItemID)
@@ -46,7 +46,8 @@ func (handler Handler) HandleOpen(ctx context.Context, envelope command.Envelope
 			return encodeErr
 		}
 		return envelope.Command.Handler.Send(ctx, packet)
-	case registry.FamilyEffect:
+	case registry.FamilyEffect, registry.FamilySelector, registry.FamilyVariable,
+		registry.FamilyExtra:
 		packet, encodeErr := actionpacket.Encode(selection, int32(handler.Config.Normalize().MaxSelection), selected, stored.SpriteID, stored.ItemID, stored.StringParam, stored.IntParams, stored.SelectionMode, descriptor.ClientCode, stored.DelayPulses, conflicts)
 		if encodeErr != nil {
 			return encodeErr
@@ -58,6 +59,17 @@ func (handler Handler) HandleOpen(ctx context.Context, envelope command.Envelope
 			return encodeErr
 		}
 		return envelope.Command.Handler.Send(ctx, packet)
+	}
+}
+
+// editableFamily reports whether Nitro can configure one native family.
+func editableFamily(family registry.Family) bool {
+	switch family {
+	case registry.FamilyTrigger, registry.FamilyEffect, registry.FamilyCondition,
+		registry.FamilyExtra, registry.FamilySelector, registry.FamilyVariable:
+		return true
+	default:
+		return false
 	}
 }
 

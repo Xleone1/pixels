@@ -53,12 +53,15 @@ type avatar struct {
 	calls int
 	// items stores stable executed effect ids.
 	items []int64
+	// actors stores the exact event actor received by each effect.
+	actors []int64
 }
 
 // ExecuteAvatar records one effect.
-func (service *avatar) ExecuteAvatar(_ context.Context, _ effect.AvatarOperation, node *configuration.Node, _ trigger.Event) (effect.Result, error) {
+func (service *avatar) ExecuteAvatar(_ context.Context, _ effect.AvatarOperation, node *configuration.Node, event trigger.Event) (effect.Result, error) {
 	service.calls++
 	service.items = append(service.items, node.ItemID)
+	service.actors = append(service.actors, event.ActorID)
 	return effect.Result{Status: effect.Applied}, nil
 }
 

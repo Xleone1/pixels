@@ -53,7 +53,7 @@ func (registry *Registry) Register(descriptor Descriptor) error {
 	if registry.frozen {
 		return ErrFrozen
 	}
-	if descriptor.Key == "" || descriptor.Family < FamilyTrigger || descriptor.Family > FamilyHighscore {
+	if descriptor.Key == "" || descriptor.Family < FamilyTrigger || descriptor.Family > FamilyVariable {
 		return fmt.Errorf("invalid WIRED descriptor %q", descriptor.Key)
 	}
 	if _, exists := registry.byKey[descriptor.Key]; exists {

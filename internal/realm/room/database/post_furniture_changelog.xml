@@ -11,4 +11,5 @@
     <include file="migrations/0014_social_group_home_consistency.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0015_room_game_scores.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0016_room_branding.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0017_room_wired_variables.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

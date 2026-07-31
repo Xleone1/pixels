@@ -26,6 +26,8 @@ import (
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/registry"
 	wiredruntime "github.com/niflaot/pixels/internal/realm/room/world/wired/runtime"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/selection"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/variable"
 	"github.com/niflaot/pixels/internal/realm/session/binding"
 	netconn "github.com/niflaot/pixels/networking/connection"
 	"github.com/niflaot/pixels/pkg/i18n"
@@ -37,7 +39,7 @@ import (
 var Module = fx.Module("room-wired",
 	fx.Provide(
 		roomwired.LoadConfig, NewRepository, NewStore, NewRewardStore, NewHighscoreStore, NewRegistry, NewCompiler,
-		NewGamesWithStore, conditionroom.New, wiredruntime.NewRoomScheduler,
+		NewVariableService, NewSelectionResolver, NewGamesWithStore, conditionroom.NewWithVariables, wiredruntime.NewRoomScheduler,
 		NewAvatarEffects, NewFurnitureEffects, NewBotEffects, progressioneffect.New,
 		rewardeffect.New, NewEffectsWithProgression, NewEngine, game.NewCoordinator, bridge.NewSpeechBridge, NewCommandHandler,
 	),
@@ -66,6 +68,16 @@ func NewRewardStore(repository *wiredrepo.Repository) record.RewardStore { retur
 
 // NewHighscoreStore exposes WIRED highscore persistence through its focused contract.
 func NewHighscoreStore(repository *wiredrepo.Repository) record.HighscoreStore { return repository }
+
+// NewVariableService creates the durable WIRED variable cache.
+func NewVariableService(repository *wiredrepo.Repository, config roomwired.Config) *variable.Service {
+	return variable.New(repository.VariableStore(), config.Normalize().MaxVariablesPerRoom)
+}
+
+// NewSelectionResolver creates the bounded WIRED selector resolver.
+func NewSelectionResolver(config roomwired.Config) *selection.Resolver {
+	return selection.New(config.Normalize().MaxSelectionResolution)
+}
 
 // NewRegistry creates and audits the canonical WIRED manifest.
 func NewRegistry() (*registry.Registry, error) { return registry.Canonical() }
@@ -96,13 +108,13 @@ func NewEffects(furniture *furnitureeffect.Service, avatar *avatareffect.Service
 }
 
 // NewEffectsWithProgression composes every focused effect service.
-func NewEffectsWithProgression(furniture *furnitureeffect.Service, avatar *avatareffect.Service, bot *boteffect.Service, games *game.Service, rewards *rewardeffect.Service, progression *progressioneffect.Service, extensions *pluginwired.Registry) *effect.Executor {
-	return effect.New(effect.Services{Furniture: furniture, Avatar: avatar, Bot: bot, Game: games, Reward: rewards, Progression: progression}).WithExtensions(extensions)
+func NewEffectsWithProgression(furniture *furnitureeffect.Service, avatar *avatareffect.Service, bot *boteffect.Service, games *game.Service, rewards *rewardeffect.Service, progression *progressioneffect.Service, variables *variable.Service, extensions *pluginwired.Registry) *effect.Executor {
+	return effect.New(effect.Services{Furniture: furniture, Avatar: avatar, Bot: bot, Game: games, Reward: rewards, Progression: progression, Variables: variables}).WithExtensions(extensions)
 }
 
 // NewEngine creates the room WIRED engine.
-func NewEngine(config roomwired.Config, store record.Store, compiler *configuration.Compiler, effects *effect.Executor, views *conditionroom.Provider, scheduler *wiredruntime.RoomScheduler, furniture *furnitureeffect.Service, extensions *pluginwired.Registry) *wiredruntime.Engine {
-	return wiredruntime.New(config, store, compiler, effects, views, scheduler, furniture, extensions)
+func NewEngine(config roomwired.Config, store record.Store, compiler *configuration.Compiler, effects *effect.Executor, views *conditionroom.Provider, scheduler *wiredruntime.RoomScheduler, furniture *furnitureeffect.Service, selections *selection.Resolver, variables *variable.Service, extensions *pluginwired.Registry) *wiredruntime.Engine {
+	return wiredruntime.New(config, store, compiler, effects, views, scheduler, furniture, extensions).WithDynamicDependencies(selections, variables)
 }
 
 // NewCommandHandler composes WIRED editor command behavior.

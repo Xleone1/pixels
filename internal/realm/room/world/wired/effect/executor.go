@@ -14,6 +14,14 @@ func (executor *Executor) Execute(ctx context.Context, node *configuration.Node,
 		return Result{Status: Skipped}, nil
 	}
 	key := node.Descriptor.Key
+	if key == "wf_act_send_signal" {
+		derived := event
+		derived.ID, derived.Kind, derived.Signal = 0, trigger.ReceiveSignal, node.Parameters.Text
+		return Result{Status: Applied, Derived: []trigger.Event{derived}}, nil
+	}
+	if variableEffect(key) {
+		return executor.executeVariable(ctx, node, event)
+	}
 	if operation, found := furnitureOperation(key); found {
 		if executor.services.Furniture == nil {
 			return Result{Status: Blocked}, nil

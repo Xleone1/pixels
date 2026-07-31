@@ -84,6 +84,10 @@ func (compiler *Compiler) Compile(roomID int64, generationID uint64, records []r
 		case registry.FamilyExtra:
 			stack.Extras = append(stack.Extras, node)
 			applyExtra(stack, node.Descriptor.Key)
+		case registry.FamilySelector:
+			stack.Selectors = append(stack.Selectors, node)
+		case registry.FamilyVariable:
+			stack.Variables = append(stack.Variables, node)
 		}
 	}
 	for _, stack := range generation.Stacks {
@@ -94,6 +98,8 @@ func (compiler *Compiler) Compile(roomID int64, generationID uint64, records []r
 		sortNodes(stack.Conditions)
 		sortNodes(stack.Effects)
 		sortNodes(stack.Extras)
+		sortNodes(stack.Selectors)
+		sortNodes(stack.Variables)
 	}
 	sortNodes(generation.Triggers)
 	return generation, nil
@@ -133,6 +139,8 @@ func applyExtra(stack *Stack, key string) {
 		stack.Unseen = true
 	case "wf_xtra_or_eval":
 		stack.Or = true
+	case "wf_xtra_exec_in_order":
+		stack.ExecuteInOrder = true
 	}
 }
 
@@ -144,6 +152,17 @@ func sortNodes(nodes []*Node) {
 // compileParameters parses strings and durations outside execution hot paths.
 func compileParameters(stored record.Config, descriptor registry.Descriptor) (Parameters, error) {
 	parameters := Parameters{Text: strings.TrimSpace(stored.StringParam)}
+	if strings.Contains(descriptor.Key, "_var") || strings.HasPrefix(descriptor.Key, "wf_var_") {
+		parameters.Text = strings.ToLower(parameters.Text)
+	}
+	if descriptor.Key == "wf_xtra_filter_furni_by_var" ||
+		descriptor.Key == "wf_xtra_filter_users_by_var" {
+		parts := strings.SplitN(parameters.Text, "\t", 2)
+		parameters.Text = strings.TrimSpace(parts[0])
+		if len(parts) == 2 {
+			parameters.Message = strings.TrimSpace(parts[1])
+		}
+	}
 	if descriptor.Key == "wf_cnd_wearing_badge" || descriptor.Key == "wf_cnd_not_wearing_b" {
 		parameters.Text = strings.ToUpper(parameters.Text)
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/niflaot/pixels/internal/realm/room/runtime/broadcast"
 	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
+	roomacted "github.com/niflaot/pixels/internal/realm/room/world/events/acted"
 	roomdanced "github.com/niflaot/pixels/internal/realm/room/world/events/danced"
 	roomexpressed "github.com/niflaot/pixels/internal/realm/room/world/events/expressed"
 	roomidle "github.com/niflaot/pixels/internal/realm/room/world/events/idlechanged"
@@ -66,7 +67,10 @@ func (service *Service) Dance(ctx context.Context, room *roomlive.Room, playerID
 	if err = broadcast.RoomPacket(ctx, service.connections, room, packet, 0); err != nil {
 		return err
 	}
-	return service.publish(ctx, roomdanced.Name, roomdanced.Payload{RoomID: room.ID(), RoomIndex: unit.UnitID, DanceID: danceID})
+	if err = service.publish(ctx, roomdanced.Name, roomdanced.Payload{RoomID: room.ID(), RoomIndex: unit.UnitID, DanceID: danceID}); err != nil {
+		return err
+	}
+	return service.publishAction(ctx, room.ID(), playerID, 10, danceID)
 }
 
 // Express cancels incompatible avatar actions and broadcasts one transient expression.
@@ -96,7 +100,10 @@ func (service *Service) Express(ctx context.Context, room *roomlive.Room, player
 	if err = broadcast.RoomPacket(ctx, service.connections, room, packet, 0); err != nil {
 		return err
 	}
-	return service.publish(ctx, roomexpressed.Name, roomexpressed.Payload{RoomID: room.ID(), RoomIndex: unit.UnitID, ExpressionID: expressionID})
+	if err = service.publish(ctx, roomexpressed.Name, roomexpressed.Payload{RoomID: room.ID(), RoomIndex: unit.UnitID, ExpressionID: expressionID}); err != nil {
+		return err
+	}
+	return service.publishAction(ctx, room.ID(), playerID, expressionAction(expressionID), expressionID)
 }
 
 // SetIdle changes and broadcasts one AFK projection when needed.
@@ -186,7 +193,10 @@ func (service *Service) Sign(ctx context.Context, room *roomlive.Room, playerID 
 	if !found {
 		return roomlive.ErrUnitNotFound
 	}
-	return broadcast.RoomUnitStatus(ctx, service.connections, room, unit, 0)
+	if err := broadcast.RoomUnitStatus(ctx, service.connections, room, unit, 0); err != nil {
+		return err
+	}
+	return service.publishAction(ctx, room.ID(), playerID, 9, signID)
 }
 
 // ResumeForMovement clears avatar actions that cannot continue while walking.
@@ -235,5 +245,37 @@ func (service *Service) Posture(ctx context.Context, room *roomlive.Room, player
 	if !found {
 		return nil
 	}
-	return broadcast.RoomUnitStatus(ctx, service.connections, room, unit, 0)
+	if err := broadcast.RoomUnitStatus(ctx, service.connections, room, unit, 0); err != nil {
+		return err
+	}
+	action := int32(7)
+	if sitting {
+		action = 6
+	}
+	return service.publishAction(ctx, room.ID(), playerID, action, 0)
+}
+
+// publishAction emits a normalized WIRED action event.
+func (service *Service) publishAction(ctx context.Context, roomID int64, playerID int64, action int32, value int32) error {
+	return service.publish(ctx, roomacted.Name, roomacted.Payload{
+		RoomID: roomID, PlayerID: playerID, Action: action, Value: value,
+	})
+}
+
+// expressionAction maps protocol expressions to WIRED action types.
+func expressionAction(expressionID int32) int32 {
+	switch expressionID {
+	case 1:
+		return 1
+	case 2:
+		return 2
+	case 3:
+		return 3
+	case 6:
+		return 4
+	case 7:
+		return 5
+	default:
+		return 0
+	}
 }

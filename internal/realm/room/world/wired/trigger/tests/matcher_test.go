@@ -55,7 +55,9 @@ func TestAllCanonicalTriggersMatch(t *testing.T) {
 		"wf_trg_game_starts": trigger.GameStarted, "wf_trg_game_ends": trigger.GameEnded,
 		"wf_trg_score_achieved": trigger.ScoreAchieved, "wf_trg_bot_reached_stf": trigger.BotReachedFurniture,
 		"wf_trg_bot_reached_avtr": trigger.BotReachedAvatar, "wf_trg_game_team_win": trigger.TeamWon,
-		"wf_trg_game_team_lose": trigger.TeamLost,
+		"wf_trg_game_team_lose": trigger.TeamLost, "wf_trg_recv_signal": trigger.ReceiveSignal,
+		"wf_trg_leave_room": trigger.LeaveRoom, "wf_trg_user_performs_action": trigger.UserPerformsAction,
+		"wf_trg_clock_counter": trigger.ClockCounter, "wf_trg_var_changed": trigger.VariableChanged,
 	}
 	matcher := trigger.New()
 	count := 0
@@ -72,7 +74,12 @@ func TestAllCanonicalTriggersMatch(t *testing.T) {
 		if descriptor.Key == "wf_trg_enter_room" {
 			node.Parameters.Text = ""
 		}
-		event := trigger.Event{Kind: kind, RoomID: 1, ActorKind: trigger.ActorPlayer, ActorID: 4, PlayerID: 4, Username: "bot", Message: "hello world", SourceItem: 8, SourceSprite: 9, PreviousScore: 4, Score: 5}
+		event := trigger.Event{
+			Kind: kind, RoomID: 1, ActorKind: trigger.ActorPlayer, ActorID: 4,
+			PlayerID: 4, Username: "bot", Message: "hello world", SourceItem: 8,
+			SourceSprite: 9, PreviousScore: 4, Score: 5, Signal: "hello",
+			Action: 5, PreviousCounter: 4, Counter: 5, VariableName: "hello",
+		}
 		if descriptor.Actor == registry.ActorBot {
 			event.ActorKind = trigger.ActorBot
 		}
@@ -80,7 +87,7 @@ func TestAllCanonicalTriggersMatch(t *testing.T) {
 			t.Fatalf("trigger %s did not match event %d", descriptor.Key, kind)
 		}
 	}
-	if count != 17 {
+	if count != 22 {
 		t.Fatalf("trigger count=%d", count)
 	}
 }

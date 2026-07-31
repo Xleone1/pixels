@@ -68,12 +68,18 @@ type Stack struct {
 	Effects []*Node
 	// Extras stores stable stack-selector and evaluation add-ons.
 	Extras []*Node
+	// Selectors stores dynamic target resolvers in stable execution order.
+	Selectors []*Node
+	// Variables stores variable definitions colocated with the stack.
+	Variables []*Node
 	// Random selects one eligible effect.
 	Random bool
 	// Unseen selects effects in runtime round-robin order.
 	Unseen bool
 	// Or evaluates conditions with OR semantics.
 	Or bool
+	// ExecuteInOrder preserves the configured effect order explicitly.
+	ExecuteInOrder bool
 }
 
 // Generation stores an immutable compiled room graph.

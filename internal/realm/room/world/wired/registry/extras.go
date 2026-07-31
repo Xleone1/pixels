@@ -11,13 +11,109 @@ func canonicalExtras() []Descriptor {
 	}
 }
 
-// CanonicalManifest returns the audited seventy-six behavior descriptors.
+// canonicalSelectors returns the twenty official WIRED target selectors.
+func canonicalSelectors() []Descriptor {
+	return []Descriptor{
+		{Key: "wf_slc_furni_area", Family: FamilySelector, ClientCode: 28, Editor: true},
+		{Key: "wf_slc_furni_neighborhood", Family: FamilySelector, ClientCode: 29, Editor: true},
+		{Key: "wf_slc_furni_bytype", Family: FamilySelector, ClientCode: 30, Selection: SelectionRequired, Editor: true},
+		{Key: "wf_slc_users_area", Family: FamilySelector, ClientCode: 31, Editor: true},
+		{Key: "wf_slc_users_neighborhood", Family: FamilySelector, ClientCode: 32, Editor: true},
+		{Key: "wf_slc_furni_altitude", Family: FamilySelector, ClientCode: 44, Editor: true},
+		{Key: "wf_slc_furni_onfurni", Family: FamilySelector, ClientCode: 45, Selection: SelectionRequired, Editor: true},
+		{Key: "wf_slc_furni_picks", Family: FamilySelector, ClientCode: 46, Selection: SelectionRequired, Editor: true},
+		{Key: "wf_slc_furni_signal", Family: FamilySelector, ClientCode: 47, Editor: true},
+		{Key: "wf_slc_users_signal", Family: FamilySelector, ClientCode: 48, Editor: true},
+		{Key: "wf_slc_users_bytype", Family: FamilySelector, ClientCode: 49, Editor: true},
+		{Key: "wf_slc_users_team", Family: FamilySelector, ClientCode: 50, Editor: true},
+		{Key: "wf_slc_users_byaction", Family: FamilySelector, ClientCode: 51, Editor: true},
+		{Key: "wf_slc_users_byname", Family: FamilySelector, ClientCode: 52, Editor: true},
+		{Key: "wf_slc_users_onfurni", Family: FamilySelector, ClientCode: 53, Selection: SelectionRequired, Editor: true},
+		{Key: "wf_slc_users_group", Family: FamilySelector, ClientCode: 54, Editor: true},
+		{Key: "wf_slc_users_handitem", Family: FamilySelector, ClientCode: 55, Editor: true},
+		{Key: "wf_slc_furni_with_var", Family: FamilySelector, ClientCode: 75, Editor: true},
+		{Key: "wf_slc_users_with_var", Family: FamilySelector, ClientCode: 76, Editor: true},
+		{Key: "wf_slc_remote", Family: FamilySelector, ClientCode: 96, Selection: SelectionRequired, Editor: true},
+	}
+}
+
+// canonicalVariables returns the four WIRED variable definitions in scope.
+func canonicalVariables() []Descriptor {
+	return []Descriptor{
+		{Key: "wf_var_user", Family: FamilyVariable, ClientCode: 70, Editor: true},
+		{Key: "wf_var_furni", Family: FamilyVariable, ClientCode: 71, Editor: true},
+		{Key: "wf_var_room", Family: FamilyVariable, ClientCode: 72, Editor: true},
+		{Key: "wf_var_reference", Family: FamilyVariable, ClientCode: 81, Editor: true},
+	}
+}
+
+// canonicalAdditionalTriggers returns official WIRED trigger additions.
+func canonicalAdditionalTriggers() []Descriptor {
+	return []Descriptor{
+		{Key: "wf_trg_recv_signal", Family: FamilyTrigger, ClientCode: 15, Actor: ActorOptional, Editor: true},
+		{Key: "wf_trg_leave_room", Family: FamilyTrigger, ClientCode: 16, Actor: ActorPlayer, Editor: true},
+		{Key: "wf_trg_user_performs_action", Family: FamilyTrigger, ClientCode: 21, Actor: ActorUnit, Editor: true},
+		{Key: "wf_trg_clock_counter", Family: FamilyTrigger, ClientCode: 22, Actor: ActorOptional, Editor: true},
+		{Key: "wf_trg_var_changed", Family: FamilyTrigger, ClientCode: 23, Actor: ActorOptional, Editor: true},
+	}
+}
+
+// canonicalAdditionalEffects returns official WIRED effect additions.
+func canonicalAdditionalEffects() []Descriptor {
+	return []Descriptor{
+		{Key: "wf_act_send_signal", Family: FamilyEffect, ClientCode: 33, Actor: ActorOptional, Editor: true},
+		{Key: "wf_act_freeze", Family: FamilyEffect, ClientCode: 34, Actor: ActorUnit, Editor: true},
+		{Key: "wf_act_unfreeze", Family: FamilyEffect, ClientCode: 35, Actor: ActorUnit, Editor: true},
+		{Key: "wf_act_furni_to_user", Family: FamilyEffect, ClientCode: 36, Selection: SelectionRequired, Actor: ActorUnit, Editor: true},
+		{Key: "wf_act_user_to_furni", Family: FamilyEffect, ClientCode: 37, Selection: SelectionRequired, Actor: ActorUnit, Editor: true},
+		{Key: "wf_act_furni_to_furni", Family: FamilyEffect, ClientCode: 38, Selection: SelectionRequired, Editor: true},
+		{Key: "wf_act_set_altitude", Family: FamilyEffect, ClientCode: 39, Selection: SelectionRequired, Editor: true},
+		{Key: "wf_act_control_clock", Family: FamilyEffect, ClientCode: 41, Editor: true},
+		{Key: "wf_act_control_clock_counter", Family: FamilyEffect, ClientCode: 42, Editor: true, Aliases: []string{"wf_act_adjust_clock"}},
+		{Key: "wf_act_move_rotate_user", Family: FamilyEffect, ClientCode: 43, Actor: ActorUnit, Editor: true},
+		{Key: "wf_act_give_var", Family: FamilyEffect, ClientCode: 69, Actor: ActorOptional, Editor: true},
+		{Key: "wf_act_remove_var", Family: FamilyEffect, ClientCode: 73, Actor: ActorOptional, Editor: true},
+		{Key: "wf_act_change_var_val", Family: FamilyEffect, ClientCode: 74, Actor: ActorOptional, Editor: true},
+	}
+}
+
+// canonicalAdditionalConditions returns official WIRED condition additions.
+func canonicalAdditionalConditions() []Descriptor {
+	return []Descriptor{
+		{Key: "wf_cnd_clock_matches", Family: FamilyCondition, ClientCode: 27, Editor: true},
+		{Key: "wf_cnd_has_altitude", Family: FamilyCondition, ClientCode: 29, Selection: SelectionRequired, Editor: true},
+		{Key: "wf_cnd_not_has_altitude", Family: FamilyCondition, ClientCode: 29, Selection: SelectionRequired, Editor: true},
+		{Key: "wf_cnd_actor_dir", Family: FamilyCondition, ClientCode: 38, Actor: ActorUnit, Editor: true},
+		{Key: "wf_cnd_slc_quantity", Family: FamilyCondition, ClientCode: 39, Editor: true},
+		{Key: "wf_cnd_has_var", Family: FamilyCondition, ClientCode: 40, Actor: ActorOptional, Editor: true},
+		{Key: "wf_cnd_neg_has_var", Family: FamilyCondition, ClientCode: 41, Actor: ActorOptional, Editor: true},
+		{Key: "wf_cnd_var_val_match", Family: FamilyCondition, ClientCode: 42, Actor: ActorOptional, Editor: true},
+		{Key: "wf_cnd_var_age_match", Family: FamilyCondition, ClientCode: 43, Actor: ActorOptional, Editor: true},
+	}
+}
+
+// canonicalAdditionalExtras returns official WIRED stack modifiers.
+func canonicalAdditionalExtras() []Descriptor {
+	return []Descriptor{
+		{Key: "wf_xtra_exec_in_order", Family: FamilyExtra, ClientCode: 64, Editor: true},
+		{Key: "wf_xtra_filter_furni_by_var", Family: FamilyExtra, ClientCode: 78, Selection: SelectionOptional, Editor: true},
+		{Key: "wf_xtra_filter_users_by_var", Family: FamilyExtra, ClientCode: 77, Selection: SelectionOptional, Editor: true},
+	}
+}
+
+// CanonicalManifest returns the audited classic and WIRED behavior descriptors.
 func CanonicalManifest() []Descriptor {
-	manifest := make([]Descriptor, 0, 76)
+	manifest := make([]Descriptor, 0, 130)
 	manifest = append(manifest, canonicalTriggers()...)
 	manifest = append(manifest, canonicalEffects()...)
 	manifest = append(manifest, canonicalConditions()...)
 	manifest = append(manifest, canonicalExtras()...)
+	manifest = append(manifest, canonicalSelectors()...)
+	manifest = append(manifest, canonicalVariables()...)
+	manifest = append(manifest, canonicalAdditionalTriggers()...)
+	manifest = append(manifest, canonicalAdditionalEffects()...)
+	manifest = append(manifest, canonicalAdditionalConditions()...)
+	manifest = append(manifest, canonicalAdditionalExtras()...)
 	return manifest
 }
 

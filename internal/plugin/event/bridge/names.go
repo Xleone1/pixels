@@ -109,6 +109,7 @@ var eventNames = []string{
 	"room.staff_picked",
 	"room.updated",
 	"room.occupancy_changed",
+	"room.unit.acted",
 	"room.unit.danced",
 	"room.unit.expressed",
 	"room.unit.idle_changed",

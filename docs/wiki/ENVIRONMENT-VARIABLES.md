@@ -264,6 +264,9 @@ Durations use Go duration syntax such as `250ms`, `5m`, `24h`, and `168h`. Empty
 | `PIXELS_WIRED_MAX_EFFECTS_PER_TRACE` | `128` | Effect budget per trace |
 | `PIXELS_WIRED_MAX_CALL_DEPTH` | `10` | Recursive call depth limit |
 | `PIXELS_WIRED_MAX_DELAYED_PER_ROOM` | `512` | Outstanding delayed actions per room |
+| `PIXELS_WIRED_MAX_SELECTION_RESOLUTION` | `1000` | Maximum actors or furniture resolved by one selector stack |
+| `PIXELS_WIRED_MAX_VARIABLES_PER_ROOM` | `10000` | Maximum warmed durable variable assignments per room |
+| `PIXELS_WIRED_MAX_SIGNALS_PER_TICK` | `256` | Maximum intra-room signals derived by one execution trace |
 | `PIXELS_WIRED_HIGHSCORE_TOP` | `50` | Rows projected by a highscore board |
 
 ## Social groups and crafting

@@ -16,6 +16,7 @@ import (
 // TestArcturusInventoryAudit reproduces the versioned 76/179/113 inventory without a database.
 func TestArcturusInventoryAudit(t *testing.T) {
 	interactions, rows := baseInteractions(t)
+	wired := polarisInteractions()
 	if rows != 232 || len(interactions) != 179 {
 		t.Fatalf("Arcturus WIRED inventory rows=%d types=%d, want 232/179", rows, len(interactions))
 	}
@@ -24,7 +25,7 @@ func TestArcturusInventoryAudit(t *testing.T) {
 	for _, descriptor := range registry.CanonicalManifest() {
 		if interactions[descriptor.Key] {
 			direct++
-		} else {
+		} else if _, modern := wired[descriptor.Key]; !modern {
 			missing = append(missing, descriptor.Key)
 		}
 	}
@@ -46,6 +47,25 @@ func TestArcturusInventoryAudit(t *testing.T) {
 	}
 	if _, supported := registered.Resolve("wf_act_give_credits"); supported {
 		t.Fatal("corrupt wf_act_give_credits became functional")
+	}
+}
+
+// TestPolarisManifestExpansionInventory verifies every modern key and layout code against the pinned audit.
+func TestPolarisManifestExpansionInventory(t *testing.T) {
+	wired := polarisInteractions()
+	found := 0
+	for _, descriptor := range registry.CanonicalManifest() {
+		code, modern := wired[descriptor.Key]
+		if !modern {
+			continue
+		}
+		found++
+		if descriptor.ClientCode != code {
+			t.Errorf("%s client code=%d, want %d", descriptor.Key, descriptor.ClientCode, code)
+		}
+	}
+	if found != 54 || len(wired) != 54 {
+		t.Fatalf("Polaris WIRED keys=%d manifest matches=%d, want 54", len(wired), found)
 	}
 }
 
