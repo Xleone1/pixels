@@ -35,6 +35,7 @@
 *.cover
 coverage.out
 coverage.log
+databasechangelog.csv
 
 # Logs and runtime output.
 *.log

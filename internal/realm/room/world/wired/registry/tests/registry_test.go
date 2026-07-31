@@ -37,6 +37,10 @@ func TestCanonicalInventory(t *testing.T) {
 	if !found || extension.Editor || extension.Family != registry.FamilyCondition || len(registry.CompatibilityManifest()) != 5 {
 		t.Fatalf("compatibility extension resolved to %+v, %t", extension, found)
 	}
+	variableEffect, found := registered.Resolve("wf_act_give_var")
+	if !found || variableEffect.Selection != registry.SelectionOptional {
+		t.Fatalf("variable effect selection contract = %+v, %t", variableEffect, found)
+	}
 }
 
 // TestRegistryRejectsDuplicatesAndFreezes verifies construction guardrails.

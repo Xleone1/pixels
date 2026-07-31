@@ -71,9 +71,9 @@ func canonicalAdditionalEffects() []Descriptor {
 		{Key: "wf_act_control_clock", Family: FamilyEffect, ClientCode: 41, Editor: true},
 		{Key: "wf_act_control_clock_counter", Family: FamilyEffect, ClientCode: 42, Editor: true, Aliases: []string{"wf_act_adjust_clock"}},
 		{Key: "wf_act_move_rotate_user", Family: FamilyEffect, ClientCode: 43, Actor: ActorUnit, Editor: true},
-		{Key: "wf_act_give_var", Family: FamilyEffect, ClientCode: 69, Actor: ActorOptional, Editor: true},
-		{Key: "wf_act_remove_var", Family: FamilyEffect, ClientCode: 73, Actor: ActorOptional, Editor: true},
-		{Key: "wf_act_change_var_val", Family: FamilyEffect, ClientCode: 74, Actor: ActorOptional, Editor: true},
+		{Key: "wf_act_give_var", Family: FamilyEffect, ClientCode: 69, Selection: SelectionOptional, Actor: ActorOptional, Editor: true},
+		{Key: "wf_act_remove_var", Family: FamilyEffect, ClientCode: 73, Selection: SelectionOptional, Actor: ActorOptional, Editor: true},
+		{Key: "wf_act_change_var_val", Family: FamilyEffect, ClientCode: 74, Selection: SelectionOptional, Actor: ActorOptional, Editor: true},
 	}
 }
 

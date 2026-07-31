@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
@@ -101,6 +102,43 @@ func TestFunctionalSeedManifest(t *testing.T) {
 	}
 	if len(definitions) != 83 || len(interactions) != 69 {
 		t.Fatalf("functional assets=%d interaction variants=%d, want 83/69", len(definitions), len(interactions))
+	}
+}
+
+// TestExpansionAssetMapping verifies every added behavior has one published sprite mapping.
+func TestExpansionAssetMapping(t *testing.T) {
+	path := repositoryPath(
+		t,
+		"internal/realm/furniture/database/seed/development/0052_wired_asset_mapping.sql",
+	)
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expression := regexp.MustCompile(`\('(wf_[^']+)',([0-9]+),'(wf_[^']+)'\)`)
+	interactions := make(map[string]struct{})
+	sprites := make(map[string]struct{})
+	for _, match := range expression.FindAllStringSubmatch(string(contents), -1) {
+		if _, duplicate := interactions[match[1]]; duplicate {
+			t.Errorf("duplicate asset interaction %s", match[1])
+		}
+		if _, duplicate := sprites[match[2]]; duplicate {
+			t.Errorf("duplicate asset sprite %s", match[2])
+		}
+		interactions[match[1]] = struct{}{}
+		sprites[match[2]] = struct{}{}
+	}
+	for _, descriptor := range registry.CanonicalManifest()[76:] {
+		if _, found := interactions[descriptor.Key]; !found {
+			t.Errorf("missing asset mapping for %s", descriptor.Key)
+		}
+	}
+	if len(interactions) != 54 || len(sprites) != 54 {
+		t.Fatalf(
+			"asset interactions=%d sprites=%d, want 54/54",
+			len(interactions),
+			len(sprites),
+		)
 	}
 }
 

@@ -88,6 +88,31 @@ func TestDevelopmentWiredExpansionSeed(t *testing.T) {
 	}
 }
 
+// TestDevelopmentWiredCatalogOrganization verifies the one-level catalog hierarchy.
+func TestDevelopmentWiredCatalogOrganization(t *testing.T) {
+	path := repositoryPath(
+		t,
+		"internal/realm/catalog/database/seed/development/0034_wired_catalog_organization.sql",
+	)
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	required := []string{
+		"'wired_classic'",
+		"'wired_advanced'",
+		"'wired_advanced_components'",
+		"definition.metadata->>'source'='polaris-wired'",
+		"when definition.name like 'wf_slc_%' then 1007",
+		"when definition.name like 'wf_var_%' then 1008",
+	}
+	for _, fragment := range required {
+		if !strings.Contains(string(contents), fragment) {
+			t.Errorf("catalog organization is missing %q", fragment)
+		}
+	}
+}
+
 // isManifestExpansion reports whether a descriptor belongs to the pinned Polaris addition.
 func isManifestExpansion(key string) bool {
 	for _, descriptor := range registry.CanonicalManifest()[76:] {

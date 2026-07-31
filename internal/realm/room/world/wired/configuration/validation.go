@@ -111,7 +111,7 @@ func validateBehavior(stored record.Config, key string) error {
 			return fmt.Errorf("%w: actor movement", ErrInvalid)
 		}
 	case "wf_trg_user_performs_action", "wf_slc_users_byaction":
-		if len(stored.IntParams) == 0 || stored.IntParams[0] < 0 {
+		if len(stored.IntParams) == 0 || stored.IntParams[0] < 1 || stored.IntParams[0] > 11 {
 			return fmt.Errorf("%w: actor action", ErrInvalid)
 		}
 	case "wf_act_send_signal", "wf_trg_recv_signal":
@@ -138,13 +138,21 @@ func validateBehavior(stored record.Config, key string) error {
 			return fmt.Errorf("%w: comparison", ErrInvalid)
 		}
 	case "wf_xtra_filter_furni_by_var", "wf_xtra_filter_users_by_var":
-		name := strings.SplitN(strings.TrimSpace(stored.StringParam), "\t", 2)[0]
+		parts := strings.SplitN(strings.TrimSpace(stored.StringParam), "\t", 2)
+		name := parts[0]
 		if name == "" || len(name) > 64 ||
 			len(stored.IntParams) < 3 ||
 			stored.IntParams[0] < 0 || stored.IntParams[0] > 5 ||
 			stored.IntParams[1] < 0 || stored.IntParams[1] > 1 ||
 			stored.IntParams[2] < 0 || stored.IntParams[2] > 10000 {
 			return fmt.Errorf("%w: variable filter", ErrInvalid)
+		}
+		if stored.IntParams[1] == 1 &&
+			(len(parts) != 2 || strings.TrimSpace(parts[1]) == "" ||
+				len(strings.TrimSpace(parts[1])) > 64 ||
+				len(stored.IntParams) < 4 ||
+				stored.IntParams[3] < 0 || stored.IntParams[3] > 3) {
+			return fmt.Errorf("%w: variable filter amount source", ErrInvalid)
 		}
 	}
 	return nil

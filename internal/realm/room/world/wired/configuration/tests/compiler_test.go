@@ -81,11 +81,17 @@ func TestCompileRejectsEveryStrictBehaviorBoundary(t *testing.T) {
 		{ItemID: 1, RoomID: 1, Interaction: "wf_act_toggle_state", SelectionMode: 1, Targets: []record.Target{{ItemID: 2}, {ItemID: 2}}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_slc_users_area", IntParams: []int32{-1, 0, 1, 1}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_slc_users_team", IntParams: []int32{5}},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_trg_user_performs_action", IntParams: []int32{0}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_act_freeze", IntParams: []int32{0}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_act_set_altitude", IntParams: []int32{10001}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_act_send_signal", StringParam: ""},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_var_room", StringParam: ""},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_cnd_slc_quantity", IntParams: []int32{6, 1}},
+		{
+			ItemID: 1, RoomID: 1,
+			Interaction: "wf_xtra_filter_users_by_var",
+			IntParams:   []int32{0, 1, 0, 0}, StringParam: "score",
+		},
 	}
 	for _, stored := range cases {
 		if _, compileErr := compiler.CompileNode(stored); !errors.Is(compileErr, configuration.ErrInvalid) {
@@ -163,6 +169,25 @@ func BenchmarkCompileNode(b *testing.B) {
 	}
 	compiler := configuration.NewCompiler(registered, roomwired.Config{})
 	stored := record.Config{ItemID: 1, RoomID: 1, Interaction: "wf_trg_says_something", StringParam: "hello"}
+	b.ReportAllocs()
+	for range b.N {
+		if _, compileErr := compiler.CompileNode(stored); compileErr != nil {
+			b.Fatal(compileErr)
+		}
+	}
+}
+
+// BenchmarkCompileSelectorNode measures area-selector validation and cloning.
+func BenchmarkCompileSelectorNode(b *testing.B) {
+	registered, err := registry.Canonical()
+	if err != nil {
+		b.Fatal(err)
+	}
+	compiler := configuration.NewCompiler(registered, roomwired.Config{})
+	stored := record.Config{
+		ItemID: 1, RoomID: 1, Interaction: "wf_slc_users_area",
+		IntParams: []int32{0, 0, 10, 10},
+	}
 	b.ReportAllocs()
 	for range b.N {
 		if _, compileErr := compiler.CompileNode(stored); compileErr != nil {

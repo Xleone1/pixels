@@ -302,7 +302,7 @@ func TestReferenceVariableMutatesRemoteRoom(t *testing.T) {
 
 // wiredEngine creates an engine with selected WIRED service boundaries.
 func wiredEngine(
-	t *testing.T,
+	t testing.TB,
 	records []record.Config,
 	services effect.Services,
 ) *wiredruntime.Engine {
