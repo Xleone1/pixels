@@ -66,10 +66,17 @@ func resolveVariable(
 	node *configuration.Node,
 	context Context,
 ) (variable.Value, bool, error) {
-	if context.Variables == nil || node.Parameters.Text == "" {
+	if node.Parameters.Text == "" {
 		return variable.Value{}, false, nil
 	}
 	scope := variable.Scope(first(node.Parameters.Values))
+	if scope == variable.ScopeContext {
+		current, found := variable.ResolveContext(context.Event, node.Parameters.Text, context.Now)
+		return current, found, nil
+	}
+	if context.Variables == nil {
+		return variable.Value{}, false, nil
+	}
 	scopeID := context.Event.RoomID
 	switch scope {
 	case variable.ScopeFurni:

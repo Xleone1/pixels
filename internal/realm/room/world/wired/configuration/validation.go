@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	roomaction "github.com/niflaot/pixels/internal/realm/room/world/action"
+	roomwired "github.com/niflaot/pixels/internal/realm/room/world/wired"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/registry"
 )
@@ -39,11 +41,11 @@ func (compiler *Compiler) validate(stored record.Config, descriptor registry.Des
 		}
 		seen[target.ItemID] = struct{}{}
 	}
-	return validateBehavior(stored, descriptor.Key)
+	return validateBehavior(stored, descriptor.Key, compiler.config)
 }
 
 // validateBehavior enforces schemas whose editor fields have strict meaning.
-func validateBehavior(stored record.Config, key string) error {
+func validateBehavior(stored record.Config, key string, limits roomwired.Config) error {
 	switch key {
 	case "wf_trg_says_something":
 		if strings.TrimSpace(stored.StringParam) == "" || len(stored.StringParam) > 100 {
@@ -110,9 +112,14 @@ func validateBehavior(stored record.Config, key string) error {
 		if len(stored.IntParams) < 2 || stored.IntParams[0] < 0 || stored.IntParams[0] > 7 || stored.IntParams[1] < 0 || stored.IntParams[1] > 7 {
 			return fmt.Errorf("%w: actor movement", ErrInvalid)
 		}
-	case "wf_trg_user_performs_action", "wf_slc_users_byaction":
-		if len(stored.IntParams) == 0 || stored.IntParams[0] < 1 || stored.IntParams[0] > 11 {
+	case "wf_trg_user_performs_action", "wf_slc_users_byaction",
+		"wf_cnd_user_performs_action", "wf_cnd_not_user_performs_action":
+		if len(stored.IntParams) == 0 || !roomaction.ValidWiredAction(stored.IntParams[0]) {
 			return fmt.Errorf("%w: actor action", ErrInvalid)
+		}
+	case "wf_trg_user_clicks_furni", "wf_trg_user_clicks_tile":
+		if !validClickSource(stored) {
+			return fmt.Errorf("%w: click source", ErrInvalid)
 		}
 	case "wf_act_send_signal", "wf_trg_recv_signal":
 		if strings.TrimSpace(stored.StringParam) == "" || len(stored.StringParam) > 64 {
@@ -154,6 +161,14 @@ func validateBehavior(stored record.Config, key string) error {
 				stored.IntParams[3] < 0 || stored.IntParams[3] > 3) {
 			return fmt.Errorf("%w: variable filter amount source", ErrInvalid)
 		}
+	case "wf_xtra_projectile":
+		if len(stored.IntParams) != 3 ||
+			stored.IntParams[0] < 0 || stored.IntParams[0] > 7 ||
+			stored.IntParams[1] < 1 || int(stored.IntParams[1]) > limits.MaxProjectileDistance ||
+			stored.IntParams[2] < 1 || stored.IntParams[2] > 20 ||
+			int64(stored.IntParams[1])*int64(stored.IntParams[2]) > int64(limits.MaxProjectileDurationPulses) {
+			return fmt.Errorf("%w: projectile direction, distance, or speed", ErrInvalid)
+		}
 	}
 	return nil
 }
@@ -161,4 +176,23 @@ func validateBehavior(stored record.Config, key string) error {
 // positiveAt reports whether a setting index stores a positive value.
 func positiveAt(values []int32, index int) bool {
 	return index >= 0 && index < len(values) && values[index] > 0
+}
+
+// validClickSource enforces own-box, explicit-selection, and selector source modes.
+func validClickSource(stored record.Config) bool {
+	if len(stored.IntParams) > 1 {
+		return false
+	}
+	source := int32(0)
+	if len(stored.IntParams) == 1 {
+		source = stored.IntParams[0]
+	}
+	switch source {
+	case 0, 200:
+		return len(stored.Targets) == 0 && stored.SelectionMode == 0
+	case 100:
+		return len(stored.Targets) > 0 && stored.SelectionMode > 0
+	default:
+		return false
+	}
 }

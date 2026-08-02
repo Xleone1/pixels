@@ -11,7 +11,6 @@ import (
 	furnitureaccess "github.com/niflaot/pixels/internal/realm/furniture/access"
 	decorcmd "github.com/niflaot/pixels/internal/realm/furniture/commands/decor"
 	furnituresession "github.com/niflaot/pixels/internal/realm/furniture/commands/session"
-	furnitureused "github.com/niflaot/pixels/internal/realm/furniture/events/used"
 	"github.com/niflaot/pixels/internal/realm/furniture/interactions"
 	essential "github.com/niflaot/pixels/internal/realm/furniture/interactions/essential"
 	teleport "github.com/niflaot/pixels/internal/realm/furniture/interactions/teleport"
@@ -122,6 +121,9 @@ func (handler Handler) Handle(ctx context.Context, envelope command.Envelope[Com
 	if !actionMatches(envelope.Command.Action, item.Definition.InteractionType) {
 		return nil
 	}
+	if err := handler.publishClick(ctx, player.ID(), item.ID, roomID); err != nil {
+		return err
+	}
 	if envelope.Command.Action == ActionDiceClose && handler.Essentials != nil {
 		return handler.Essentials.CloseDice(ctx, essential.Request{PlayerID: player.ID(), Room: active, Item: item})
 	}
@@ -218,17 +220,6 @@ func (handler Handler) broadcast(ctx context.Context, active *roomlive.Room, ite
 	}
 
 	return broadcast.RoomPacket(ctx, handler.Connections, active, packet, 0)
-}
-
-// publish emits one successful generic furniture use event.
-func (handler Handler) publish(ctx context.Context, playerID int64, itemID int64, roomID int64) error {
-	if handler.Events == nil {
-		return nil
-	}
-
-	return handler.Events.Publish(ctx, bus.Event{Name: furnitureused.Name, Payload: furnitureused.Payload{
-		PlayerID: playerID, ItemID: itemID, RoomID: roomID,
-	}})
 }
 
 // teleportType reports whether an interaction delegates to paired travel.

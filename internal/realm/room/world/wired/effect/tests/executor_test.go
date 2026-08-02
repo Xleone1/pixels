@@ -117,7 +117,7 @@ func TestAllCanonicalEffectsDispatch(t *testing.T) {
 			t.Fatalf("effect %s result = %+v, %v", descriptor.Key, result, err)
 		}
 	}
-	if count != 43 || service.calls != 37 {
+	if count != 44 || service.calls != 38 {
 		t.Fatalf("effects=%d service calls=%d", count, service.calls)
 	}
 }

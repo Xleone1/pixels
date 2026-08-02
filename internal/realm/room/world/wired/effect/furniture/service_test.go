@@ -163,6 +163,22 @@ func TestServiceMutatesFurnitureThroughAuthoritativePlacement(t *testing.T) {
 	if item.Point != grid.MustPoint(1, 0) || item.ExtraData != "0" {
 		t.Fatalf("restored item=%+v", item)
 	}
+	result, err = service.ExecuteFurniture(context.Background(), effect.ToggleState, node, event)
+	if err != nil || result.Status != effect.Applied {
+		t.Fatalf("prepare reset result=%+v err=%v", result, err)
+	}
+	result, err = service.ExecuteFurniture(context.Background(), effect.ResetFurnitureState, node, event)
+	if err != nil || result.Status != effect.Applied {
+		t.Fatalf("reset result=%+v err=%v", result, err)
+	}
+	item, _ = active.FurnitureItem(10)
+	if item.Point != grid.MustPoint(1, 0) || item.ExtraData != "0" || manager.item.ExtraData != "0" {
+		t.Fatalf("reset item=%+v durable=%q", item, manager.item.ExtraData)
+	}
+	result, err = service.ExecuteFurniture(context.Background(), effect.ResetFurnitureState, node, event)
+	if err != nil || result.Status != effect.Skipped {
+		t.Fatalf("idempotent reset result=%+v err=%v", result, err)
+	}
 	if err = service.Activate(context.Background(), active.ID(), 10); err != nil {
 		t.Fatal(err)
 	}

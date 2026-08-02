@@ -58,6 +58,9 @@ func (compiler *Compiler) ResolveDescriptor(key string) (registry.Descriptor, bo
 
 // Compile creates one immutable room generation.
 func (compiler *Compiler) Compile(roomID int64, generationID uint64, records []record.Config) (*Generation, error) {
+	if len(records) > compiler.config.MaxFurniPerRoom {
+		return nil, fmt.Errorf("%w: room WIRED furniture limit", ErrInvalid)
+	}
 	generation := &Generation{ID: generationID, RoomID: roomID, Nodes: make(map[int64]*Node, len(records)), Stacks: make(map[Point]*Stack)}
 	for _, stored := range records {
 		if stored.RoomID != roomID {

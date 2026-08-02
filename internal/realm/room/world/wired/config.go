@@ -9,6 +9,8 @@ type Config struct {
 	Enabled bool `env:"PIXELS_WIRED_ENABLED" envDefault:"true"`
 	// MaxSelection bounds furniture targets stored by one node.
 	MaxSelection int `env:"PIXELS_WIRED_MAX_SELECTION" envDefault:"20"`
+	// MaxFurniPerRoom bounds compiled WIRED furniture in one room.
+	MaxFurniPerRoom int `env:"PIXELS_WIRED_MAX_FURNI_PER_ROOM" envDefault:"2500"`
 	// MaxSelectionResolution bounds dynamic targets produced by one stack.
 	MaxSelectionResolution int `env:"PIXELS_WIRED_MAX_SELECTION_RESOLUTION" envDefault:"1000"`
 	// MaxVariablesPerRoom bounds durable variable assignments in one room.
@@ -29,6 +31,12 @@ type Config struct {
 	MaxDelayedPerRoom int `env:"PIXELS_WIRED_MAX_DELAYED_PER_ROOM" envDefault:"512"`
 	// HighscoreTop bounds retained highscore entries per board and period.
 	HighscoreTop int `env:"PIXELS_WIRED_HIGHSCORE_TOP" envDefault:"50"`
+	// MaxProjectilesPerRoom bounds active custom projectiles in one room.
+	MaxProjectilesPerRoom int `env:"PIXELS_WIRED_MAX_PROJECTILES_PER_ROOM" envDefault:"64"`
+	// MaxProjectileDistance bounds tiles travelled by one custom projectile.
+	MaxProjectileDistance int `env:"PIXELS_WIRED_MAX_PROJECTILE_DISTANCE" envDefault:"64"`
+	// MaxProjectileDurationPulses bounds one custom projectile lifetime.
+	MaxProjectileDurationPulses int `env:"PIXELS_WIRED_MAX_PROJECTILE_DURATION_PULSES" envDefault:"1280"`
 }
 
 // LoadConfig reads WIRED configuration from environment variables.
@@ -38,6 +46,9 @@ func LoadConfig() (Config, error) { return env.ParseAs[Config]() }
 func (config Config) Normalize() Config {
 	if config.MaxSelection <= 0 {
 		config.MaxSelection = 20
+	}
+	if config.MaxFurniPerRoom <= 0 {
+		config.MaxFurniPerRoom = 2500
 	}
 	if config.MaxSelectionResolution <= 0 {
 		config.MaxSelectionResolution = 1000
@@ -68,6 +79,15 @@ func (config Config) Normalize() Config {
 	}
 	if config.HighscoreTop <= 0 {
 		config.HighscoreTop = 50
+	}
+	if config.MaxProjectilesPerRoom <= 0 {
+		config.MaxProjectilesPerRoom = 64
+	}
+	if config.MaxProjectileDistance <= 0 {
+		config.MaxProjectileDistance = 64
+	}
+	if config.MaxProjectileDurationPulses <= 0 {
+		config.MaxProjectileDurationPulses = 1280
 	}
 	return config
 }

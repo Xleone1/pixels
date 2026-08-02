@@ -18,6 +18,8 @@ const (
 	ScopeRoom
 	// ScopeReference stores a cross-room reference value.
 	ScopeReference
+	// ScopeContext exposes one execution event without durable persistence.
+	ScopeContext
 )
 
 // Value stores one durable typed variable assignment.
@@ -34,6 +36,8 @@ type Value struct {
 	IntValue int64
 	// StringValue stores the textual projection.
 	StringValue string
+	// UpdatedByPlayerID identifies the latest player editor when available.
+	UpdatedByPlayerID int64
 	// CreatedAt stores the first assignment instant.
 	CreatedAt time.Time
 	// UpdatedAt stores the latest mutation instant.
@@ -54,6 +58,14 @@ type Store interface {
 type Finder interface {
 	// Find returns one exact persisted assignment.
 	Find(context.Context, int64, Scope, int64, string) (Value, bool, error)
+}
+
+// SystemProvider resolves immutable variables derived from live room state.
+type SystemProvider interface {
+	// ResolveSystem returns one exact system variable without persistence.
+	ResolveSystem(int64, Scope, int64, string) (Value, bool)
+	// ListSystem returns system variables for one exact scope target.
+	ListSystem(int64, Scope, int64) []Value
 }
 
 // key indexes one variable inside a room cache.

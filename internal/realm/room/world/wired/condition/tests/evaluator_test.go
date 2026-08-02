@@ -69,6 +69,16 @@ func (value view) HasHanditem(int64, int32) (bool, bool, error) {
 	return value.predicate, value.valid, value.err
 }
 
+// PerformsAction returns the shared predicate and domain.
+func (value view) PerformsAction(trigger.Event, []int32) (bool, bool, error) {
+	return value.predicate, value.valid, value.err
+}
+
+// TeamHasRank returns the shared predicate and domain.
+func (value view) TeamHasRank(int32, int32) (bool, bool, error) {
+	return value.predicate, value.valid, value.err
+}
+
 // ValidMoves returns the shared compatibility simulation result.
 func (value view) ValidMoves([]*configuration.Node, trigger.Event) (bool, error) {
 	return value.predicate, value.err
@@ -137,7 +147,7 @@ func TestAllCanonicalConditionsEvaluateValid(t *testing.T) {
 			t.Fatalf("condition %s result=%+v err=%v", descriptor.Key, result, err)
 		}
 	}
-	if count != 33 {
+	if count != 37 {
 		t.Fatalf("condition count=%d", count)
 	}
 }

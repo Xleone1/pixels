@@ -24,6 +24,7 @@ func TestMatcher(t *testing.T) {
 		{name: "walk target", key: "wf_trg_walks_on_furni", targets: []record.Target{{ItemID: 8}}, event: trigger.Event{Kind: trigger.WalkOn, RoomID: 1, ActorKind: trigger.ActorPet, SourceItem: 8}, want: true},
 		{name: "wrong actor", key: "wf_trg_enter_room", event: trigger.Event{Kind: trigger.EnterRoom, RoomID: 1, ActorKind: trigger.ActorBot}, want: false},
 		{name: "system game", key: "wf_trg_game_starts", event: trigger.Event{Kind: trigger.GameStarted, RoomID: 1}, want: true},
+		{name: "unknown user action", key: "wf_trg_user_performs_action", parameters: configuration.Parameters{Values: []int32{11}}, event: trigger.Event{Kind: trigger.UserPerformsAction, RoomID: 1, ActorKind: trigger.ActorPlayer, Action: 11}, want: false},
 	}
 	manifest := map[string]registry.Descriptor{}
 	for _, descriptor := range registry.CanonicalManifest() {
@@ -44,6 +45,39 @@ func TestMatcher(t *testing.T) {
 	}
 }
 
+// TestFloorTileClickSourcesPreserveEveryEditorMode verifies box, selected, and selector sources.
+func TestFloorTileClickSourcesPreserveEveryEditorMode(t *testing.T) {
+	descriptor := registry.Descriptor{Key: "wf_trg_user_clicks_tile", Family: registry.FamilyTrigger, Actor: registry.ActorPlayer}
+	event := trigger.Event{Kind: trigger.FloorTileClicked, RoomID: 1, ActorKind: trigger.ActorPlayer, SourceItem: 8, SourceSprite: 9}
+	tests := []struct {
+		name    string
+		itemID  int64
+		source  int32
+		targets []record.Target
+		mode    int32
+		want    bool
+	}{
+		{name: "own box", itemID: 8, source: 0, want: true},
+		{name: "other box", itemID: 7, source: 0, want: false},
+		{name: "selected item", itemID: 7, source: 100, targets: []record.Target{{ItemID: 8}}, mode: 1, want: true},
+		{name: "unselected item", itemID: 7, source: 100, targets: []record.Target{{ItemID: 6}}, mode: 1, want: false},
+		{name: "selector source", itemID: 7, source: 200, want: true},
+	}
+	matcher := trigger.New()
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			node := &configuration.Node{
+				ItemID: test.itemID, RoomID: 1, Descriptor: descriptor,
+				Parameters: configuration.Parameters{Values: []int32{test.source}},
+				Targets:    test.targets, SelectionMode: test.mode,
+			}
+			if got := matcher.Match(node, event); got != test.want {
+				t.Fatalf("Match()=%t, want %t", got, test.want)
+			}
+		})
+	}
+}
+
 // TestAllCanonicalTriggersMatch verifies every descriptor maps to a concrete event kind.
 func TestAllCanonicalTriggersMatch(t *testing.T) {
 	kinds := map[string]trigger.Kind{
@@ -58,6 +92,9 @@ func TestAllCanonicalTriggersMatch(t *testing.T) {
 		"wf_trg_game_team_lose": trigger.TeamLost, "wf_trg_recv_signal": trigger.ReceiveSignal,
 		"wf_trg_leave_room": trigger.LeaveRoom, "wf_trg_user_performs_action": trigger.UserPerformsAction,
 		"wf_trg_clock_counter": trigger.ClockCounter, "wf_trg_var_changed": trigger.VariableChanged,
+		"wf_trg_user_clicks_furni": trigger.FurnitureClicked,
+		"wf_trg_user_clicks_tile":  trigger.FloorTileClicked,
+		"wf_trg_user_clicks_user":  trigger.AvatarClicked,
 	}
 	matcher := trigger.New()
 	count := 0
@@ -71,6 +108,9 @@ func TestAllCanonicalTriggersMatch(t *testing.T) {
 			t.Fatalf("missing trigger event mapping for %s", descriptor.Key)
 		}
 		node := &configuration.Node{RoomID: 1, Descriptor: descriptor, Parameters: configuration.Parameters{Text: "hello", Name: "bot", Values: []int32{5}}, SelectionMode: 1, Targets: []record.Target{{ItemID: 8, SpriteID: 9}}}
+		if descriptor.Key == "wf_trg_user_clicks_furni" || descriptor.Key == "wf_trg_user_clicks_tile" {
+			node.Parameters.Values = []int32{100}
+		}
 		if descriptor.Key == "wf_trg_enter_room" {
 			node.Parameters.Text = ""
 		}
@@ -87,7 +127,7 @@ func TestAllCanonicalTriggersMatch(t *testing.T) {
 			t.Fatalf("trigger %s did not match event %d", descriptor.Key, kind)
 		}
 	}
-	if count != 22 {
+	if count != 25 {
 		t.Fatalf("trigger count=%d", count)
 	}
 }
@@ -103,5 +143,12 @@ func BenchmarkMatcher(b *testing.B) {
 		if !matcher.Match(node, event) {
 			b.Fatal("did not match")
 		}
+	}
+}
+
+// TestLabelsExposeStableCreatorToolsNames verifies public event labels.
+func TestLabelsExposeStableCreatorToolsNames(t *testing.T) {
+	if trigger.Label(trigger.ReceiveSignal) != "RECEIVE_SIGNAL" || trigger.Label(0) != "UNKNOWN" {
+		t.Fatal("unexpected trigger labels")
 	}
 }

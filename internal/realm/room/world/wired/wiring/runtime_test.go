@@ -5,12 +5,14 @@ import (
 	"testing"
 	"time"
 
+	furnitureclicked "github.com/niflaot/pixels/internal/realm/furniture/events/clicked"
 	furnituremoved "github.com/niflaot/pixels/internal/realm/furniture/events/moved"
 	furniturepicked "github.com/niflaot/pixels/internal/realm/furniture/events/pickedup"
 	furnitureplaced "github.com/niflaot/pixels/internal/realm/furniture/events/placed"
 	furnitureused "github.com/niflaot/pixels/internal/realm/furniture/events/used"
 	furnitureoff "github.com/niflaot/pixels/internal/realm/furniture/events/walkedoff"
 	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
+	avatarclicked "github.com/niflaot/pixels/internal/realm/room/world/events/avatarclicked"
 	worldfurniture "github.com/niflaot/pixels/internal/realm/room/world/furniture"
 	"github.com/niflaot/pixels/internal/realm/room/world/grid"
 	worldpath "github.com/niflaot/pixels/internal/realm/room/world/path"
@@ -83,6 +85,14 @@ func TestEventHandlersScheduleAndReloadActiveRoom(t *testing.T) {
 		{ItemID: 4, RoomID: active.ID(), Interaction: "wf_act_show_message", X: 2, Y: 2, StringParam: "off"},
 		{ItemID: 5, RoomID: active.ID(), Interaction: "wf_trg_collision", X: 3, Y: 3},
 		{ItemID: 6, RoomID: active.ID(), Interaction: "wf_act_show_message", X: 3, Y: 3, StringParam: "collision"},
+		{ItemID: 7, RoomID: active.ID(), Interaction: "wf_trg_user_clicks_furni", X: 4, Y: 4, IntParams: []int32{100}, SelectionMode: 1, Targets: []record.Target{{ItemID: 12}}},
+		{ItemID: 8, RoomID: active.ID(), Interaction: "wf_act_show_message", X: 4, Y: 4, StringParam: "furniture click"},
+		{ItemID: 9, RoomID: active.ID(), Interaction: "wf_trg_user_clicks_tile", X: 5, Y: 5, IntParams: []int32{100}, SelectionMode: 1, Targets: []record.Target{{ItemID: 12}}},
+		{ItemID: 10, RoomID: active.ID(), Interaction: "wf_act_show_message", X: 5, Y: 5, StringParam: "tile click"},
+		{ItemID: 13, RoomID: active.ID(), Interaction: "wf_trg_user_clicks_user", X: 6, Y: 6},
+		{ItemID: 14, RoomID: active.ID(), Interaction: "wf_act_show_message", X: 6, Y: 6, StringParam: "avatar click"},
+		{ItemID: 15, RoomID: active.ID(), Interaction: "wf_trg_user_clicks_tile", X: 7, Y: 7, IntParams: []int32{0}},
+		{ItemID: 16, RoomID: active.ID(), Interaction: "wf_act_show_message", X: 7, Y: 7, StringParam: "trigger box click"},
 	}
 	store := &wiringStore{records: records}
 	avatar := &wiringAvatar{}
@@ -101,6 +111,27 @@ func TestEventHandlersScheduleAndReloadActiveRoom(t *testing.T) {
 	active.RunScheduled(time.Now().Add(time.Second))
 	if avatar.calls != 2 {
 		t.Fatalf("handler effect calls=%d, want 2", avatar.calls)
+	}
+	if err := clickedHandler(rooms, engine)(ctx, bus.Event{Payload: furnitureclicked.Payload{RoomID: active.ID(), PlayerID: 7, ItemID: 12}}); err != nil {
+		t.Fatal(err)
+	}
+	active.RunScheduled(time.Now().Add(time.Second))
+	if avatar.calls != 4 {
+		t.Fatalf("click handler effect calls=%d, want 4", avatar.calls)
+	}
+	if err := clickedHandler(rooms, engine)(ctx, bus.Event{Payload: furnitureclicked.Payload{RoomID: active.ID(), PlayerID: 7, ItemID: 15}}); err != nil {
+		t.Fatal(err)
+	}
+	active.RunScheduled(time.Now().Add(time.Second))
+	if avatar.calls != 5 {
+		t.Fatalf("trigger box click effect calls=%d, want 5", avatar.calls)
+	}
+	if err := avatarClickedHandler(rooms, engine)(ctx, bus.Event{Payload: avatarclicked.Payload{RoomID: active.ID(), PlayerID: 7, TargetPlayerID: 8}}); err != nil {
+		t.Fatal(err)
+	}
+	active.RunScheduled(time.Now().Add(time.Second))
+	if avatar.calls != 6 {
+		t.Fatalf("avatar click effect calls=%d, want 6", avatar.calls)
 	}
 	if event := unitEvent(rooms, trigger.StateChanged, active.ID(), 7, 10); event.SourceSprite != 2 || event.ActorKind != trigger.ActorPlayer {
 		t.Fatalf("unit event=%+v", event)
@@ -123,7 +154,7 @@ func TestEventHandlersIgnoreForeignPayloadsAndWiredBoxUse(t *testing.T) {
 		t.Fatal(err)
 	}
 	handlers := []bus.Handler{
-		usedHandler(rooms, engine), walkOffHandler(rooms, engine),
+		usedHandler(rooms, engine), clickedHandler(rooms, engine), avatarClickedHandler(rooms, engine), walkOffHandler(rooms, engine),
 		reloadMovedHandler(engine, nil), reloadPlacedHandler(engine, nil), reloadPickedHandler(store, engine, nil),
 		walkOnHandler(rooms, engine, nil), unitMovedHandler(rooms, nil, engine),
 	}
@@ -166,12 +197,17 @@ func wiringRoom(t *testing.T) (*roomlive.Registry, *roomlive.Room) {
 	items := []worldfurniture.Item{
 		{ID: 10, Point: grid.MustPoint(0, 0), Definition: worldfurniture.Definition{SpriteID: 2, InteractionType: "toggle", Width: 1, Length: 1, AllowWalk: true}},
 		{ID: 11, Point: grid.MustPoint(0, 0), Definition: worldfurniture.Definition{SpriteID: 3, InteractionType: "wf_trg_state_changed", Width: 1, Length: 1, AllowWalk: true}},
+		{ID: 12, Point: grid.MustPoint(0, 0), Definition: worldfurniture.Definition{SpriteID: 4, InteractionType: "room_invisible_click_tile", Width: 1, Length: 1, AllowWalk: true}},
+		{ID: 15, Point: grid.MustPoint(0, 0), Definition: worldfurniture.Definition{SpriteID: 5, InteractionType: "wf_trg_user_clicks_tile", Width: 1, Length: 1, AllowWalk: true}},
 	}
 	if err = active.LoadWorld(roomlive.WorldConfig{Grid: roomGrid, Furniture: items, Door: worldpath.Position{Point: grid.MustPoint(0, 0)}}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = rooms.Join(context.Background(), active.ID(), roomlive.Occupant{PlayerID: 7, ConnectionID: "test", ConnectionKind: "test"}); err != nil {
 		t.Fatal(err)
+	}
+	if !clickedFloorTile(rooms, active.ID(), 12) || !clickedFloorTile(rooms, active.ID(), 15) || clickedFloorTile(rooms, active.ID(), 10) || clickedFloorTile(rooms, 999, 12) {
+		t.Fatal("click tile classification failed")
 	}
 	t.Cleanup(func() { _, _, _ = rooms.Close(context.Background(), active.ID()) })
 	return rooms, active

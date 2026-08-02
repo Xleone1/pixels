@@ -82,6 +82,10 @@ func TestCompileRejectsEveryStrictBehaviorBoundary(t *testing.T) {
 		{ItemID: 1, RoomID: 1, Interaction: "wf_slc_users_area", IntParams: []int32{-1, 0, 1, 1}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_slc_users_team", IntParams: []int32{5}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_trg_user_performs_action", IntParams: []int32{0}},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_trg_user_performs_action", IntParams: []int32{11}},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_slc_users_byaction", IntParams: []int32{11}},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_cnd_user_performs_action", IntParams: []int32{11}},
+		{ItemID: 1, RoomID: 1, Interaction: "wf_cnd_not_user_performs_action", IntParams: []int32{11}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_act_freeze", IntParams: []int32{0}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_act_set_altitude", IntParams: []int32{10001}},
 		{ItemID: 1, RoomID: 1, Interaction: "wf_act_send_signal", StringParam: ""},
@@ -92,10 +96,40 @@ func TestCompileRejectsEveryStrictBehaviorBoundary(t *testing.T) {
 			Interaction: "wf_xtra_filter_users_by_var",
 			IntParams:   []int32{0, 1, 0, 0}, StringParam: "score",
 		},
+		{
+			ItemID: 1, RoomID: 1, Interaction: "wf_xtra_projectile",
+			IntParams: []int32{8, 1, 1}, SelectionMode: 1,
+			Targets: []record.Target{{ItemID: 2}},
+		},
 	}
 	for _, stored := range cases {
 		if _, compileErr := compiler.CompileNode(stored); !errors.Is(compileErr, configuration.ErrInvalid) {
 			t.Errorf("interaction=%s error=%v", stored.Interaction, compileErr)
+		}
+	}
+}
+
+// TestCompileAcceptsEverySemanticUserAction verifies the shared one-through-ten contract.
+func TestCompileAcceptsEverySemanticUserAction(t *testing.T) {
+	registered, err := registry.Canonical()
+	if err != nil {
+		t.Fatal(err)
+	}
+	compiler := configuration.NewCompiler(registered, roomwired.Config{})
+	for action := int32(1); action <= 10; action++ {
+		for _, interaction := range []string{
+			"wf_trg_user_performs_action",
+			"wf_slc_users_byaction",
+			"wf_cnd_user_performs_action",
+			"wf_cnd_not_user_performs_action",
+		} {
+			_, compileErr := compiler.CompileNode(record.Config{
+				ItemID: 1, RoomID: 1, Interaction: interaction,
+				IntParams: []int32{action},
+			})
+			if compileErr != nil {
+				t.Fatalf("interaction=%s action=%d error=%v", interaction, action, compileErr)
+			}
 		}
 	}
 }

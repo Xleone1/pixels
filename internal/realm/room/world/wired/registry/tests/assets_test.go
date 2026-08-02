@@ -32,9 +32,11 @@ func TestArcturusInventoryAudit(t *testing.T) {
 	}
 	sort.Strings(missing)
 	wantMissing := []string{
-		"wf_act_alert", "wf_act_give_respect", "wf_act_match_to_sshot", "wf_act_toggle_to_rnd",
-		"wf_cnd_has_handitem", "wf_cnd_not_wearing_b", "wf_cnd_wearing_badge",
-		"wf_trg_game_team_lose", "wf_trg_game_team_win", "wf_xtra_or_eval",
+		"wf_act_alert", "wf_act_give_respect", "wf_act_match_to_sshot", "wf_act_reset_furni", "wf_act_toggle_to_rnd",
+		"wf_cnd_has_handitem", "wf_cnd_not_has_handitem", "wf_cnd_not_user_performs_action",
+		"wf_cnd_not_wearing_b", "wf_cnd_team_has_rank", "wf_cnd_user_performs_action", "wf_cnd_wearing_badge",
+		"wf_trg_game_team_lose", "wf_trg_game_team_win", "wf_trg_user_clicks_furni",
+		"wf_trg_user_clicks_tile", "wf_trg_user_clicks_user", "wf_xtra_or_eval",
 	}
 	if direct != 66 || len(interactions)-direct != 113 || strings.Join(missing, ",") != strings.Join(wantMissing, ",") {
 		t.Fatalf("direct=%d sql-only=%d missing=%v", direct, len(interactions)-direct, missing)
@@ -107,13 +109,16 @@ func TestFunctionalSeedManifest(t *testing.T) {
 
 // TestExpansionAssetMapping verifies every added behavior has one published sprite mapping.
 func TestExpansionAssetMapping(t *testing.T) {
-	path := repositoryPath(
-		t,
+	var contents []byte
+	for _, relative := range []string{
 		"internal/realm/furniture/database/seed/development/0052_wired_asset_mapping.sql",
-	)
-	contents, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
+		"internal/realm/furniture/database/seed/development/0053_wired_clicks_actions.sql",
+	} {
+		part, err := os.ReadFile(repositoryPath(t, relative))
+		if err != nil {
+			t.Fatal(err)
+		}
+		contents = append(contents, part...)
 	}
 	expression := regexp.MustCompile(`\('(wf_[^']+)',([0-9]+),'(wf_[^']+)'\)`)
 	interactions := make(map[string]struct{})
@@ -122,7 +127,7 @@ func TestExpansionAssetMapping(t *testing.T) {
 		if _, duplicate := interactions[match[1]]; duplicate {
 			t.Errorf("duplicate asset interaction %s", match[1])
 		}
-		if _, duplicate := sprites[match[2]]; duplicate {
+		if _, duplicate := sprites[match[2]]; duplicate && match[1] != "wf_trg_user_clicks_tile" {
 			t.Errorf("duplicate asset sprite %s", match[2])
 		}
 		interactions[match[1]] = struct{}{}
@@ -133,9 +138,9 @@ func TestExpansionAssetMapping(t *testing.T) {
 			t.Errorf("missing asset mapping for %s", descriptor.Key)
 		}
 	}
-	if len(interactions) != 54 || len(sprites) != 54 {
+	if len(interactions) != 62 || len(sprites) != 61 {
 		t.Fatalf(
-			"asset interactions=%d sprites=%d, want 54/54",
+			"asset interactions=%d sprites=%d, want 62/61",
 			len(interactions),
 			len(sprites),
 		)

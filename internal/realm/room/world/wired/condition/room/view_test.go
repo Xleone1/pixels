@@ -83,6 +83,60 @@ func TestViewReadsAuthoritativeRoomFacts(t *testing.T) {
 	if pass, valid, _ := view.ActorTeam(7, 2); !valid || !pass {
 		t.Fatal("team membership was not visible")
 	}
+	_, err = games.ExecuteGame(context.Background(), effect.JoinTeam, &configuration.Node{Parameters: configuration.Parameters{Values: []int32{1}}}, trigger.Event{RoomID: active.ID(), PlayerID: 8})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, _ = games.AddScore(active.ID(), 8, 9)
+	_, _, _ = games.AddScore(active.ID(), 7, 5)
+	if pass, valid, _ := view.TeamHasRank(1, 1); !valid || !pass {
+		t.Fatal("winning team rank was not visible")
+	}
+	if pass, valid, _ := view.TeamHasRank(2, 1); !valid || pass {
+		t.Fatal("losing team incorrectly held first place")
+	}
+}
+
+// TestPerformsActionSupportsTransientAndStableVariants verifies sign and dance filters.
+func TestPerformsActionSupportsTransientAndStableVariants(t *testing.T) {
+	_, active := conditionRoom(t)
+	view := &View{active: active}
+	if _, found := active.SetUnitDance(7, 3); !found {
+		t.Fatal("set stable dance")
+	}
+	if pass, valid, _ := view.PerformsAction(trigger.Event{ActorID: 7}, []int32{10, 0, 0, 1, 3}); !valid || !pass {
+		t.Fatal("stable dance variant did not match")
+	}
+	if pass, valid, _ := view.PerformsAction(trigger.Event{ActorID: 7}, []int32{10, 0, 0, 1, 4}); !valid || pass {
+		t.Fatal("wrong stable dance variant matched")
+	}
+	sign := trigger.Event{Kind: trigger.UserPerformsAction, ActorID: 7, Action: 9, ActionValue: 4}
+	if pass, valid, _ := view.PerformsAction(sign, []int32{9, 1, 4}); !valid || !pass {
+		t.Fatal("transient sign variant did not match")
+	}
+	if pass, valid, _ := view.PerformsAction(trigger.Event{ActorID: 7}, []int32{9, 1, 4}); !valid || pass {
+		t.Fatal("expired sign pulse remained visible")
+	}
+	if pass, valid, _ := view.PerformsAction(trigger.Event{ActorID: 999}, []int32{10}); valid || pass {
+		t.Fatal("missing actor action did not fail closed")
+	}
+}
+
+// TestPerformsActionRejectsUnknownActionCodes verifies runtime fail closed behavior.
+func TestPerformsActionRejectsUnknownActionCodes(t *testing.T) {
+	_, active := conditionRoom(t)
+	view := &View{active: active}
+	for _, action := range []int32{0, 11, 12} {
+		pass, valid, err := view.PerformsAction(trigger.Event{
+			Kind: trigger.UserPerformsAction, ActorID: 7, Action: action,
+		}, []int32{action})
+		if err != nil || pass || valid {
+			t.Fatalf("action=%d pass=%v valid=%v err=%v", action, pass, valid, err)
+		}
+		if actors := view.UsersByAction(action); len(actors) != 0 {
+			t.Fatalf("action=%d actors=%v", action, actors)
+		}
+	}
 }
 
 // TestValidMovesSimulatesFurnitureDestinations verifies the compatibility condition rejects occupied targets.

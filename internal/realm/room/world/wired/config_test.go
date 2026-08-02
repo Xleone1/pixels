@@ -8,7 +8,7 @@ func TestLoadConfigReadsDefaultsAndOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !config.Enabled || config.MaxSelection != 20 || config.MaxDelayPulses != 7200 || config.HighscoreTop != 50 {
+	if !config.Enabled || config.MaxSelection != 20 || config.MaxFurniPerRoom != 2500 || config.MaxDelayPulses != 7200 || config.HighscoreTop != 50 || config.MaxProjectilesPerRoom != 64 || config.MaxProjectileDistance != 64 || config.MaxProjectileDurationPulses != 1280 {
 		t.Fatalf("default config=%+v", config)
 	}
 	t.Setenv("PIXELS_WIRED_ENABLED", "false")
@@ -20,11 +20,15 @@ func TestLoadConfigReadsDefaultsAndOverrides(t *testing.T) {
 	t.Setenv("PIXELS_WIRED_MAX_CALL_DEPTH", "12")
 	t.Setenv("PIXELS_WIRED_MAX_DELAYED_PER_ROOM", "13")
 	t.Setenv("PIXELS_WIRED_HIGHSCORE_TOP", "14")
+	t.Setenv("PIXELS_WIRED_MAX_FURNI_PER_ROOM", "15")
+	t.Setenv("PIXELS_WIRED_MAX_PROJECTILES_PER_ROOM", "16")
+	t.Setenv("PIXELS_WIRED_MAX_PROJECTILE_DISTANCE", "17")
+	t.Setenv("PIXELS_WIRED_MAX_PROJECTILE_DURATION_PULSES", "18")
 	config, err = LoadConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if config.Enabled || config.MaxSelection != 7 || config.MaxDelayPulses != 8 || config.MaxEventsPerTrace != 9 || config.MaxStacksPerTrace != 10 || config.MaxEffectsPerTrace != 11 || config.MaxCallDepth != 12 || config.MaxDelayedPerRoom != 13 || config.HighscoreTop != 14 {
+	if config.Enabled || config.MaxSelection != 7 || config.MaxDelayPulses != 8 || config.MaxEventsPerTrace != 9 || config.MaxStacksPerTrace != 10 || config.MaxEffectsPerTrace != 11 || config.MaxCallDepth != 12 || config.MaxDelayedPerRoom != 13 || config.HighscoreTop != 14 || config.MaxFurniPerRoom != 15 || config.MaxProjectilesPerRoom != 16 || config.MaxProjectileDistance != 17 || config.MaxProjectileDurationPulses != 18 {
 		t.Fatalf("override config=%+v", config)
 	}
 }
@@ -32,7 +36,7 @@ func TestLoadConfigReadsDefaultsAndOverrides(t *testing.T) {
 // TestNormalizeReplacesEveryInvalidBudget verifies zero values cannot disable safety limits.
 func TestNormalizeReplacesEveryInvalidBudget(t *testing.T) {
 	config := (Config{Enabled: true}).Normalize()
-	if config.MaxSelection != 20 || config.MaxDelayPulses != 7200 || config.MaxEventsPerTrace != 128 || config.MaxStacksPerTrace != 64 || config.MaxEffectsPerTrace != 128 || config.MaxCallDepth != 10 || config.MaxDelayedPerRoom != 512 || config.HighscoreTop != 50 {
+	if config.MaxSelection != 20 || config.MaxFurniPerRoom != 2500 || config.MaxDelayPulses != 7200 || config.MaxEventsPerTrace != 128 || config.MaxStacksPerTrace != 64 || config.MaxEffectsPerTrace != 128 || config.MaxCallDepth != 10 || config.MaxDelayedPerRoom != 512 || config.HighscoreTop != 50 || config.MaxProjectilesPerRoom != 64 || config.MaxProjectileDistance != 64 || config.MaxProjectileDurationPulses != 1280 {
 		t.Fatalf("normalized config=%+v", config)
 	}
 }

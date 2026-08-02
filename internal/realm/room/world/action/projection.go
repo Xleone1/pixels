@@ -80,3 +80,40 @@ func (service *Service) publish(ctx context.Context, name bus.Name, payload any)
 	}
 	return service.events.Publish(ctx, bus.Event{Name: name, Payload: payload})
 }
+
+// Posture changes and broadcasts one free-standing posture.
+func (service *Service) Posture(ctx context.Context, room *roomlive.Room, playerID int64, sitting bool) error {
+	current, found := room.Unit(playerID)
+	if !found {
+		return roomlive.ErrUnitNotFound
+	}
+	if current.Idle {
+		if err := service.setIdle(ctx, room, playerID, false, false, time.Now()); err != nil {
+			return err
+		}
+	}
+	if err := service.stopDance(ctx, room, current); err != nil {
+		return err
+	}
+	if err := service.cancelExpression(ctx, room, current.UnitID); err != nil {
+		return err
+	}
+	if err := service.cancelSign(ctx, room, playerID); err != nil {
+		return err
+	}
+	if err := service.pauseTransition(ctx); err != nil {
+		return err
+	}
+	unit, found := room.SetUnitPosture(playerID, sitting)
+	if !found {
+		return nil
+	}
+	if err := broadcast.RoomUnitStatus(ctx, service.connections, room, unit, 0); err != nil {
+		return err
+	}
+	action := WiredActionStand
+	if sitting {
+		action = WiredActionSit
+	}
+	return service.publishAction(ctx, room.ID(), playerID, action, 0)
+}

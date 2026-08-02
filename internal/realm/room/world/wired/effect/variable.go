@@ -66,6 +66,7 @@ func (executor *Executor) mutateVariable(
 ) (variable.Value, int64, bool, error) {
 	value := variable.Value{
 		RoomID: roomID, Scope: scope, ScopeID: scopeID, Name: name,
+		UpdatedByPlayerID: event.PlayerID,
 	}
 	switch node.Descriptor.Key {
 	case "wf_act_give_var":

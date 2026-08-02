@@ -1,33 +1,47 @@
 --liquibase formatted sql
 
 --changeset pixels:furniture-seed-wired-labs-0051 context:development
+--validCheckSum: 9:1438cf0b2251a3aaaf52789fca8985d1
 insert into furniture_items(
  id,definition_id,owner_player_id,room_id,x,y,z,rotation,extra_data)
 overriding system value
-select 1010000 + definition.ordinal,definition.id,1,
- 200 + definition.ordinal / 9,
+select 1010000 + definition.ordinal,definition.id,room.owner_player_id,
+ room.id,
  4 + definition.ordinal % 9 % 8,2 + definition.ordinal % 9 / 8,0,0,'0'
 from (
  select id,row_number() over(order by id) - 1 ordinal
  from furniture_definitions
  where metadata->>'source'='polaris-wired'
 ) definition
-on conflict(id) do update set definition_id=excluded.definition_id,owner_player_id=1,
+join rooms room on room.id=200 + definition.ordinal / 9
+on conflict(id) do update set definition_id=excluded.definition_id,
+ owner_player_id=excluded.owner_player_id,
  room_id=excluded.room_id,x=excluded.x,y=excluded.y,z=0,rotation=0,
  extra_data='0',deleted_at=null;
 
+with fixture(id,definition_name,room_id,x,y,z,extra_data) as (values
+ (1020900,'wf_pressureplate',200,4,8,0.0,'0'),
+ (1020901,'wf_pressureplate',201,4,8,0.0,'0'),
+ (1020902,'wf_pressureplate',202,4,8,0.0,'0'),
+ (1020903,'wf_pressureplate',203,4,8,0.0,'0'),
+ (1020904,'wf_pressureplate',204,4,8,0.0,'0'),
+ (1020905,'wf_pressureplate',205,4,8,0.0,'0'),
+ (1020000,'wf_trg_user_performs_action',205,4,5,0.0,'0'),
+ (1020001,'wf_act_send_signal',205,4,5,0.65,'0'),
+ (1020010,'wf_trg_recv_signal',205,6,5,0.0,'0'),
+ (1020011,'wf_slc_users_signal',205,6,5,0.65,'0'),
+ (1020012,'wf_act_show_message',205,6,5,1.30,'0')
+)
 insert into furniture_items(
  id,definition_id,owner_player_id,room_id,x,y,z,rotation,extra_data)
-overriding system value values
- (1020900,28,1,200,4,8,0,0,'0'),(1020901,28,1,201,4,8,0,0,'0'),
- (1020902,28,1,202,4,8,0,0,'0'),(1020903,28,1,203,4,8,0,0,'0'),
- (1020904,28,1,204,4,8,0,0,'0'),(1020905,28,1,205,4,8,0,0,'0'),
- (1020000,1000026,1,205,4,5,0,0,'0'),
- (1020001,1000029,1,205,4,5,0.65,0,'0'),
- (1020010,1000024,1,205,6,5,0,0,'0'),
- (1020011,1000009,1,205,6,5,0.65,0,'0'),
- (1020012,3681,1,205,6,5,1.30,0,'0')
-on conflict(id) do update set definition_id=excluded.definition_id,owner_player_id=1,
+overriding system value
+select fixture.id,definition.id,room.owner_player_id,room.id,
+ fixture.x,fixture.y,fixture.z,0,fixture.extra_data
+from fixture
+join furniture_definitions definition on definition.name=fixture.definition_name
+ and definition.deleted_at is null
+join rooms room on room.id=fixture.room_id
+on conflict(id) do update set definition_id=excluded.definition_id,owner_player_id=excluded.owner_player_id,
  room_id=excluded.room_id,x=excluded.x,y=excluded.y,z=excluded.z,
  rotation=excluded.rotation,extra_data=excluded.extra_data,deleted_at=null;
 

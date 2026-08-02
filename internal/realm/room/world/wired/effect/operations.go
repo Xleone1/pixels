@@ -7,6 +7,8 @@ func furnitureOperation(key string) (FurnitureOperation, bool) {
 		return ToggleState, true
 	case "wf_act_match_to_sshot":
 		return MatchSnapshot, true
+	case "wf_act_reset_furni":
+		return ResetFurnitureState, true
 	case "wf_act_move_rotate":
 		return MoveRotate, true
 	case "wf_act_chase":

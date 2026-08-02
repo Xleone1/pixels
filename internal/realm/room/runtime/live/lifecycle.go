@@ -5,6 +5,17 @@ import (
 	"time"
 )
 
+// WorldDimensions returns the loaded room grid dimensions without allocation.
+func (room *Room) WorldDimensions() (uint16, uint16, bool) {
+	room.mutex.RLock()
+	defer room.mutex.RUnlock()
+	if room.world == nil {
+		return 0, 0, false
+	}
+	width, height := room.world.Dimensions()
+	return width, height, true
+}
+
 // startLoop starts the room owner goroutine.
 func (room *Room) startLoop(ctx context.Context, interval time.Duration, movementPublisher MovementPublisher, doorbellPublisher DoorbellPublisher, cyclePublisher CyclePublisher, doorbellTimeout time.Duration) {
 	if movementPublisher == nil && doorbellPublisher == nil && cyclePublisher == nil {

@@ -23,17 +23,38 @@ func (engine *Engine) processLocked(ctx context.Context, loaded *state, event tr
 		trace: Trace{ID: event.ID, Kind: event.Kind, StartedAt: started},
 	}
 	for _, node := range candidates {
-		if engine.matcher.Match(node, event) {
+		if engine.matcher.Match(node, event) && engine.selectorSourceMatches(ctx, loaded, node, event) {
 			execution.enqueue(eventQueue{
 				stack: loaded.generation.Stacks[node.Point], trigger: node,
 			})
 		}
 	}
 	err := engine.run(&execution)
+	execution.trace.Signals = execution.signals
+	loaded.lastEvent, loaded.hasLastEvent = execution.event, true
 	execution.trace.Duration = time.Since(started)
 	engine.recordTrace(execution.trace)
 	loaded.appendTrace(execution.trace)
 	return execution.trace, err
+}
+
+// selectorSourceMatches resolves click-trigger selector output only for source mode 200.
+func (engine *Engine) selectorSourceMatches(ctx context.Context, loaded *state, node *configuration.Node, event trigger.Event) bool {
+	if !usesClickSelectorSource(node) {
+		return true
+	}
+	stack := loaded.generation.Stacks[node.Point]
+	probe := execution{context: ctx, state: loaded, event: event}
+	resolved, err := engine.resolveSelection(&probe, stack)
+	if err != nil || !resolved.FurniResolved {
+		return false
+	}
+	for _, target := range resolved.Furni {
+		if target.ItemID == event.SourceItem {
+			return true
+		}
+	}
+	return false
 }
 
 // processTriggerLocked executes one already-selected timer trigger.
@@ -47,6 +68,8 @@ func (engine *Engine) processTriggerLocked(ctx context.Context, loaded *state, n
 		stack: loaded.generation.Stacks[node.Point], trigger: node,
 	})
 	err := engine.run(&execution)
+	execution.trace.Signals = execution.signals
+	loaded.lastEvent, loaded.hasLastEvent = execution.event, true
 	execution.trace.Duration = time.Since(started)
 	engine.recordTrace(execution.trace)
 	loaded.appendTrace(execution.trace)
@@ -58,7 +81,13 @@ func (engine *Engine) run(execution *execution) error {
 	var result error
 	for execution.queueSize() > 0 {
 		request, _ := execution.dequeue()
-		if request.stack == nil || request.depth > engine.config.MaxCallDepth {
+		if request.stack == nil {
+			continue
+		}
+		execution.trace.StackPoint = request.stack.Point
+		if request.depth > engine.config.MaxCallDepth {
+			execution.trace.BudgetExhausted = true
+			execution.trace.BudgetCode = "CALL_DEPTH"
 			continue
 		}
 		if request.event == nil {
@@ -73,6 +102,7 @@ func (engine *Engine) run(execution *execution) error {
 		}
 		if execution.trace.Stacks >= engine.config.MaxStacksPerTrace {
 			execution.trace.BudgetExhausted = true
+			execution.trace.BudgetCode = "STACK_CAP"
 			break
 		}
 		execution.trace.Stacks++
@@ -99,6 +129,11 @@ func (engine *Engine) run(execution *execution) error {
 			continue
 		}
 		engine.activateNodes(execution.context, execution.event.RoomID, request.stack.Extras)
+		if engine.extras != nil {
+			result = joined(result, engine.extras.ExecuteExtras(
+				execution.context, request.stack.Extras, execution.event, resolved, execution.now,
+			))
+		}
 		effects := engine.selectEffects(execution.state, request.stack, execution.event.ID)
 		for _, node := range effects {
 			if !engine.executeSelected(execution, node, request.depth, resolved, &result) {
@@ -155,6 +190,7 @@ func (engine *Engine) executeSelected(execution *execution, node *configuration.
 func (engine *Engine) executeOne(execution *execution, node *configuration.Node, event trigger.Event, depth int, aggregate *error) bool {
 	if execution.trace.Effects >= engine.config.MaxEffectsPerTrace {
 		execution.trace.BudgetExhausted = true
+		execution.trace.BudgetCode = "EFFECT_CAP"
 		return false
 	}
 	execution.trace.Effects++

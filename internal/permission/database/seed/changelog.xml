@@ -24,4 +24,5 @@
     <include file="development/0016_progression_nodes.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="development/0017_games_nodes.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="development/0018_ensure_admin_wildcard.sql" relativeToChangelogFile="true" contextFilter="development"/>
+    <include file="development/0019_wired_creator_tools_nodes.sql" relativeToChangelogFile="true" contextFilter="development"/>
 </databaseChangeLog>

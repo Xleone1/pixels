@@ -15,10 +15,10 @@ func TestCanonicalInventory(t *testing.T) {
 	for _, descriptor := range manifest {
 		counts[descriptor.Family]++
 	}
-	if len(manifest) != 130 ||
-		counts[registry.FamilyTrigger] != 22 ||
-		counts[registry.FamilyEffect] != 43 ||
-		counts[registry.FamilyCondition] != 33 ||
+	if len(manifest) != 138 ||
+		counts[registry.FamilyTrigger] != 25 ||
+		counts[registry.FamilyEffect] != 44 ||
+		counts[registry.FamilyCondition] != 37 ||
 		counts[registry.FamilyExtra] != 7 ||
 		counts[registry.FamilyHighscore] != 1 ||
 		counts[registry.FamilySelector] != 20 ||
@@ -34,7 +34,7 @@ func TestCanonicalInventory(t *testing.T) {
 		t.Fatalf("alias resolved to %+v, %t", descriptor, found)
 	}
 	extension, found := registered.Resolve("wf_cnd_valid_moves")
-	if !found || extension.Editor || extension.Family != registry.FamilyCondition || len(registry.CompatibilityManifest()) != 5 {
+	if !found || extension.Editor || extension.Family != registry.FamilyCondition || len(registry.CompatibilityManifest()) != 6 {
 		t.Fatalf("compatibility extension resolved to %+v, %t", extension, found)
 	}
 	variableEffect, found := registered.Resolve("wf_act_give_var")
