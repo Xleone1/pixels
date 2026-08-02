@@ -10,6 +10,7 @@ import (
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/condition"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/configuration"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/effect"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/selection"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/trigger"
 )
 
@@ -31,6 +32,12 @@ type Activator interface {
 	Activate(context.Context, int64, int64) error
 }
 
+// ExtraExecutor applies custom extras after selection and conditions pass.
+type ExtraExecutor interface {
+	// ExecuteExtras applies supported extras without changing effect selection.
+	ExecuteExtras(context.Context, []*configuration.Node, trigger.Event, selection.Selection, time.Time) error
+}
+
 // Trace stores a bounded execution summary.
 type Trace struct {
 	// ID identifies the source event.
@@ -41,8 +48,14 @@ type Trace struct {
 	Stacks int
 	// Effects stores attempted effect count.
 	Effects int
+	// Signals stores intra-trace signals accepted before the configured cap.
+	Signals int
+	// StackPoint stores the latest visited stack coordinate.
+	StackPoint configuration.Point
 	// BudgetExhausted reports whether safety budgets stopped execution.
 	BudgetExhausted bool
+	// BudgetCode identifies the exact safety budget that stopped execution.
+	BudgetCode string
 	// StartedAt stores trace start time.
 	StartedAt time.Time
 	// Duration stores trace execution duration.
@@ -52,7 +65,7 @@ type Trace struct {
 // MetricsSnapshot contains low-cardinality WIRED runtime counters.
 type MetricsSnapshot struct {
 	// Events stores processed events indexed by trigger kind.
-	Events [23]uint64 `json:"events"`
+	Events [26]uint64 `json:"events"`
 	// StackResults stores passed, failed, and errored stack evaluations.
 	StackResults [3]uint64 `json:"stackResults"`
 	// EffectResults stores applied, skipped, and blocked effect results by status value.
@@ -76,7 +89,7 @@ type MetricsSnapshot struct {
 // metrics stores lock-free low-cardinality execution counters.
 type metrics struct {
 	// events stores counters indexed by trigger kind.
-	events [23]atomic.Uint64
+	events [26]atomic.Uint64
 	// stackResults stores pass, fail, and error counters.
 	stackResults [3]atomic.Uint64
 	// effectResults stores counters indexed by effect status.
@@ -104,7 +117,7 @@ type state struct {
 	// generation stores immutable compiled room nodes.
 	generation *configuration.Generation
 	// byKind indexes triggers without per-event allocation.
-	byKind [23][]*configuration.Node
+	byKind [26][]*configuration.Node
 	// resetAt stores timer origin.
 	resetAt time.Time
 	// timers stores deadline-ordered triggers.
@@ -119,6 +132,10 @@ type state struct {
 	traceNext int
 	// traceCount stores populated ring entries.
 	traceCount int
+	// lastEvent stores the latest execution context for Creator Tools inspection.
+	lastEvent trigger.Event
+	// hasLastEvent reports whether lastEvent belongs to a completed trace.
+	hasLastEvent bool
 }
 
 // eventQueue stores one breadth-first stack request.

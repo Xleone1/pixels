@@ -21,7 +21,7 @@ func TestModuleConstructorsExposeFocusedBoundaries(t *testing.T) {
 	furniture := NewFurnitureEffects(rooms, nil, nil)
 	bot := NewBotEffects(rooms, nil)
 	effects := NewEffects(furniture, avatar, bot, games, nil)
-	engine := NewEngine(roomwired.Config{}, nil, compiler, effects, nil, nil, furniture, nil, nil, nil)
+	engine := NewEngine(roomwired.Config{}, nil, compiler, effects, nil, nil, furniture, nil, nil, nil, nil)
 	if compiler == nil || games == nil || avatar == nil || furniture == nil || bot == nil || effects == nil || engine == nil {
 		t.Fatal("module constructor returned nil")
 	}

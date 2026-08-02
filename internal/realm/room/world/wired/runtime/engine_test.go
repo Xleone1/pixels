@@ -150,6 +150,27 @@ func TestExecutionInlineBuffersPreserveOrder(t *testing.T) {
 	}
 }
 
+// TestClickSelectorSourceSupportsFurnitureAndTiles verifies source mode parity.
+func TestClickSelectorSourceSupportsFurnitureAndTiles(t *testing.T) {
+	for _, key := range []string{"wf_trg_user_clicks_furni", "wf_trg_user_clicks_tile"} {
+		node := &configuration.Node{
+			Descriptor: registry.Descriptor{Key: key},
+			Parameters: configuration.Parameters{Values: []int32{200}},
+		}
+		if !usesClickSelectorSource(node) {
+			t.Errorf("selector source rejected for %s", key)
+		}
+	}
+	for _, node := range []*configuration.Node{
+		{Descriptor: registry.Descriptor{Key: "wf_trg_user_clicks_user"}, Parameters: configuration.Parameters{Values: []int32{200}}},
+		{Descriptor: registry.Descriptor{Key: "wf_trg_user_clicks_tile"}, Parameters: configuration.Parameters{Values: []int32{100}}},
+	} {
+		if usesClickSelectorSource(node) {
+			t.Errorf("selector source accepted for %+v", node)
+		}
+	}
+}
+
 // TestRoomSchedulerQueuesOnlyActiveRooms verifies delayed work stays owned by active room lifecycle.
 func TestRoomSchedulerQueuesOnlyActiveRooms(t *testing.T) {
 	rooms := roomlive.NewRegistry(nil)

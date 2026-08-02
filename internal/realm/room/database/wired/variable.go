@@ -11,7 +11,7 @@ import (
 
 // LoadRoom loads every durable WIRED variable assignment for one room.
 func (repository *Repository) LoadRoomVariables(ctx context.Context, roomID int64) ([]wiredvariable.Value, error) {
-	rows, err := repository.pool.Query(ctx, `select room_id,scope,scope_id,name,int_value,string_value,created_at,updated_at from room_wired_variables where room_id=$1 order by scope,scope_id,name`, roomID)
+	rows, err := repository.pool.Query(ctx, `select room_id,scope,scope_id,name,int_value,string_value,coalesce(updated_by_player_id,0),created_at,updated_at from room_wired_variables where room_id=$1 order by scope,scope_id,name`, roomID)
 	if err != nil {
 		return nil, fmt.Errorf("load room WIRED variables: %w", err)
 	}
@@ -19,7 +19,7 @@ func (repository *Repository) LoadRoomVariables(ctx context.Context, roomID int6
 	values := make([]wiredvariable.Value, 0)
 	for rows.Next() {
 		var value wiredvariable.Value
-		if err := rows.Scan(&value.RoomID, &value.Scope, &value.ScopeID, &value.Name, &value.IntValue, &value.StringValue, &value.CreatedAt, &value.UpdatedAt); err != nil {
+		if err := rows.Scan(&value.RoomID, &value.Scope, &value.ScopeID, &value.Name, &value.IntValue, &value.StringValue, &value.UpdatedByPlayerID, &value.CreatedAt, &value.UpdatedAt); err != nil {
 			return nil, err
 		}
 		values = append(values, value)
@@ -40,10 +40,10 @@ func (repository *Repository) FindVariable(
 	}
 	err := repository.pool.QueryRow(
 		ctx,
-		`select int_value,string_value,created_at,updated_at from room_wired_variables where room_id=$1 and scope=$2 and scope_id=$3 and name=$4`,
+		`select int_value,string_value,coalesce(updated_by_player_id,0),created_at,updated_at from room_wired_variables where room_id=$1 and scope=$2 and scope_id=$3 and name=$4`,
 		roomID, scope, scopeID, name,
 	).Scan(
-		&value.IntValue, &value.StringValue,
+		&value.IntValue, &value.StringValue, &value.UpdatedByPlayerID,
 		&value.CreatedAt, &value.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -59,7 +59,7 @@ func (repository *Repository) FindVariable(
 
 // SetVariable creates or replaces one WIRED variable assignment.
 func (repository *Repository) SetVariable(ctx context.Context, value wiredvariable.Value) (wiredvariable.Value, error) {
-	err := repository.pool.QueryRow(ctx, `insert into room_wired_variables(room_id,scope,scope_id,name,int_value,string_value) values($1,$2,$3,$4,$5,$6) on conflict(room_id,scope,scope_id,name) do update set int_value=excluded.int_value,string_value=excluded.string_value,updated_at=now() returning created_at,updated_at`, value.RoomID, value.Scope, value.ScopeID, value.Name, value.IntValue, value.StringValue).Scan(&value.CreatedAt, &value.UpdatedAt)
+	err := repository.pool.QueryRow(ctx, `insert into room_wired_variables(room_id,scope,scope_id,name,int_value,string_value,updated_by_player_id) values($1,$2,$3,$4,$5,$6,nullif($7,0)) on conflict(room_id,scope,scope_id,name) do update set int_value=excluded.int_value,string_value=excluded.string_value,updated_by_player_id=excluded.updated_by_player_id,updated_at=now() returning created_at,updated_at`, value.RoomID, value.Scope, value.ScopeID, value.Name, value.IntValue, value.StringValue, value.UpdatedByPlayerID).Scan(&value.CreatedAt, &value.UpdatedAt)
 	if err != nil {
 		return wiredvariable.Value{}, fmt.Errorf("set room WIRED variable: %w", err)
 	}

@@ -1218,10 +1218,10 @@ minimum manual checks expected when touching it.
 
 - Owns `internal/realm/room/world/wired`, its room commands/handlers/database,
   WIRED packets below `networking`, and `pkg/http/room/routes/wired`.
-- Provides an audited registry for all 76 canonical Arcturus behaviors plus the
-  explicit `wf_cnd_valid_moves` extension: 17 triggers, 30 effects, 24
-  conditions, selectors/blob, and durable highscore boards. Unknown SQL-only
-  `wf_*` assets never become executable implicitly.
+- Provides an audited registry for 138 canonical behaviors plus explicit Pixels
+  compatibility extensions: 25 triggers, 44 effects, 37 conditions, 20
+  selectors, 4 variable definitions, 7 stack add-ons, and the highscore family.
+  Unknown SQL-only `wf_*` assets never become executable implicitly.
 - Compiles immutable per-room stack generations with indexed event lookup,
   deterministic AND/OR/random/unseen semantics, breadth-first call stacks,
   bounded trace/effect/delay budgets, room-owned timers, compact execution activation,
@@ -1234,21 +1234,42 @@ minimum manual checks expected when touching it.
   equipped badges, teams, games, rewards, and highscore projection use focused
   realm boundaries. Dispatch performs no PostgreSQL reads and an event without
   candidates must remain zero-allocation.
+- System variables expose warmed immutable furniture, user, room, and custom
+  projectile state. Context variables are ephemeral to one execution and never
+  become durable reference variables. Neither family may add a PostgreSQL read
+  or temporary map allocation to normal room dispatch.
 - Nitro supports five inbound editor packets and seven outbound WIRED packets;
   object-data packets `1453` and `2547` carry typed highscore state. Config saves
   use optimistic versions and same-room targets, and pickup cleans reverse links.
-- Development seeds provide the complete functional catalog plus six configured
-  rooms (`110` through `115`) covering every registered behavior, bots, social
-  group/badge conditions, rewards, game pieces, failure paths, and all twelve
-  highscore variants.
+- Creator Tools uses the Pixels-specific bidirectional packet range `6300`
+  through `6303`; avatar clicks use inbound packet `6304`. The `:wired` and
+  `:wf` commands open Monitor, `:var` opens Variables, and `:inspect` opens
+  Inspection. Server authorization remains authoritative. Documents and lists
+  are bounded, versioned, and preserve 64 bit values as decimal strings.
+- `wf_xtra_projectile` is a bounded custom extension advanced by the room cycle.
+  It creates no per-projectile goroutine or timer, uses swept collision checks,
+  sends transient movement while active, and persists only final placement.
+- Development seeds provide the complete functional catalog plus ten
+  configured rooms: `110` through `115`, `200`, `201`, `206`, and `207`. They cover every
+  registered behavior, Creator Tools additions, click and action gaps, custom
+  projectiles, bots, social group and badge conditions, rewards, game pieces,
+  failure paths, and all twelve highscore variants.
 - Test after changes:
   - `go test ./networking/inbound/furniture/wired/... ./networking/outbound/furniture/wired/... ./networking/outbound/room/furniture/objectdata/...`
   - `go test -race ./internal/realm/room/world/wired/... ./internal/realm/room/database/wired/...`
+  - `go test ./networking/inbound/room/entities/userclick ./networking/inbound/furniture/wired/tools/... ./networking/outbound/furniture/wired/tools/...`
   - `go test ./pkg/http/room/routes/wired ./pkg/http/openapi ./internal/realm/room/... ./internal/realm/furniture/... ./internal/realm/bot/... ./internal/realm/chat/...`
   - `go test ./internal/realm/room/world/wired/runtime/tests -run '^$' -bench . -benchmem`
-  - Apply Liquibase with development context and enter rooms `110`–`115`; open,
+  - Apply Liquibase with development context and enter rooms `110`–`115`, `200`,
+    `201`, `206`, and `207`; open,
     save, and re-open one trigger, condition, and effect before exercising the
     full checklist in `plan/rooms/WIRED.md` Part 12.
+  - Open `:wired`, inspect a furniture item and a user, mutate one durable
+    variable, reject a system or context mutation, toggle live refresh, and
+    verify the document limits and permissions.
+  - Launch a projectile toward geometry, furniture, and a player; verify swept
+    collision, actor following, final persistence, rollback, and the inactive
+    `BenchmarkProjectileIdleCycle` path at zero allocations.
   - Close/reopen a room with pending timers and delays, pick up selected targets,
     run a call-stack cycle, and confirm old generations do not execute or leak.
 - Keep packet logs open around periodic stacks: box animation must use `2376`;

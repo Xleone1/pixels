@@ -1,6 +1,7 @@
 --liquibase formatted sql
 
 --changeset pixels:furniture-seed-wired-0050 context:development
+--validCheckSum: 9:0d51752df5322cdbca271a8a8819a138
 -- Polaris-compatible WIRED boxes use the existing action definition protocol.
 insert into furniture_definitions(
  id,sprite_id,name,public_name,kind,width,length,stack_height,allow_stack,allow_walk,
@@ -38,7 +39,7 @@ from (values
  (910050,'wf_cnd_var_age_match'),(910051,'wf_xtra_exec_in_order'),
  (910052,'wf_xtra_filter_furni_by_var'),(910053,'wf_xtra_filter_users_by_var')
 ) wired(id,name)
-on conflict(id) do update set sprite_id=excluded.sprite_id,name=excluded.name,
+on conflict(name) where deleted_at is null do update set sprite_id=excluded.sprite_id,
  public_name=excluded.public_name,kind=excluded.kind,width=excluded.width,
  length=excluded.length,stack_height=excluded.stack_height,
  allow_stack=excluded.allow_stack,allow_walk=excluded.allow_walk,

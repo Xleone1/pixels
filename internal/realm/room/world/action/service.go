@@ -6,7 +6,6 @@ import (
 
 	"github.com/niflaot/pixels/internal/realm/room/runtime/broadcast"
 	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
-	roomacted "github.com/niflaot/pixels/internal/realm/room/world/events/acted"
 	roomdanced "github.com/niflaot/pixels/internal/realm/room/world/events/danced"
 	roomexpressed "github.com/niflaot/pixels/internal/realm/room/world/events/expressed"
 	roomidle "github.com/niflaot/pixels/internal/realm/room/world/events/idlechanged"
@@ -70,7 +69,7 @@ func (service *Service) Dance(ctx context.Context, room *roomlive.Room, playerID
 	if err = service.publish(ctx, roomdanced.Name, roomdanced.Payload{RoomID: room.ID(), RoomIndex: unit.UnitID, DanceID: danceID}); err != nil {
 		return err
 	}
-	return service.publishAction(ctx, room.ID(), playerID, 10, danceID)
+	return service.publishAction(ctx, room.ID(), playerID, WiredActionDance, danceID)
 }
 
 // Express cancels incompatible avatar actions and broadcasts one transient expression.
@@ -196,7 +195,7 @@ func (service *Service) Sign(ctx context.Context, room *roomlive.Room, playerID 
 	if err := broadcast.RoomUnitStatus(ctx, service.connections, room, unit, 0); err != nil {
 		return err
 	}
-	return service.publishAction(ctx, room.ID(), playerID, 9, signID)
+	return service.publishAction(ctx, room.ID(), playerID, WiredActionSign, signID)
 }
 
 // ResumeForMovement clears avatar actions that cannot continue while walking.
@@ -216,66 +215,4 @@ func (service *Service) ResumeForMovement(ctx context.Context, room *roomlive.Ro
 		}
 	}
 	return service.cancelExpression(ctx, room, previous.UnitID)
-}
-
-// Posture changes and broadcasts one free-standing posture.
-func (service *Service) Posture(ctx context.Context, room *roomlive.Room, playerID int64, sitting bool) error {
-	current, found := room.Unit(playerID)
-	if !found {
-		return roomlive.ErrUnitNotFound
-	}
-	if current.Idle {
-		if err := service.setIdle(ctx, room, playerID, false, false, time.Now()); err != nil {
-			return err
-		}
-	}
-	if err := service.stopDance(ctx, room, current); err != nil {
-		return err
-	}
-	if err := service.cancelExpression(ctx, room, current.UnitID); err != nil {
-		return err
-	}
-	if err := service.cancelSign(ctx, room, playerID); err != nil {
-		return err
-	}
-	if err := service.pauseTransition(ctx); err != nil {
-		return err
-	}
-	unit, found := room.SetUnitPosture(playerID, sitting)
-	if !found {
-		return nil
-	}
-	if err := broadcast.RoomUnitStatus(ctx, service.connections, room, unit, 0); err != nil {
-		return err
-	}
-	action := int32(7)
-	if sitting {
-		action = 6
-	}
-	return service.publishAction(ctx, room.ID(), playerID, action, 0)
-}
-
-// publishAction emits a normalized WIRED action event.
-func (service *Service) publishAction(ctx context.Context, roomID int64, playerID int64, action int32, value int32) error {
-	return service.publish(ctx, roomacted.Name, roomacted.Payload{
-		RoomID: roomID, PlayerID: playerID, Action: action, Value: value,
-	})
-}
-
-// expressionAction maps protocol expressions to WIRED action types.
-func expressionAction(expressionID int32) int32 {
-	switch expressionID {
-	case 1:
-		return 1
-	case 2:
-		return 2
-	case 3:
-		return 3
-	case 6:
-		return 4
-	case 7:
-		return 5
-	default:
-		return 0
-	}
 }

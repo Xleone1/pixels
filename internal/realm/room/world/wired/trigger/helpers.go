@@ -65,6 +65,24 @@ func targetMatches(node *configuration.Node, itemID int64, spriteID int32) bool 
 	return false
 }
 
+// clickedFurnitureMatches applies the official trigger, selected, and selector source modes.
+func clickedFurnitureMatches(node *configuration.Node, event Event) bool {
+	source := int32(0)
+	if len(node.Parameters.Values) > 0 {
+		source = node.Parameters.Values[0]
+	}
+	switch source {
+	case 0:
+		return node.ItemID == event.SourceItem
+	case 100:
+		return targetMatches(node, event.SourceItem, event.SourceSprite)
+	case 200:
+		return true
+	default:
+		return false
+	}
+}
+
 // kindFor maps canonical trigger keys to typed room events.
 func kindFor(key string) Kind {
 	switch key {
@@ -112,7 +130,71 @@ func kindFor(key string) Kind {
 		return ClockCounter
 	case "wf_trg_var_changed":
 		return VariableChanged
+	case "wf_trg_user_clicks_furni":
+		return FurnitureClicked
+	case "wf_trg_user_clicks_tile":
+		return FloorTileClicked
+	case "wf_trg_user_clicks_user":
+		return AvatarClicked
 	default:
 		return 0
+	}
+}
+
+// Label returns one stable Creator Tools event label.
+func Label(kind Kind) string {
+	switch kind {
+	case EnterRoom:
+		return "ENTER_ROOM"
+	case Say:
+		return "SAY"
+	case WalkOn:
+		return "WALK_ON"
+	case WalkOff:
+		return "WALK_OFF"
+	case StateChanged:
+		return "STATE_CHANGED"
+	case Collision:
+		return "COLLISION"
+	case Periodic:
+		return "PERIODIC"
+	case PeriodicLong:
+		return "PERIODIC_LONG"
+	case AtTime:
+		return "AT_TIME"
+	case AtTimeLong:
+		return "AT_TIME_LONG"
+	case GameStarted:
+		return "GAME_STARTED"
+	case GameEnded:
+		return "GAME_ENDED"
+	case ScoreAchieved:
+		return "SCORE_ACHIEVED"
+	case BotReachedFurniture:
+		return "BOT_REACHED_FURNITURE"
+	case BotReachedAvatar:
+		return "BOT_REACHED_AVATAR"
+	case TeamWon:
+		return "TEAM_WON"
+	case TeamLost:
+		return "TEAM_LOST"
+	case ReceiveSignal:
+		return "RECEIVE_SIGNAL"
+	case LeaveRoom:
+		return "LEAVE_ROOM"
+	case UserPerformsAction:
+		return "USER_PERFORMS_ACTION"
+	case ClockCounter:
+		return "CLOCK_COUNTER"
+	case VariableChanged:
+		return "VARIABLE_CHANGED"
+	case FurnitureClicked:
+		return "FURNITURE_CLICKED"
+	case FloorTileClicked:
+		return "FLOOR_TILE_CLICKED"
+	case AvatarClicked:
+		return "AVATAR_CLICKED"
+	default:
+		return "UNKNOWN"
 	}
 }

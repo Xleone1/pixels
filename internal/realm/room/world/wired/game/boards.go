@@ -10,6 +10,46 @@ import (
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
 )
 
+// TeamRank returns one participating team's competition rank without allocation.
+func (service *Service) TeamRank(roomID int64, team int32) (int32, bool) {
+	if team < 1 || team > 4 {
+		return 0, false
+	}
+	service.mutex.RLock()
+	defer service.mutex.RUnlock()
+	state := service.rooms[roomID]
+	if state == nil {
+		return 0, false
+	}
+	participating := false
+	for _, assigned := range state.Teams {
+		if assigned == team {
+			participating = true
+			break
+		}
+	}
+	if !participating {
+		return 0, false
+	}
+	rank := int32(1)
+	for candidate := int32(1); candidate <= 4; candidate++ {
+		if candidate != team && teamParticipates(state, candidate) && state.TeamScores[candidate] > state.TeamScores[team] {
+			rank++
+		}
+	}
+	return rank, true
+}
+
+// teamParticipates reports whether one room team has at least one member.
+func teamParticipates(state *State, team int32) bool {
+	for _, assigned := range state.Teams {
+		if assigned == team {
+			return true
+		}
+	}
+	return false
+}
+
 // boardProjection stores durable JSON consumed as Nitro highscore stuff-data.
 type boardProjection struct {
 	// State stores the legacy visual state.

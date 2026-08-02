@@ -35,10 +35,12 @@ import (
 	actioncmd "github.com/niflaot/pixels/internal/realm/room/world/commands/action"
 	handitemcmd "github.com/niflaot/pixels/internal/realm/room/world/commands/handitem"
 	lookcmd "github.com/niflaot/pixels/internal/realm/room/world/commands/look"
+	userclickcmd "github.com/niflaot/pixels/internal/realm/room/world/commands/userclick"
 	walkcmd "github.com/niflaot/pixels/internal/realm/room/world/commands/walk"
 	actionhandler "github.com/niflaot/pixels/internal/realm/room/world/handlers/action"
 	handitemhandler "github.com/niflaot/pixels/internal/realm/room/world/handlers/handitem"
 	movementhandler "github.com/niflaot/pixels/internal/realm/room/world/handlers/movement"
+	selectionhandler "github.com/niflaot/pixels/internal/realm/room/world/handlers/selection"
 	"github.com/niflaot/pixels/internal/realm/room/world/layout"
 	"github.com/niflaot/pixels/internal/realm/session/binding"
 	"github.com/niflaot/pixels/networking/codec"
@@ -157,6 +159,9 @@ func RegisterConnectionHandlers(handlers *realmconn.Handlers, deps HandlerDeps) 
 	movementhandler.RegisterWalk(handlers.Inbound, movementhandler.NewWalk(walkcmd.Handler{
 		Players: deps.Players, Bindings: deps.Bindings, Runtime: deps.Runtime, Connections: deps.Connections,
 		Actions: deps.Actions, PluginEvents: deps.PluginEvents,
+	}, deps.Log))
+	selectionhandler.RegisterUserClick(handlers.Inbound, selectionhandler.NewUserClick(userclickcmd.Handler{
+		Players: deps.Players, Bindings: deps.Bindings, Runtime: deps.Runtime, Events: deps.Events,
 	}, deps.Log))
 	actionhandler.Register(handlers.Inbound, actionhandler.New(actioncmd.Handler{
 		Players: deps.Players, Bindings: deps.Bindings, Runtime: deps.Runtime, Actions: deps.Actions,

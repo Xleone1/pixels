@@ -63,6 +63,35 @@ func TestWinningTeamsRejectsTies(t *testing.T) {
 	}
 }
 
+// TestTeamRankUsesCompetitionPlacements verifies ties share ranks and absent teams fail closed.
+func TestTeamRankUsesCompetitionPlacements(t *testing.T) {
+	service := New()
+	for playerID, team := range map[int64]int32{1: 1, 2: 2, 3: 3} {
+		if !service.JoinTeam(8, playerID, team) {
+			t.Fatalf("join player %d", playerID)
+		}
+	}
+	if !service.Start(8) {
+		t.Fatal("start game")
+	}
+	_, _, _ = service.AddScore(8, 1, 10)
+	_, _, _ = service.AddScore(8, 2, 10)
+	_, _, _ = service.AddScore(8, 3, 5)
+	for team, want := range map[int32]int32{1: 1, 2: 1, 3: 3} {
+		if rank, found := service.TeamRank(8, team); !found || rank != want {
+			t.Fatalf("team %d rank=%d found=%t want=%d", team, rank, found, want)
+		}
+	}
+	if _, found := service.TeamRank(8, 4); found {
+		t.Fatal("absent team received a rank")
+	}
+	if allocations := testing.AllocsPerRun(100, func() {
+		_, _ = service.TeamRank(8, 1)
+	}); allocations != 0 {
+		t.Fatalf("TeamRank allocations=%f", allocations)
+	}
+}
+
 // TestScoreThresholdCrossesOnceAndSaturates verifies threshold and overflow policy.
 func TestScoreThresholdCrossesOnceAndSaturates(t *testing.T) {
 	event := trigger.Event{RoomID: 1, PlayerID: 2}

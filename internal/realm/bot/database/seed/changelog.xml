@@ -6,4 +6,5 @@
     <include file="development/0001_example_bots.sql" relativeToChangelogFile="true" context="development"/>
     <include file="development/0002_wired_lab.sql" relativeToChangelogFile="true" context="development"/>
     <include file="development/0003_rebuild_wired_lab.sql" relativeToChangelogFile="true" context="development"/>
+    <include file="development/0004_wired_projectile_obstacle.sql" relativeToChangelogFile="true" context="development"/>
 </databaseChangeLog>

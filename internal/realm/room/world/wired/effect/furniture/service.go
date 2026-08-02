@@ -105,12 +105,31 @@ func (service *Service) executeTarget(ctx context.Context, active *roomlive.Room
 	case effect.MatchSnapshot:
 		changed, err := service.restore(ctx, active, target, event.PlayerID)
 		return mutation{changed: changed}, err
+	case effect.ResetFurnitureState:
+		changed, err := service.resetState(ctx, active, target.ItemID)
+		return mutation{changed: changed}, err
 	case effect.SetAltitude:
 		changed, err := service.setAltitude(ctx, active, target.ItemID, node, event.PlayerID)
 		return mutation{changed: changed}, err
 	default:
 		return service.move(ctx, active, target.ItemID, operation, node, event)
 	}
+}
+
+// resetState restores one furniture item to its definition's default state.
+func (service *Service) resetState(ctx context.Context, active *roomlive.Room, itemID int64) (bool, error) {
+	item, found := active.FurnitureItem(itemID)
+	if !found || item.ExtraData == "0" {
+		return false, nil
+	}
+	if _, err := service.furniture.UpdateState(ctx, furnitureservice.StateParams{ItemID: itemID, RoomID: active.ID(), Expected: item.ExtraData, Next: "0"}); err != nil {
+		return false, err
+	}
+	updated, err := active.UpdateFurnitureState(itemID, "0", true)
+	if err != nil {
+		return false, err
+	}
+	return true, service.broadcast(ctx, active, updated)
 }
 
 // appendCollision appends a collision event only when a movement encountered a unit.

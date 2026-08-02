@@ -25,6 +25,9 @@
     <include file="development/0018_football_qa_entrance.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="development/0019_rooms_finals_lab.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="development/0020_wired_qa_rooms.sql" relativeToChangelogFile="true" contextFilter="development"/>
+    <include file="development/0021_wired_clicks_actions_room.sql" relativeToChangelogFile="true" contextFilter="development"/>
+    <include file="development/0022_wired_projectile_room.sql" relativeToChangelogFile="true" contextFilter="development"/>
+    <include file="development/0023_wired_selector_variable_rooms.sql" relativeToChangelogFile="true" contextFilter="development"/>
     <include file="test/0001_test_room_layouts.sql" relativeToChangelogFile="true" contextFilter="test"/>
     <include file="test/0002_test_rooms.sql" relativeToChangelogFile="true" contextFilter="test"/>
     <include file="test/0003_reconcile_room_vote_scores.sql" relativeToChangelogFile="true" contextFilter="test"/>

@@ -157,6 +157,15 @@ func (view *View) HasHanditem(playerID int64, itemID int32) (bool, bool, error) 
 	return found && unit.HandItem == itemID, found, nil
 }
 
+// TeamHasRank reports whether one participating team holds the configured placement.
+func (view *View) TeamHasRank(team int32, placement int32) (bool, bool, error) {
+	if view.games == nil || placement < 1 {
+		return false, false, nil
+	}
+	rank, found := view.games.TeamRank(view.active.ID(), team)
+	return found && rank == placement, found, nil
+}
+
 // FurnitureAltitude returns one furniture base height in hundredths.
 func (view *View) FurnitureAltitude(itemID int64) (int32, bool) {
 	item, found := view.active.FurnitureItem(itemID)

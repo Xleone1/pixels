@@ -76,6 +76,9 @@ func New(config Config) (*World, error) {
 	}, nil
 }
 
+// Dimensions returns the immutable room grid dimensions without allocation.
+func (world *World) Dimensions() (uint16, uint16) { return world.grid.Width(), world.grid.Height() }
+
 // AddUnit creates a world unit for a player when absent.
 func (world *World) AddUnit(playerID int64) {
 	if _, exists := world.units[playerID]; exists {

@@ -52,6 +52,10 @@ type View interface {
 	WearingEffect(int64, int32) (bool, bool, error)
 	// HasHanditem reports whether a player's current hand item matches.
 	HasHanditem(int64, int32) (bool, bool, error)
+	// PerformsAction reports whether the event actor matches a configured action.
+	PerformsAction(trigger.Event, []int32) (bool, bool, error)
+	// TeamHasRank reports whether a participating team holds one placement.
+	TeamHasRank(int32, int32) (bool, bool, error)
 	// ValidMoves simulates the stack's movement effects without durable mutation.
 	ValidMoves([]*configuration.Node, trigger.Event) (bool, error)
 	// FurnitureAltitude returns one furniture base height in hundredths.

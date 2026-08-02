@@ -5,6 +5,7 @@ import (
 	"time"
 
 	botcore "github.com/niflaot/pixels/internal/realm/bot/core"
+	furnitureclicked "github.com/niflaot/pixels/internal/realm/furniture/events/clicked"
 	furnituremoved "github.com/niflaot/pixels/internal/realm/furniture/events/moved"
 	furniturepicked "github.com/niflaot/pixels/internal/realm/furniture/events/pickedup"
 	furnitureplaced "github.com/niflaot/pixels/internal/realm/furniture/events/placed"
@@ -17,9 +18,11 @@ import (
 	roomleft "github.com/niflaot/pixels/internal/realm/room/access/events/left"
 	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
 	roomacted "github.com/niflaot/pixels/internal/realm/room/world/events/acted"
+	avatarclicked "github.com/niflaot/pixels/internal/realm/room/world/events/avatarclicked"
 	roommoved "github.com/niflaot/pixels/internal/realm/room/world/events/moved"
 	avatareffect "github.com/niflaot/pixels/internal/realm/room/world/wired/effect/avatar"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/game"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/projectile"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
 	wiredruntime "github.com/niflaot/pixels/internal/realm/room/world/wired/runtime"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/trigger"
@@ -30,11 +33,15 @@ import (
 )
 
 // RegisterRuntime connects WIRED to room lifecycle and realm events.
-func RegisterRuntime(lifecycle fx.Lifecycle, subscriber bus.Subscriber, rooms *roomlive.Registry, players *playerlive.Registry, bots *botcore.Service, engine *wiredruntime.Engine, games *game.Service, coordinator *game.Coordinator, groups *socialgroup.Service, variables *variable.Service, avatars *avatareffect.Service, store record.Store, log *zap.Logger) error {
+func RegisterRuntime(lifecycle fx.Lifecycle, subscriber bus.Subscriber, rooms *roomlive.Registry, players *playerlive.Registry, bots *botcore.Service, engine *wiredruntime.Engine, games *game.Service, coordinator *game.Coordinator, groups *socialgroup.Service, variables *variable.Service, avatars *avatareffect.Service, projectiles *projectile.Service, store record.Store, log *zap.Logger) error {
 	rooms.AddCyclePublisher(func(ctx context.Context, active *roomlive.Room, now time.Time) error {
 		return engine.Cycle(ctx, active.ID(), now)
 	})
+	rooms.AddCyclePublisher(func(ctx context.Context, active *roomlive.Room, now time.Time) error {
+		return projectiles.Cycle(ctx, active.ID(), now)
+	})
 	rooms.AddClosePublisher(func(roomID int64) {
+		projectiles.Close(roomID)
 		engine.Close(roomID)
 		games.Close(roomID)
 		groups.CloseRoom(roomID)
@@ -67,6 +74,8 @@ func subscribeRuntime(subscriber bus.Subscriber, rooms *roomlive.Registry, playe
 		{name: roomentered.Name, handle: enteredHandler(rooms, players, engine, groups, variables, log)},
 		{name: roomleft.Name, handle: leftHandler(rooms, engine)},
 		{name: roomacted.Name, handle: actedHandler(rooms, engine)},
+		{name: furnitureclicked.Name, handle: clickedHandler(rooms, engine)},
+		{name: avatarclicked.Name, handle: avatarClickedHandler(rooms, engine)},
 		{name: furnitureused.Name, handle: usedHandler(rooms, engine)},
 		{name: furnitureon.Name, handle: walkOnHandler(rooms, engine, coordinator)},
 		{name: furnitureoff.Name, handle: walkOffHandler(rooms, engine)},

@@ -219,6 +219,7 @@ updated in the same change.
 | `room.wired.configure.any` | Configure Wired in any room |
 | `room.wired.inspect` | Inspect Wired configuration |
 | `room.wired.reward.manage` | Configure Wired rewards |
+| `room.wired.variables.manage` | Create, update, and delete durable room Wired variables from Creator Tools |
 
 Plugin nodes are registered dynamically as
 `plugin.<plugin-name>.<local-node>`, so their concrete inventory depends on the

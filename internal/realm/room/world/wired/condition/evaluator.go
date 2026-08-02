@@ -71,6 +71,12 @@ func evaluatePositive(key string, node *configuration.Node, context Context, vie
 	case "wf_cnd_has_handitem":
 		pass, valid, err := view.HasHanditem(context.Event.PlayerID, first(node.Parameters.Values))
 		return Result{Pass: pass, Valid: valid}, err
+	case "wf_cnd_user_performs_action":
+		pass, valid, err := view.PerformsAction(context.Event, node.Parameters.Values)
+		return Result{Pass: pass, Valid: valid}, err
+	case "wf_cnd_team_has_rank":
+		pass, valid, err := view.TeamHasRank(first(node.Parameters.Values), value(node.Parameters.Values, 1))
+		return Result{Pass: pass, Valid: valid}, err
 	case "wf_cnd_has_altitude":
 		return altitudeMatches(node, view)
 	case "wf_cnd_actor_dir":
@@ -121,6 +127,10 @@ func positiveKey(key string) (string, bool) {
 		return "wf_cnd_has_altitude", true
 	case "wf_cnd_neg_has_var":
 		return "wf_cnd_has_var", true
+	case "wf_cnd_not_has_handitem":
+		return "wf_cnd_has_handitem", true
+	case "wf_cnd_not_user_performs_action":
+		return "wf_cnd_user_performs_action", true
 	default:
 		return key, false
 	}

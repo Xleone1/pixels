@@ -43,6 +43,8 @@ type Engine struct {
 	selections *selection.Resolver
 	// variables resolves warmed WIRED state.
 	variables *variable.Service
+	// extras executes custom post-condition stack add-ons.
+	extras ExtraExecutor
 	// rooms stores state pointers by room id.
 	rooms sync.Map
 	// generationID allocates unique generation identifiers.
@@ -62,6 +64,12 @@ func New(config roomwired.Config, store record.Store, compiler *configuration.Co
 func (engine *Engine) WithDynamicDependencies(selections *selection.Resolver, variables *variable.Service) *Engine {
 	engine.selections = selections
 	engine.variables = variables
+	return engine
+}
+
+// WithExtraExecutor installs optional custom post-condition extras.
+func (engine *Engine) WithExtraExecutor(extras ExtraExecutor) *Engine {
+	engine.extras = extras
 	return engine
 }
 

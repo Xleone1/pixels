@@ -14,6 +14,7 @@ import (
 	furnitureon "github.com/niflaot/pixels/internal/realm/furniture/events/walkedon"
 	roomleft "github.com/niflaot/pixels/internal/realm/room/access/events/left"
 	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
+	roomaction "github.com/niflaot/pixels/internal/realm/room/world/action"
 	roomacted "github.com/niflaot/pixels/internal/realm/room/world/events/acted"
 	roommoved "github.com/niflaot/pixels/internal/realm/room/world/events/moved"
 	"github.com/niflaot/pixels/internal/realm/room/world/grid"
@@ -45,11 +46,11 @@ func leftHandler(rooms *roomlive.Registry, engine *wiredruntime.Engine) bus.Hand
 func actedHandler(rooms *roomlive.Registry, engine *wiredruntime.Engine) bus.Handler {
 	return func(_ context.Context, event bus.Event) error {
 		payload, ok := event.Payload.(roomacted.Payload)
-		if ok && payload.Action > 0 {
+		if ok && roomaction.ValidWiredAction(payload.Action) {
 			wiredEvent := trigger.Event{
 				Kind: trigger.UserPerformsAction, RoomID: payload.RoomID,
 				ActorKind: trigger.ActorPlayer, ActorID: payload.PlayerID,
-				PlayerID: payload.PlayerID, Action: payload.Action,
+				PlayerID: payload.PlayerID, Action: payload.Action, ActionValue: payload.Value,
 			}
 			if active, found := rooms.Find(payload.RoomID); found {
 				if actor, exists := active.UnitMotion(payload.PlayerID); exists {

@@ -41,6 +41,8 @@ const (
 	ToggleState FurnitureOperation = iota + 1
 	// MatchSnapshot restores captured state and placement.
 	MatchSnapshot
+	// ResetFurnitureState restores the furniture definition's default state.
+	ResetFurnitureState
 	// MoveRotate moves or rotates furniture.
 	MoveRotate
 	// ChaseActor moves furniture toward the actor.

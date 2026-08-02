@@ -45,10 +45,25 @@ func eventKind(key string) trigger.Kind {
 		return trigger.ClockCounter
 	case "wf_trg_var_changed":
 		return trigger.VariableChanged
+	case "wf_trg_user_clicks_furni":
+		return trigger.FurnitureClicked
+	case "wf_trg_user_clicks_tile":
+		return trigger.FloorTileClicked
+	case "wf_trg_user_clicks_user":
+		return trigger.AvatarClicked
 	default:
 		kind, _ := timerKind(key)
 		return kind
 	}
+}
+
+// usesClickSelectorSource reports whether a click trigger uses selector output as its source.
+func usesClickSelectorSource(node *configuration.Node) bool {
+	if len(node.Parameters.Values) == 0 || node.Parameters.Values[0] != 200 {
+		return false
+	}
+	return node.Descriptor.Key == "wf_trg_user_clicks_furni" ||
+		node.Descriptor.Key == "wf_trg_user_clicks_tile"
 }
 
 // applyResult applies engine-owned effect directives.
@@ -70,12 +85,17 @@ func (engine *Engine) applyResult(execution *execution, result effect.Result, de
 		if derived.Kind == trigger.ReceiveSignal {
 			if execution.signals >= engine.config.MaxSignalsPerTick {
 				execution.trace.BudgetExhausted = true
+				execution.trace.BudgetCode = "SIGNAL_CAP"
 				continue
 			}
 			execution.signals++
 		}
-		if derived.RoomID != execution.event.RoomID ||
-			execution.queueSize() >= engine.config.MaxEventsPerTrace {
+		if derived.RoomID != execution.event.RoomID {
+			continue
+		}
+		if execution.queueSize() >= engine.config.MaxEventsPerTrace {
+			execution.trace.BudgetExhausted = true
+			execution.trace.BudgetCode = "EVENT_CAP"
 			continue
 		}
 		for _, candidate := range execution.state.byKind[derived.Kind] {

@@ -4,6 +4,7 @@ package trigger
 import (
 	"strings"
 
+	roomaction "github.com/niflaot/pixels/internal/realm/room/world/action"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/configuration"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
 )
@@ -56,6 +57,12 @@ const (
 	ClockCounter
 	// VariableChanged reports a WIRED variable mutation.
 	VariableChanged
+	// FurnitureClicked reports a deliberate user interaction with furniture.
+	FurnitureClicked
+	// FloorTileClicked reports a deliberate interaction with a click-only floor tile.
+	FloorTileClicked
+	// AvatarClicked reports a deliberate user interaction with a room avatar.
+	AvatarClicked
 )
 
 // ActorKind classifies an event actor.
@@ -102,6 +109,10 @@ type Event struct {
 	Team int32
 	// Action stores the actor action identifier.
 	Action int32
+	// ActionValue stores an optional action variant such as a sign or dance.
+	ActionValue int32
+	// TargetPlayerID identifies the deliberately clicked player when present.
+	TargetPlayerID int64
 	// Direction stores the actor facing direction.
 	Direction int32
 	// Signal stores an intra-room signal name.
@@ -151,7 +162,9 @@ func (Matcher) Match(node *configuration.Node, event Event) bool {
 	case "wf_trg_clock_counter":
 		return len(node.Parameters.Values) > 0 && event.PreviousCounter < int64(node.Parameters.Values[0]) && event.Counter >= int64(node.Parameters.Values[0])
 	case "wf_trg_user_performs_action":
-		return len(node.Parameters.Values) > 0 && event.Action == node.Parameters.Values[0]
+		return len(node.Parameters.Values) > 0 &&
+			roomaction.ValidWiredAction(event.Action) &&
+			event.Action == node.Parameters.Values[0]
 	case "wf_trg_recv_signal":
 		return node.Parameters.Text != "" && strings.EqualFold(node.Parameters.Text, event.Signal)
 	case "wf_trg_var_changed":
@@ -160,6 +173,8 @@ func (Matcher) Match(node *configuration.Node, event Event) bool {
 		return botNameMatches(node, event) && targetMatches(node, event.SourceItem, event.SourceSprite)
 	case "wf_trg_bot_reached_avtr":
 		return botNameMatches(node, event)
+	case "wf_trg_user_clicks_furni", "wf_trg_user_clicks_tile":
+		return clickedFurnitureMatches(node, event)
 	case "wf_trg_walks_on_furni", "wf_trg_walks_off_furni", "wf_trg_state_changed":
 		return targetMatches(node, event.SourceItem, event.SourceSprite)
 	default:

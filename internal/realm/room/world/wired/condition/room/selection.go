@@ -5,9 +5,11 @@ import (
 	"strings"
 
 	roomlive "github.com/niflaot/pixels/internal/realm/room/runtime/live"
+	roomaction "github.com/niflaot/pixels/internal/realm/room/world/action"
 	worldunit "github.com/niflaot/pixels/internal/realm/room/world/unit"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/selection"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/trigger"
 )
 
 // SelectionView returns this adapter as a dynamic selector view.
@@ -122,28 +124,86 @@ func (view *View) UsersByTeam(team int32) []int64 {
 
 // actionMatches compares one stable actor action projection.
 func actionMatches(unit roomlive.UnitSnapshot, action int32) bool {
-	if action == 4 {
+	if !roomaction.ValidWiredAction(action) {
+		return false
+	}
+	if action == roomaction.WiredActionJump {
 		return !unit.Idle
 	}
-	if action == 5 {
+	if action == roomaction.WiredActionRespect {
 		return unit.Idle
 	}
 	for _, status := range unit.Statuses {
 		switch action {
-		case 6:
+		case roomaction.WiredActionSit:
 			if status.Key == worldunit.StatusSit {
 				return true
 			}
-		case 8:
+		case roomaction.WiredActionLay:
 			if status.Key == worldunit.StatusLay {
 				return true
 			}
-		case 10:
+		case roomaction.WiredActionDance:
 			if status.Key == worldunit.StatusDance {
 				value, _ := strconv.ParseInt(status.Value, 10, 32)
 				return value > 0
 			}
 		}
 	}
-	return action == 7
+	return action == roomaction.WiredActionStand
+}
+
+// PerformsAction reports whether the event actor matches one configured action and variant.
+func (view *View) PerformsAction(event trigger.Event, values []int32) (bool, bool, error) {
+	action := int32(0)
+	if len(values) > 0 {
+		action = values[0]
+	}
+	if !roomaction.ValidWiredAction(action) || event.ActorID == 0 {
+		return false, false, nil
+	}
+	if event.Kind == trigger.UserPerformsAction && event.Action == action {
+		return actionVariantMatches(action, event.ActionValue, values), true, nil
+	}
+	unit, found := view.active.UnitMotion(event.ActorID)
+	if !found {
+		return false, false, nil
+	}
+	if unit.Kind == worldunit.KindPlayer {
+		unit, found = view.active.Unit(unit.PlayerID)
+	}
+	return found && actionMatches(unit, action) && stableActionVariantMatches(unit, action, values), found, nil
+}
+
+// actionVariantMatches compares optional sign and dance filters.
+func actionVariantMatches(action int32, actionValue int32, values []int32) bool {
+	if action == roomaction.WiredActionSign && valueAt(values, 1) != 0 {
+		return actionValue == valueAt(values, 2)
+	}
+	if action == roomaction.WiredActionDance && valueAt(values, 3) != 0 {
+		return actionValue == valueAt(values, 4)
+	}
+	return true
+}
+
+// stableActionVariantMatches compares persistent action variants.
+func stableActionVariantMatches(unit roomlive.UnitSnapshot, action int32, values []int32) bool {
+	if action != roomaction.WiredActionDance || valueAt(values, 3) == 0 {
+		return action != roomaction.WiredActionSign || valueAt(values, 1) == 0
+	}
+	for _, status := range unit.Statuses {
+		if status.Key == worldunit.StatusDance {
+			current, _ := strconv.ParseInt(status.Value, 10, 32)
+			return int32(current) == valueAt(values, 4)
+		}
+	}
+	return false
+}
+
+// valueAt returns one optional action parameter.
+func valueAt(values []int32, index int) int32 {
+	if index >= 0 && index < len(values) {
+		return values[index]
+	}
+	return 0
 }

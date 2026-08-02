@@ -22,13 +22,13 @@ func TestDevelopmentLabsPlaceAndConfigureManifest(t *testing.T) {
 	for _, relative := range []string{
 		"internal/realm/furniture/database/seed/development/0026_rebuild_wired_labs.sql",
 		"internal/realm/furniture/database/seed/development/0038_room_games.sql",
+		"internal/realm/furniture/database/seed/development/0056_wired_projectile_obstacles.sql",
 	} {
 		contents, readErr := os.ReadFile(repositoryPath(t, relative))
 		if readErr != nil {
 			t.Fatal(readErr)
 		}
-		for itemID, definitionID := range placedItems(t, string(contents)) {
-			interaction := definitions[definitionID]
+		for itemID, interaction := range placedItems(t, string(contents), definitions) {
 			descriptor, found := registered.Resolve(interaction)
 			if !found {
 				continue
@@ -53,25 +53,25 @@ func TestDevelopmentLabsPlaceAndConfigureManifest(t *testing.T) {
 			}
 		}
 	}
-	if len(placed) != len(want)-54 {
-		t.Fatalf("placed classic behavior keys=%d, want %d", len(placed), len(want)-54)
+	if len(placed) != len(want)-62 {
+		t.Fatalf("placed classic behavior keys=%d, want %d", len(placed), len(want)-62)
 	}
 }
 
 // TestDevelopmentWiredExpansionSeed covers all modern definitions, catalog rows, and dynamic QA placements.
 func TestDevelopmentWiredExpansionSeed(t *testing.T) {
-	definitions, err := os.ReadFile(repositoryPath(t, "internal/realm/furniture/database/seed/development/0050_wired_definitions_expansion.sql"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	catalog, err := os.ReadFile(repositoryPath(t, "internal/realm/catalog/database/seed/development/0033_wired_catalog.sql"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	labs, err := os.ReadFile(repositoryPath(t, "internal/realm/furniture/database/seed/development/0051_wired_dynamic_labs.sql"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	definitions := readSeedFiles(t,
+		"internal/realm/furniture/database/seed/development/0050_wired_definitions_expansion.sql",
+		"internal/realm/furniture/database/seed/development/0053_wired_clicks_actions.sql",
+	)
+	catalog := readSeedFiles(t,
+		"internal/realm/catalog/database/seed/development/0033_wired_catalog.sql",
+		"internal/realm/catalog/database/seed/development/0035_wired_clicks_actions.sql",
+	)
+	labs := readSeedFiles(t,
+		"internal/realm/furniture/database/seed/development/0051_wired_dynamic_labs.sql",
+		"internal/realm/furniture/database/seed/development/0053_wired_clicks_actions.sql",
+	)
 	for _, descriptor := range registry.CanonicalManifest() {
 		if !isManifestExpansion(descriptor.Key) {
 			continue
@@ -83,9 +83,24 @@ func TestDevelopmentWiredExpansionSeed(t *testing.T) {
 	if !strings.Contains(string(catalog), "metadata->>'source'='polaris-wired'") ||
 		!strings.Contains(string(catalog), "overriding system value") ||
 		!strings.Contains(string(labs), "item.id between 1010000 and 1010053") ||
-		!strings.Contains(string(labs), "wired-integration") {
+		!strings.Contains(string(labs), "wired-integration") ||
+		!strings.Contains(string(labs), "room_invisible_click_tile") {
 		t.Fatal("WIRED catalog or integration lab contract is incomplete")
 	}
+}
+
+// readSeedFiles joins related additive seed documents.
+func readSeedFiles(t *testing.T, relatives ...string) []byte {
+	t.Helper()
+	var result []byte
+	for _, relative := range relatives {
+		contents, err := os.ReadFile(repositoryPath(t, relative))
+		if err != nil {
+			t.Fatal(err)
+		}
+		result = append(result, contents...)
+	}
+	return result
 }
 
 // TestDevelopmentWiredCatalogOrganization verifies the one-level catalog hierarchy.
@@ -146,6 +161,7 @@ func seededDefinitions(t *testing.T) map[int64]string {
 		"internal/realm/furniture/database/seed/development/0021_wired_definitions.sql",
 		"internal/realm/furniture/database/seed/development/0023_wired_compatibility.sql",
 		"internal/realm/furniture/database/seed/development/0038_room_games.sql",
+		"internal/realm/furniture/database/seed/development/0054_wired_projectile.sql",
 	} {
 		contents, err := os.ReadFile(repositoryPath(t, relative))
 		if err != nil {
@@ -165,25 +181,45 @@ func seededDefinitions(t *testing.T) map[int64]string {
 	return result
 }
 
-// placedItems returns QA furniture ids and their definition ids.
-func placedItems(t *testing.T, contents string) map[int64]int64 {
+// placedItems returns QA furniture ids and their canonical interactions.
+func placedItems(t *testing.T, contents string, definitions map[int64]string) map[int64]string {
 	t.Helper()
-	expression := regexp.MustCompile(`\((\d+),(\d+),1,11[0-5],`)
-	result := make(map[int64]int64)
-	for _, match := range expression.FindAllStringSubmatch(contents, -1) {
+	result := make(map[int64]string)
+	for _, match := range regexp.MustCompile(`\((\d+),(\d+),1,11[0-5],`).FindAllStringSubmatch(contents, -1) {
 		itemID, itemErr := strconv.ParseInt(match[1], 10, 64)
 		definitionID, definitionErr := strconv.ParseInt(match[2], 10, 64)
 		if itemErr != nil || definitionErr != nil {
 			t.Fatalf("invalid placed item tuple %v", match)
 		}
-		result[itemID] = definitionID
+		result[itemID] = definitions[definitionID]
+	}
+	fixture := statementBody(contents, "fixture(id,definition_id", ")\ninsert into furniture_items")
+	for _, match := range regexp.MustCompile(`\((\d+),(\d+),`).FindAllStringSubmatch(fixture, -1) {
+		itemID, itemErr := strconv.ParseInt(match[1], 10, 64)
+		definitionID, definitionErr := strconv.ParseInt(match[2], 10, 64)
+		if itemErr != nil || definitionErr != nil {
+			t.Fatalf("invalid fixture tuple %v", match)
+		}
+		result[itemID] = definitions[definitionID]
+	}
+	namedFixture := statementBody(contents, "fixture(id,definition_name", ")\ninsert into furniture_items")
+	for _, match := range regexp.MustCompile(`\((\d+),'([^']+)',`).FindAllStringSubmatch(namedFixture, -1) {
+		itemID, itemErr := strconv.ParseInt(match[1], 10, 64)
+		if itemErr != nil {
+			t.Fatalf("invalid named fixture tuple %v", match)
+		}
+		result[itemID] = match[2]
 	}
 	return result
 }
 
 // configuredItems returns item ids from one normalized settings statement.
 func configuredItems(contents string) map[int64]bool {
-	statement := statementBody(contents, "insert into room_wired_settings", "on conflict(item_id)")
+	start := "insert into room_wired_settings"
+	if strings.Contains(contents, "with desired(item_id,int_params") {
+		start = "with desired(item_id,int_params"
+	}
+	statement := statementBody(contents, start, "on conflict(item_id)")
 	expression := regexp.MustCompile(`\((\d+),`)
 	result := make(map[int64]bool)
 	for _, match := range expression.FindAllStringSubmatch(statement, -1) {

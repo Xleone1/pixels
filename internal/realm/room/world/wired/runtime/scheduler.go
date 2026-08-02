@@ -74,6 +74,7 @@ func (engine *Engine) executeDelayed(ctx context.Context, event trigger.Event, n
 		engine.applyResult(&execution, result, depth)
 		err = engine.run(&execution)
 	}
+	execution.trace.Signals = execution.signals
 	execution.trace.Duration = time.Since(started)
 	engine.recordTrace(execution.trace)
 	loaded.appendTrace(execution.trace)

@@ -13,6 +13,26 @@ type memoryStore struct {
 	values []Value
 }
 
+// systemFixture provides one immutable room variable.
+type systemFixture struct{}
+
+// ResolveSystem resolves the fixture system variable.
+func (systemFixture) ResolveSystem(roomID int64, scope Scope, scopeID int64, name string) (Value, bool) {
+	if roomID == 1 && scope == ScopeRoom && scopeID == 1 && name == "@id" {
+		return Value{RoomID: roomID, Scope: scope, ScopeID: scopeID, Name: name, IntValue: 1}, true
+	}
+	return Value{}, false
+}
+
+// ListSystem lists the fixture system variable.
+func (fixture systemFixture) ListSystem(roomID int64, scope Scope, scopeID int64) []Value {
+	value, found := fixture.ResolveSystem(roomID, scope, scopeID, "@id")
+	if !found {
+		return nil
+	}
+	return []Value{value}
+}
+
 // LoadRoom returns assignments for one room.
 func (store *memoryStore) LoadRoom(_ context.Context, roomID int64) ([]Value, error) {
 	result := make([]Value, 0)
@@ -173,6 +193,27 @@ func TestColdDurableReferenceSupportsReadAndChange(t *testing.T) {
 	}
 	if _, warmed := service.Get(2, ScopeRoom, 2, "score"); warmed {
 		t.Fatal("cold reference populated an unowned room cache")
+	}
+}
+
+// TestSystemVariablesAreInspectableAndReadOnly verifies live projections never reach persistence.
+func TestSystemVariablesAreInspectableAndReadOnly(t *testing.T) {
+	service := New(&memoryStore{}, 10)
+	service.SetSystemProvider(systemFixture{})
+	if value, found := service.Get(1, ScopeRoom, 1, "@id"); !found || value.IntValue != 1 {
+		t.Fatalf("system value=%+v found=%t", value, found)
+	}
+	if values := service.List(1, ScopeRoom, 1); len(values) != 1 || values[0].Name != "@id" {
+		t.Fatalf("system list=%+v", values)
+	}
+	if _, err := service.Set(context.Background(), Value{RoomID: 1, Scope: ScopeRoom, ScopeID: 1, Name: "@id"}); err != ErrReadOnly {
+		t.Fatalf("set read-only error=%v", err)
+	}
+	if _, _, err := service.Change(context.Background(), Value{RoomID: 1, Scope: ScopeRoom, ScopeID: 1, Name: "@id"}, 1); err != ErrReadOnly {
+		t.Fatalf("change read-only error=%v", err)
+	}
+	if _, _, err := service.Delete(context.Background(), 1, ScopeRoom, 1, "@id"); err != ErrReadOnly {
+		t.Fatalf("delete read-only error=%v", err)
 	}
 }
 

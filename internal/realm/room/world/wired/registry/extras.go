@@ -55,6 +55,9 @@ func canonicalAdditionalTriggers() []Descriptor {
 		{Key: "wf_trg_user_performs_action", Family: FamilyTrigger, ClientCode: 21, Actor: ActorUnit, Editor: true},
 		{Key: "wf_trg_clock_counter", Family: FamilyTrigger, ClientCode: 22, Actor: ActorOptional, Editor: true},
 		{Key: "wf_trg_var_changed", Family: FamilyTrigger, ClientCode: 23, Actor: ActorOptional, Editor: true},
+		{Key: "wf_trg_user_clicks_furni", Family: FamilyTrigger, ClientCode: 18, Selection: SelectionOptional, Actor: ActorPlayer, Editor: true},
+		{Key: "wf_trg_user_clicks_tile", Family: FamilyTrigger, ClientCode: 19, Selection: SelectionOptional, Actor: ActorPlayer, Editor: true},
+		{Key: "wf_trg_user_clicks_user", Family: FamilyTrigger, ClientCode: 20, Actor: ActorPlayer, Editor: true},
 	}
 }
 
@@ -68,6 +71,7 @@ func canonicalAdditionalEffects() []Descriptor {
 		{Key: "wf_act_user_to_furni", Family: FamilyEffect, ClientCode: 37, Selection: SelectionRequired, Actor: ActorUnit, Editor: true},
 		{Key: "wf_act_furni_to_furni", Family: FamilyEffect, ClientCode: 38, Selection: SelectionRequired, Editor: true},
 		{Key: "wf_act_set_altitude", Family: FamilyEffect, ClientCode: 39, Selection: SelectionRequired, Editor: true},
+		{Key: "wf_act_reset_furni", Family: FamilyEffect, ClientCode: 40, Selection: SelectionRequired, Editor: true},
 		{Key: "wf_act_control_clock", Family: FamilyEffect, ClientCode: 41, Editor: true},
 		{Key: "wf_act_control_clock_counter", Family: FamilyEffect, ClientCode: 42, Editor: true, Aliases: []string{"wf_act_adjust_clock"}},
 		{Key: "wf_act_move_rotate_user", Family: FamilyEffect, ClientCode: 43, Actor: ActorUnit, Editor: true},
@@ -81,8 +85,12 @@ func canonicalAdditionalEffects() []Descriptor {
 func canonicalAdditionalConditions() []Descriptor {
 	return []Descriptor{
 		{Key: "wf_cnd_clock_matches", Family: FamilyCondition, ClientCode: 27, Editor: true},
+		{Key: "wf_cnd_user_performs_action", Family: FamilyCondition, ClientCode: 28, Actor: ActorUnit, Editor: true},
 		{Key: "wf_cnd_has_altitude", Family: FamilyCondition, ClientCode: 29, Selection: SelectionRequired, Editor: true},
 		{Key: "wf_cnd_not_has_altitude", Family: FamilyCondition, ClientCode: 29, Selection: SelectionRequired, Editor: true},
+		{Key: "wf_cnd_not_user_performs_action", Family: FamilyCondition, ClientCode: 30, Actor: ActorUnit, Editor: true},
+		{Key: "wf_cnd_not_has_handitem", Family: FamilyCondition, ClientCode: 31, Actor: ActorPlayer, Editor: true},
+		{Key: "wf_cnd_team_has_rank", Family: FamilyCondition, ClientCode: 35, Actor: ActorOptional, Editor: true},
 		{Key: "wf_cnd_actor_dir", Family: FamilyCondition, ClientCode: 38, Actor: ActorUnit, Editor: true},
 		{Key: "wf_cnd_slc_quantity", Family: FamilyCondition, ClientCode: 39, Editor: true},
 		{Key: "wf_cnd_has_var", Family: FamilyCondition, ClientCode: 40, Actor: ActorOptional, Editor: true},
@@ -103,7 +111,7 @@ func canonicalAdditionalExtras() []Descriptor {
 
 // CanonicalManifest returns the audited classic and WIRED behavior descriptors.
 func CanonicalManifest() []Descriptor {
-	manifest := make([]Descriptor, 0, 130)
+	manifest := make([]Descriptor, 0, 138)
 	manifest = append(manifest, canonicalTriggers()...)
 	manifest = append(manifest, canonicalEffects()...)
 	manifest = append(manifest, canonicalConditions()...)
@@ -120,6 +128,7 @@ func CanonicalManifest() []Descriptor {
 // CompatibilityManifest returns explicitly designed non-master extensions.
 func CompatibilityManifest() []Descriptor {
 	return []Descriptor{
+		{Key: "wf_xtra_projectile", Family: FamilyExtra, ClientCode: 99, Selection: SelectionRequired, Actor: ActorOptional, Editor: true},
 		{Key: "wf_cnd_valid_moves", Family: FamilyCondition, ClientCode: -1, Actor: ActorOptional},
 		{Key: "wf_act_reset_highscore", Family: FamilyEffect, ClientCode: 0, Selection: SelectionRequired, Editor: true, Aliases: []string{"wf_cstm_reset_highscore"}},
 		{Key: "wf_act_progress_achievement", Family: FamilyEffect, ClientCode: 7, Actor: ActorPlayer, Editor: true, Aliases: []string{"wf_cstm_achievement"}},

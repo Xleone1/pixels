@@ -5,6 +5,7 @@ import (
 	permissionservice "github.com/niflaot/pixels/internal/permission/service"
 	pluginwired "github.com/niflaot/pixels/internal/plugin/wired"
 	botcore "github.com/niflaot/pixels/internal/realm/bot/core"
+	realmconn "github.com/niflaot/pixels/internal/realm/connection"
 	furnitureservice "github.com/niflaot/pixels/internal/realm/furniture/service"
 	playerachievement "github.com/niflaot/pixels/internal/realm/player/achievement"
 	playerlive "github.com/niflaot/pixels/internal/realm/player/live"
@@ -23,10 +24,12 @@ import (
 	progressioneffect "github.com/niflaot/pixels/internal/realm/room/world/wired/effect/progression"
 	rewardeffect "github.com/niflaot/pixels/internal/realm/room/world/wired/effect/reward"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/game"
+	"github.com/niflaot/pixels/internal/realm/room/world/wired/projectile"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/record"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/registry"
 	wiredruntime "github.com/niflaot/pixels/internal/realm/room/world/wired/runtime"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/selection"
+	wiredtools "github.com/niflaot/pixels/internal/realm/room/world/wired/tools"
 	"github.com/niflaot/pixels/internal/realm/room/world/wired/variable"
 	"github.com/niflaot/pixels/internal/realm/session/binding"
 	netconn "github.com/niflaot/pixels/networking/connection"
@@ -42,9 +45,23 @@ var Module = fx.Module("room-wired",
 		NewVariableService, NewSelectionResolver, NewGamesWithStore, conditionroom.NewWithVariables, wiredruntime.NewRoomScheduler,
 		NewAvatarEffects, NewFurnitureEffects, NewBotEffects, progressioneffect.New,
 		rewardeffect.New, NewEffectsWithProgression, NewEngine, game.NewCoordinator, bridge.NewSpeechBridge, NewCommandHandler,
+		wiredtools.New, projectile.New,
 	),
-	fx.Invoke(RegisterRuntime, RegisterHandlers),
+	fx.Invoke(RegisterSystemVariables, RegisterRuntime, RegisterHandlers, RegisterToolsHandlers, wiredtools.RegisterCommands),
 )
+
+// RegisterToolsHandlers installs Creator Tools adapters in the inbound registry.
+func RegisterToolsHandlers(handlers *realmconn.Handlers, service *wiredtools.Service) {
+	if handlers == nil {
+		return
+	}
+	wiredtools.RegisterHandlers(handlers.Inbound, service)
+}
+
+// RegisterSystemVariables installs live read-only variable resolution.
+func RegisterSystemVariables(provider *conditionroom.Provider, projectiles *projectile.Service, variables *variable.Service) {
+	variables.SetSystemProvider(variable.NewSystemChain(projectiles, provider))
+}
 
 // NewGames creates WIRED game state with room team-color projection.
 func NewGames(rooms *roomlive.Registry, connections *netconn.Registry) *game.Service {
@@ -113,8 +130,10 @@ func NewEffectsWithProgression(furniture *furnitureeffect.Service, avatar *avata
 }
 
 // NewEngine creates the room WIRED engine.
-func NewEngine(config roomwired.Config, store record.Store, compiler *configuration.Compiler, effects *effect.Executor, views *conditionroom.Provider, scheduler *wiredruntime.RoomScheduler, furniture *furnitureeffect.Service, selections *selection.Resolver, variables *variable.Service, extensions *pluginwired.Registry) *wiredruntime.Engine {
-	return wiredruntime.New(config, store, compiler, effects, views, scheduler, furniture, extensions).WithDynamicDependencies(selections, variables)
+func NewEngine(config roomwired.Config, store record.Store, compiler *configuration.Compiler, effects *effect.Executor, views *conditionroom.Provider, scheduler *wiredruntime.RoomScheduler, furniture *furnitureeffect.Service, selections *selection.Resolver, variables *variable.Service, projectiles *projectile.Service, extensions *pluginwired.Registry) *wiredruntime.Engine {
+	return wiredruntime.New(config, store, compiler, effects, views, scheduler, furniture, extensions).
+		WithDynamicDependencies(selections, variables).
+		WithExtraExecutor(projectiles)
 }
 
 // NewCommandHandler composes WIRED editor command behavior.
