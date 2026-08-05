@@ -19,6 +19,12 @@ type Config struct {
 	// Path stores the local path or HTTP URL of the JSON translation catalog.
 	Path string `env:"PIXELS_I18N_PATH" envDefault:"i18n/translations.json"`
 
+	// OverlayPath stores an optional managed catalog path or HTTP URL.
+	OverlayPath string `env:"PIXELS_I18N_OVERLAY_PATH" envDefault:""`
+
+	// OverlayAPIKey authenticates remote managed catalog reads.
+	OverlayAPIKey string `env:"PIXELS_I18N_OVERLAY_API_KEY" envDefault:""`
+
 	// DefaultLocale stores the locale used without player preference.
 	DefaultLocale Locale `env:"PIXELS_I18N_DEFAULT_LOCALE" envDefault:"es"`
 

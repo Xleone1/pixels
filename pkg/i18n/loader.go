@@ -33,7 +33,7 @@ type document struct {
 // LoadCatalog reads the configured translation catalog.
 func LoadCatalog(config Config, log *zap.Logger) (*Catalog, error) {
 	config = config.Normalize()
-	data, missing, err := readCatalog(config.Path)
+	data, missing, err := readCatalog(config.Path, "")
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +51,29 @@ func LoadCatalog(config Config, log *zap.Logger) (*Catalog, error) {
 		return nil, fmt.Errorf("parse i18n catalog: %w", err)
 	}
 
+	if config.OverlayPath != "" {
+		overlay, overlayMissing, overlayErr := readCatalog(
+			config.OverlayPath,
+			config.OverlayAPIKey,
+		)
+		if overlayErr != nil {
+			return nil, fmt.Errorf("load i18n overlay: %w", overlayErr)
+		}
+		if !overlayMissing {
+			overlayEntries, parseErr := parseCatalog(overlay)
+			if parseErr != nil {
+				return nil, fmt.Errorf("parse i18n overlay: %w", parseErr)
+			}
+			mergeEntries(entries, overlayEntries)
+			if log != nil {
+				log.Info("i18n overlay loaded",
+					zap.String("source", catalogSourceLabel(config.OverlayPath)),
+					zap.Int("keys", countEntries(overlayEntries)),
+				)
+			}
+		}
+	}
+
 	if log != nil {
 		log.Info("i18n catalog loaded", zap.String("source", source), zap.Int("locales", len(entries)), zap.Int("keys", countEntries(entries)))
 	}
@@ -59,9 +82,9 @@ func LoadCatalog(config Config, log *zap.Logger) (*Catalog, error) {
 }
 
 // readCatalog reads a bounded local file or downloads a bounded HTTP catalog.
-func readCatalog(source string) ([]byte, bool, error) {
+func readCatalog(source string, apiKey string) ([]byte, bool, error) {
 	if isHTTPSource(source) {
-		data, err := fetchCatalog(source)
+		data, err := fetchCatalog(source, apiKey)
 		if err != nil {
 			return nil, false, err
 		}
@@ -86,12 +109,15 @@ func readCatalog(source string) ([]byte, bool, error) {
 }
 
 // fetchCatalog downloads one HTTP catalog during startup.
-func fetchCatalog(source string) ([]byte, error) {
+func fetchCatalog(source string, apiKey string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), catalogHTTPTimeout)
 	defer cancel()
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, source, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create i18n catalog request: %w", err)
+	}
+	if apiKey != "" {
+		request.Header.Set("X-API-Key", apiKey)
 	}
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
@@ -110,6 +136,18 @@ func fetchCatalog(source string) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+// mergeEntries applies the managed overlay without mutating its maps.
+func mergeEntries(base map[Locale]map[Key]string, overlay map[Locale]map[Key]string) {
+	for locale, values := range overlay {
+		if base[locale] == nil {
+			base[locale] = make(map[Key]string, len(values))
+		}
+		for key, value := range values {
+			base[locale][key] = value
+		}
+	}
 }
 
 // readBounded reads one catalog while enforcing the shared size limit.

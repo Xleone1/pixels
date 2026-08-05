@@ -42,6 +42,33 @@ func TestLoadCatalogReadsHTTP(t *testing.T) {
 	}
 }
 
+// TestLoadCatalogAppliesAuthenticatedOverlay verifies managed values replace base values.
+func TestLoadCatalogAppliesAuthenticatedOverlay(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		if request.Header.Get("X-API-Key") != "managed-secret" {
+			http.Error(response, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		_, _ = response.Write([]byte(`{"version":1,"locales":{"es":{"hello":"Editorial","catalog.image":"https://example.test/banner.png"}}}`))
+	}))
+	defer server.Close()
+	path := filepath.Join(t.TempDir(), "translations.json")
+	writeFile(t, path, `{"version":1,"locales":{"es":{"hello":"Base"}}}`)
+	catalog, err := LoadCatalog(Config{
+		Path: path, OverlayPath: server.URL, OverlayAPIKey: "managed-secret",
+		DefaultLocale: "es",
+	}, zap.NewNop())
+	if err != nil {
+		t.Fatalf("load overlay catalog: %v", err)
+	}
+	if got := catalog.Default("hello"); got != "Editorial" {
+		t.Fatalf("expected overlay value, got %q", got)
+	}
+	if got := catalog.Default("catalog.image"); got != "https://example.test/banner.png" {
+		t.Fatalf("expected overlay image URL, got %q", got)
+	}
+}
+
 // TestLoadCatalogRejectsHTTPFailure verifies remote failures stop startup.
 func TestLoadCatalogRejectsHTTPFailure(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {

@@ -92,8 +92,12 @@ Catalog pages use `catalog.page.<name>` for the navigation title and the
 optional `catalog.page.<name>.description` key for the page header copy. A
 missing description is encoded as empty text instead of exposing its internal
 key. Deployments can keep hotel-specific catalog copy outside the repository
-by pointing `PIXELS_I18N_PATH` at an external URL or a mounted file. The
-catalog is loaded once, so updates take effect after a process restart.
+by pointing `PIXELS_I18N_PATH` at an external URL or a mounted file. Centralita
+editorial content can remain independent from that base document.
+Set `PIXELS_I18N_OVERLAY_PATH` to its managed catalog route and
+`PIXELS_I18N_OVERLAY_API_KEY` to a service API key. Pixels reads both documents
+once during startup and lets managed values override matching base keys. Both
+catalogs are loaded once, so updates take effect after a process restart.
 
 ## HTTP
 
