@@ -140,7 +140,7 @@ func (handler Handler) Handle(ctx context.Context, envelope command.Envelope[Com
 		return handler.placeWall(ctx, envelope.Command, player, active, roomID, item, definition)
 	}
 
-	rotation := furnituremodel.Rotation(envelope.Command.Rotation)
+	rotation := furnituremodel.Rotation(envelope.Command.Rotation).Normalize()
 	worldItem, definition, err := roomfurniture.ResolveWorldItem(ctx, active, handler.Furniture, item, envelope.Command.X, envelope.Command.Y, rotation)
 	if err != nil {
 		return handler.handleSoftError(ctx, envelope.Command, err)
@@ -178,10 +178,10 @@ func (handler Handler) Handle(ctx context.Context, envelope command.Envelope[Com
 		if handler.Log != nil {
 			handler.Log.Debug("furniture placed",
 				zap.Int64("player_id", player.ID()), zap.Int64("item_id", placed.ID), zap.Int64("room_id", roomID),
-				zap.Int("x", envelope.Command.X), zap.Int("y", envelope.Command.Y), zap.Int("rotation", envelope.Command.Rotation),
+				zap.Int("x", envelope.Command.X), zap.Int("y", envelope.Command.Y), zap.Int("rotation", int(rotation)),
 			)
 		}
-		return handler.publish(projectionCtx, player.ID(), placed.ID, item.DefinitionID, roomID, envelope.Command.X, envelope.Command.Y, envelope.Command.Rotation)
+		return handler.publish(projectionCtx, player.ID(), placed.ID, item.DefinitionID, roomID, envelope.Command.X, envelope.Command.Y, int(rotation))
 	})
 }
 

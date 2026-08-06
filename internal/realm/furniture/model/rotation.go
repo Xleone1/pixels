@@ -26,3 +26,16 @@ func (rotation Rotation) Valid() bool {
 		return false
 	}
 }
+
+// Normalize rounds an arbitrary eight-direction rotation to the nearest supported floor value.
+// Nitro sometimes forwards a placed item's diagonal facing (odd values 1, 3, 5, or 7) instead of
+// one of the four cardinal directions floor placement accepts, most visibly for furniture whose
+// own widget drives placement (room branding anchors) rather than the standard rotate control.
+func (rotation Rotation) Normalize() Rotation {
+	value := int(rotation) % 8
+	if value < 0 {
+		value += 8
+	}
+
+	return Rotation((value + 1) / 2 * 2 % 8)
+}
