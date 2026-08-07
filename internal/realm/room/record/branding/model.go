@@ -120,6 +120,4 @@ type Mutation struct {
 	ExpectedVersion int64
 	// ActorPlayerID identifies the administrative actor.
 	ActorPlayerID int64
-	// Reason explains the mutation.
-	Reason string
 }

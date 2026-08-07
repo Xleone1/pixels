@@ -13,4 +13,5 @@
     <include file="migrations/0016_room_branding.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0017_room_wired_variables.sql" relativeToChangelogFile="true"/>
     <include file="migrations/0018_room_wired_variable_editor.sql" relativeToChangelogFile="true"/>
+    <include file="migrations/0019_room_branding_drop_audit.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

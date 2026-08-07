@@ -28,7 +28,7 @@ var (
 	ErrForbidden = errors.New("room branding action forbidden")
 )
 
-// Store persists room branding and its audit history.
+// Store persists room branding.
 type Store interface {
 	// List lists branding configurations for one room.
 	List(context.Context, int64) ([]Config, error)
@@ -37,7 +37,7 @@ type Store interface {
 	// Upsert creates or updates one configuration atomically with furniture state.
 	Upsert(context.Context, Mutation, string) (Projection, error)
 	// Disable disables one configuration atomically with furniture state.
-	Disable(context.Context, int64, int64, int64, int64, string, string) (Projection, error)
+	Disable(context.Context, int64, int64, int64, int64, string) (Projection, error)
 }
 
 // Service validates, authorizes, persists, and projects room branding.
@@ -83,7 +83,6 @@ func (service *Service) ListCompatible(ctx context.Context, roomID int64, actorP
 
 // Upsert validates and commits one branding configuration.
 func (service *Service) Upsert(ctx context.Context, mutation Mutation) (Config, error) {
-	mutation.Reason = strings.TrimSpace(mutation.Reason)
 	mutation.ImageURL = strings.TrimSpace(mutation.ImageURL)
 	mutation.ClickURL = strings.TrimSpace(mutation.ClickURL)
 	mutation.AssetRef = strings.TrimSpace(mutation.AssetRef)
@@ -100,16 +99,15 @@ func (service *Service) Upsert(ctx context.Context, mutation Mutation) (Config, 
 }
 
 // Disable disables one branding configuration.
-func (service *Service) Disable(ctx context.Context, roomID int64, brandingID int64, expectedVersion int64, actorPlayerID int64, reason string) (Config, error) {
-	reason = strings.TrimSpace(reason)
-	if roomID <= 0 || brandingID <= 0 || expectedVersion <= 0 || actorPlayerID <= 0 || reason == "" || len(reason) > 500 {
+func (service *Service) Disable(ctx context.Context, roomID int64, brandingID int64, expectedVersion int64, actorPlayerID int64) (Config, error) {
+	if roomID <= 0 || brandingID <= 0 || expectedVersion <= 0 || actorPlayerID <= 0 {
 		return Config{}, ErrInvalid
 	}
 	if err := service.authorize(ctx, actorPlayerID); err != nil {
 		return Config{}, err
 	}
 	extraData := `{"clickUrl":"","imageUrl":"","offsetX":"0","offsetY":"0","offsetZ":"0","state":"0"}`
-	projection, err := service.store.Disable(ctx, roomID, brandingID, expectedVersion, actorPlayerID, reason, extraData)
+	projection, err := service.store.Disable(ctx, roomID, brandingID, expectedVersion, actorPlayerID, extraData)
 	if err != nil {
 		return Config{}, err
 	}
@@ -119,7 +117,7 @@ func (service *Service) Disable(ctx context.Context, roomID int64, brandingID in
 
 // validate validates and authorizes a branding mutation.
 func (service *Service) validate(ctx context.Context, mutation Mutation) error {
-	if mutation.RoomID <= 0 || mutation.FurnitureItemID <= 0 || !mutation.Kind.Valid() || mutation.ActorPlayerID <= 0 || mutation.AssetRef == "" || len(mutation.AssetRef) > 255 || mutation.Reason == "" || len(mutation.Reason) > 500 || mutation.State < 0 || mutation.State > 255 {
+	if mutation.RoomID <= 0 || mutation.FurnitureItemID <= 0 || !mutation.Kind.Valid() || mutation.ActorPlayerID <= 0 || mutation.AssetRef == "" || len(mutation.AssetRef) > 255 || mutation.State < 0 || mutation.State > 255 {
 		return ErrInvalid
 	}
 	if !validOffset(mutation.OffsetX) || !validOffset(mutation.OffsetY) || !validOffset(mutation.OffsetZ) || len(mutation.ImageURL) > 2048 || len(mutation.ClickURL) > 2048 || !validPublicURL(mutation.ImageURL) {

@@ -1,9 +1,8 @@
-// Package branding persists room branding configuration and audit history.
+// Package branding persists room branding configuration.
 package branding
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -23,7 +22,6 @@ const (
 	disableSQL          = `update room_brandings set enabled=false,updated_by_player_id=$4,updated_at=now(),version=version+1 where id=$1 and room_id=$2 and version=$3 and enabled returning id,room_id,furniture_item_id,kind,asset_ref,image_url,click_url,state,offset_x,offset_y,offset_z,enabled,created_by_player_id,updated_by_player_id,created_at,updated_at,version`
 	updateItemSQL       = `update furniture_items set extra_data=$2,updated_at=now(),version=version+1 where id=$1`
 	updateDefinitionSQL = `update furniture_definitions set interaction_type=$2,updated_at=now(),version=version+1 where id=$1 and (interaction_type='room_branding' or metadata->>'branding_kind' in ('background','billboard'))`
-	auditSQL            = `insert into room_branding_audit(branding_id,room_id,furniture_item_id,actor_player_id,action,reason,before_state,after_state) values($1,$2,$3,$4,$5,$6,$7,$8)`
 )
 
 // Repository persists room branding records.
@@ -80,14 +78,12 @@ func (repository *Repository) Upsert(ctx context.Context, mutation roombranding.
 		if err != nil {
 			return err
 		}
-		before, found, err := findConfig(txCtx, executor, findByItemSQL, mutation.FurnitureItemID)
+		_, found, err := findConfig(txCtx, executor, findByItemSQL, mutation.FurnitureItemID)
 		if err != nil {
 			return err
 		}
 		var after roombranding.Config
-		action := "created"
 		if found {
-			action = "updated"
 			after, err = scanConfig(executor.QueryRow(txCtx, updateSQL, mutation.FurnitureItemID, mutation.ExpectedVersion, mutation.Kind, mutation.AssetRef, mutation.ImageURL, mutation.ClickURL, mutation.State, mutation.OffsetX, mutation.OffsetY, mutation.OffsetZ, mutation.ActorPlayerID))
 		} else if mutation.ExpectedVersion == 0 {
 			after, err = scanConfig(executor.QueryRow(txCtx, insertSQL, mutation.RoomID, mutation.FurnitureItemID, mutation.Kind, mutation.AssetRef, mutation.ImageURL, mutation.ClickURL, mutation.State, mutation.OffsetX, mutation.OffsetY, mutation.OffsetZ, mutation.ActorPlayerID))
@@ -110,9 +106,6 @@ func (repository *Repository) Upsert(ctx context.Context, mutation roombranding.
 		if _, err = executor.Exec(txCtx, updateDefinitionSQL, item.definitionID, interactionType); err != nil {
 			return fmt.Errorf("update branding furniture definition: %w", err)
 		}
-		if err = insertAudit(txCtx, executor, before, after, mutation.ActorPlayerID, action, mutation.Reason); err != nil {
-			return err
-		}
 		result = item.projection(after, extraData, interactionType)
 		return nil
 	})
@@ -120,7 +113,7 @@ func (repository *Repository) Upsert(ctx context.Context, mutation roombranding.
 }
 
 // Disable disables branding and clears projected furniture state atomically.
-func (repository *Repository) Disable(ctx context.Context, roomID int64, brandingID int64, expectedVersion int64, actorPlayerID int64, reason string, extraData string) (roombranding.Projection, error) {
+func (repository *Repository) Disable(ctx context.Context, roomID int64, brandingID int64, expectedVersion int64, actorPlayerID int64, extraData string) (roombranding.Projection, error) {
 	var result roombranding.Projection
 	err := postgres.WithinScope(ctx, repository.pool, func(txCtx context.Context) error {
 		executor := postgres.ExecutorFor(txCtx, repository.pool)
@@ -141,9 +134,6 @@ func (repository *Repository) Disable(ctx context.Context, roomID int64, brandin
 		}
 		if _, err = executor.Exec(txCtx, updateItemSQL, before.FurnitureItemID, extraData); err != nil {
 			return fmt.Errorf("clear branding furniture state: %w", err)
-		}
-		if err = insertAudit(txCtx, executor, before, after, actorPlayerID, "disabled", reason); err != nil {
-			return err
 		}
 		result = item.projection(after, extraData, item.interactionType)
 		return nil
@@ -199,17 +189,6 @@ func findConfig(ctx context.Context, executor postgres.Executor, query string, a
 func scanConfig(row pgx.Row) (value roombranding.Config, err error) {
 	err = row.Scan(&value.ID, &value.RoomID, &value.FurnitureItemID, &value.Kind, &value.AssetRef, &value.ImageURL, &value.ClickURL, &value.State, &value.OffsetX, &value.OffsetY, &value.OffsetZ, &value.Enabled, &value.CreatedByPlayerID, &value.UpdatedByPlayerID, &value.CreatedAt, &value.UpdatedAt, &value.Version)
 	return value, err
-}
-
-// insertAudit appends one complete branding state transition.
-func insertAudit(ctx context.Context, executor postgres.Executor, before roombranding.Config, after roombranding.Config, actorPlayerID int64, action string, reason string) error {
-	beforeJSON, _ := json.Marshal(before)
-	afterJSON, _ := json.Marshal(after)
-	_, err := executor.Exec(ctx, auditSQL, after.ID, after.RoomID, after.FurnitureItemID, actorPlayerID, action, reason, beforeJSON, afterJSON)
-	if err != nil {
-		return fmt.Errorf("audit room branding: %w", err)
-	}
-	return nil
 }
 
 var storeAssertion roombranding.Store = (*Repository)(nil)

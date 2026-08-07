@@ -25,8 +25,8 @@ func (checker testChecker) HasPermission(context.Context, int64, permission.Node
 type testStore struct {
 	// mutation stores the latest upsert input.
 	mutation Mutation
-	// reason stores the latest disable reason.
-	reason string
+	// disabled stores the latest disabled branding identifier.
+	disabled int64
 }
 
 // List returns no test configurations.
@@ -51,8 +51,8 @@ func (store *testStore) Upsert(_ context.Context, mutation Mutation, extraData s
 }
 
 // Disable records and returns one disabled configuration.
-func (store *testStore) Disable(_ context.Context, roomID int64, brandingID int64, _ int64, _ int64, reason string, extraData string) (Projection, error) {
-	store.reason = reason
+func (store *testStore) Disable(_ context.Context, roomID int64, brandingID int64, _ int64, _ int64, extraData string) (Projection, error) {
+	store.disabled = brandingID
 	return Projection{Config: Config{ID: brandingID, RoomID: roomID, Version: 2}, ExtraData: extraData}, nil
 }
 
@@ -67,22 +67,21 @@ func newTestService(store Store, allowed bool) *Service {
 	)
 }
 
-// TestUpsertNormalizesURLsAndAuditCopy verifies canonical persistence input.
-func TestUpsertNormalizesURLsAndAuditCopy(t *testing.T) {
+// TestUpsertNormalizesURLs verifies canonical persistence input.
+func TestUpsertNormalizesURLs(t *testing.T) {
 	store := &testStore{}
 	service := newTestService(store, true)
 	_, err := service.Upsert(context.Background(), Mutation{
 		RoomID: 4, FurnitureItemID: 8, Kind: KindBillboard,
 		ImageURL: " https://cdn.example/banner.png ", ClickURL: " https://example.com ",
-		AssetRef: " asset:9 ", ActorPlayerID: 2, Reason: " campaign launch ",
+		AssetRef: " asset:9 ", ActorPlayerID: 2,
 	})
 	if err != nil {
 		t.Fatalf("upsert: %v", err)
 	}
 	if store.mutation.ImageURL != "https://cdn.example/banner.png" ||
 		store.mutation.ClickURL != "https://example.com" ||
-		store.mutation.AssetRef != "asset:9" ||
-		store.mutation.Reason != "campaign launch" {
+		store.mutation.AssetRef != "asset:9" {
 		t.Fatalf("mutation was not normalized: %#v", store.mutation)
 	}
 }
@@ -92,7 +91,7 @@ func TestUpsertRejectsBackgroundClickAndForbiddenActor(t *testing.T) {
 	valid := Mutation{
 		RoomID: 4, FurnitureItemID: 8, Kind: KindBackground,
 		ImageURL: "https://cdn.example/banner.png", AssetRef: "asset:9",
-		ActorPlayerID: 2, Reason: "launch",
+		ActorPlayerID: 2,
 	}
 	service := newTestService(&testStore{}, true)
 	valid.ClickURL = "https://example.com"
@@ -106,18 +105,18 @@ func TestUpsertRejectsBackgroundClickAndForbiddenActor(t *testing.T) {
 	}
 }
 
-// TestDisableRequiresVersionAndNormalizesReason verifies safe disable input.
-func TestDisableRequiresVersionAndNormalizesReason(t *testing.T) {
+// TestDisableRequiresVersion verifies safe disable input.
+func TestDisableRequiresVersion(t *testing.T) {
 	store := &testStore{}
 	service := newTestService(store, true)
-	if _, err := service.Disable(context.Background(), 4, 1, 0, 2, "cleanup"); !errors.Is(err, ErrInvalid) {
+	if _, err := service.Disable(context.Background(), 4, 1, 0, 2); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("expected invalid version, got %v", err)
 	}
-	if _, err := service.Disable(context.Background(), 4, 1, 1, 2, " cleanup "); err != nil {
+	if _, err := service.Disable(context.Background(), 4, 1, 1, 2); err != nil {
 		t.Fatalf("disable: %v", err)
 	}
-	if store.reason != "cleanup" {
-		t.Fatalf("reason=%q", store.reason)
+	if store.disabled != 1 {
+		t.Fatalf("disabled=%d", store.disabled)
 	}
 }
 

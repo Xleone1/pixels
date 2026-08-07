@@ -31,8 +31,6 @@ type MutationRequest struct {
 	ExpectedVersion int64 `json:"expectedVersion"`
 	// ActorPlayerID identifies the administrative actor.
 	ActorPlayerID int64 `json:"actorPlayerId"`
-	// Reason explains the mutation.
-	Reason string `json:"reason"`
 }
 
 // DisableRequest contains one attributed branding disable operation.
@@ -41,8 +39,6 @@ type DisableRequest struct {
 	ExpectedVersion int64 `json:"expectedVersion"`
 	// ActorPlayerID identifies the administrative actor.
 	ActorPlayerID int64 `json:"actorPlayerId"`
-	// Reason explains the mutation.
-	Reason string `json:"reason"`
 }
 
 // ListResponse contains room branding configurations.
@@ -126,7 +122,7 @@ func upsertHandler(service *roombranding.Service) fiber.Handler {
 			RoomID: roomID, FurnitureItemID: itemID, Kind: request.Kind,
 			AssetRef: request.AssetRef, ImageURL: request.ImageURL, ClickURL: request.ClickURL,
 			State: request.State, OffsetX: request.OffsetX, OffsetY: request.OffsetY, OffsetZ: request.OffsetZ,
-			ExpectedVersion: request.ExpectedVersion, ActorPlayerID: request.ActorPlayerID, Reason: request.Reason,
+			ExpectedVersion: request.ExpectedVersion, ActorPlayerID: request.ActorPlayerID,
 		})
 		if err != nil {
 			return mapError(err)
@@ -150,7 +146,7 @@ func disableHandler(service *roombranding.Service) fiber.Handler {
 		if err = ctx.BodyParser(&request); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, "invalid room branding disable request")
 		}
-		config, err := service.Disable(ctx.Context(), roomID, brandingID, request.ExpectedVersion, request.ActorPlayerID, request.Reason)
+		config, err := service.Disable(ctx.Context(), roomID, brandingID, request.ExpectedVersion, request.ActorPlayerID)
 		if err != nil {
 			return mapError(err)
 		}
