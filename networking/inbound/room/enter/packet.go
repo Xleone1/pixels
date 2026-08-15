@@ -21,6 +21,8 @@ type Payload struct {
 var Definition = codec.Definition{
 	codec.Named("flatId", codec.Int32Field),
 	codec.Named("password", codec.StringField),
+	codec.Optional(codec.Named("spawnX", codec.Int32Field)),
+	codec.Optional(codec.Named("spawnY", codec.Int32Field)),
 }
 
 // Decode unpacks a ROOM_ENTER packet payload.
