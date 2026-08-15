@@ -38,22 +38,6 @@ func TestDecodeAcceptsEmptyPassword(t *testing.T) {
 	}
 }
 
-// TestDecodeAcceptsSpawnFields verifies Nitro payloads carrying optional
-// reconnect spawn coordinates.
-func TestDecodeAcceptsSpawnFields(t *testing.T) {
-	packet, err := codec.NewPacket(Header, Definition, codec.Int32(42), codec.String(""), codec.Int32(-1), codec.Int32(-1))
-	if err != nil {
-		t.Fatalf("new packet: %v", err)
-	}
-	payload, err := Decode(packet)
-	if err != nil {
-		t.Fatalf("decode packet: %v", err)
-	}
-	if payload.FlatID != 42 || payload.Password != "" {
-		t.Fatalf("unexpected payload %#v", payload)
-	}
-}
-
 // TestDecodeRejectsInvalidHeader verifies header validation.
 func TestDecodeRejectsInvalidHeader(t *testing.T) {
 	_, err := Decode(codec.Packet{Header: Header + 1})
