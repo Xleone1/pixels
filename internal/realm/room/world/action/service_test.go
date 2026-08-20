@@ -56,12 +56,44 @@ func TestServiceCoordinatesAvatarState(t *testing.T) {
 	if hasStatus(unit, worldunit.StatusDance) || !hasStatus(unit, worldunit.StatusSit) {
 		t.Fatalf("unexpected sitting unit %#v", unit)
 	}
+	if err := service.Sign(context.Background(), active, 7, 5); err != nil {
+		t.Fatal(err)
+	}
 	if err := service.Sign(context.Background(), active, 7, 18); err != nil {
 		t.Fatal(err)
 	}
 	unit, _ = active.Unit(7)
 	if hasStatus(unit, worldunit.StatusSign) || unit.Idle {
 		t.Fatalf("expected transient resumed sign %#v", unit)
+	}
+	if err := service.SetIdle(context.Background(), active, 7, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.SetIdle(context.Background(), active, 7, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.Express(context.Background(), active, 7, 2); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.SetIdle(context.Background(), active, 7, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.Sign(context.Background(), active, 7, 5); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.SetIdle(context.Background(), active, 7, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.Posture(context.Background(), active, 7, false); err != nil {
+		t.Fatal(err)
+	}
+	for _, expr := range []int32{1, 3, 6, 7, 99} {
+		if err := service.Express(context.Background(), active, 7, expr); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := service.SetIdle(context.Background(), active, 7, false); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -87,6 +119,15 @@ func TestServiceProjectsActionCancellation(t *testing.T) {
 	if !containsActionValue(t, *packets, outexpression.Header, outexpression.Definition, 0) {
 		t.Fatalf("expected expression cancellation packets %#v", *packets)
 	}
+	if err := service.Sign(context.Background(), active, 7, 1); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.Posture(context.Background(), active, 7, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.SetIdle(context.Background(), active, 7, true); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // TestServiceMissingUnitReturnsStableErrors verifies stale room commands are harmless.
@@ -98,6 +139,12 @@ func TestServiceMissingUnitReturnsStableErrors(t *testing.T) {
 	}
 	if err := service.Express(context.Background(), active, 99, 1); err != roomlive.ErrUnitNotFound {
 		t.Fatalf("expected missing expression unit, got %v", err)
+	}
+	if err := service.Sign(context.Background(), active, 99, 1); err != roomlive.ErrUnitNotFound {
+		t.Fatalf("expected missing sign unit, got %v", err)
+	}
+	if err := service.Posture(context.Background(), active, 99, true); err != roomlive.ErrUnitNotFound {
+		t.Fatalf("expected missing posture unit, got %v", err)
 	}
 	if err := service.SetIdle(context.Background(), active, 99, true); err != roomlive.ErrUnitNotFound {
 		t.Fatalf("expected missing idle unit, got %v", err)
@@ -115,6 +162,11 @@ func TestServiceAppliesTransitionDelay(t *testing.T) {
 	}
 	if elapsed := time.Since(started); elapsed < delay {
 		t.Fatalf("expected at least %s transition delay, got %s", delay, elapsed)
+	}
+	cancelled, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := service.Dance(cancelled, active, 7, 3); err == nil {
+		t.Fatal("expected context error on cancelled transition")
 	}
 }
 

@@ -15,7 +15,6 @@ func (unit *Unit) SetPath(roomPath path.Path) {
 	unit.settling = false
 	unit.statuses.clear(StatusSit)
 	unit.statuses.clear(StatusLay)
-	unit.statuses.clear(StatusDance)
 	if unit.hasGoal {
 		unit.goal = steps[len(steps)-1].Position
 		unit.setMoveStatus(steps[0].Position)
@@ -56,6 +55,9 @@ func (unit *Unit) ValidatePath(world path.World) error {
 // Settle finalizes a unit's landed status and rotation, replacing any pending movement status.
 func (unit *Unit) Settle(status string, value string, body Rotation, head Rotation) {
 	unit.statuses.clear(StatusMove)
+	if status == StatusSit || status == StatusLay {
+		unit.statuses.clear(StatusDance)
+	}
 	unit.statuses.set(status, value)
 	unit.body = body
 	unit.head = head

@@ -18,7 +18,7 @@ func TestPostureMovementAndIdleClearTransientState(t *testing.T) {
 	}
 	roomUnit.SetStatus(StatusDance, "2")
 	roomUnit.SetPath(path.NewPath([]path.Step{{Position: path.Position{Point: grid.MustPoint(2, 1)}}}))
-	if roomUnit.HasStatus(StatusDance) || roomUnit.HasStatus(StatusSit) {
+	if !roomUnit.HasStatus(StatusDance) || roomUnit.HasStatus(StatusSit) {
 		t.Fatalf("unexpected movement statuses %#v", roomUnit.Statuses())
 	}
 	now := time.Unix(100, 0)
@@ -43,6 +43,58 @@ func TestUnitAdvanceWithoutPathReportsMissingStep(t *testing.T) {
 	_, moved, settled := roomUnit.Advance()
 	if moved || settled {
 		t.Fatal("expected missing step")
+	}
+}
+
+// TestUnitControlAndPostureHelpers verifies unit posture, control, effect, and item helpers.
+func TestUnitControlAndPostureHelpers(t *testing.T) {
+	roomUnit := unitForTest(t)
+	if roomUnit.StopMovement() {
+		t.Fatal("expected no movement to stop")
+	}
+	roomUnit.SetPath(path.NewPath([]path.Step{{Position: positionForTest(2, 1, 0)}}))
+	if !roomUnit.StopMovement() {
+		t.Fatal("expected active movement to stop")
+	}
+	roomUnit.SetControl(ControlExitingRoom)
+	if roomUnit.Control() != ControlExitingRoom || !roomUnit.Exiting() {
+		t.Fatalf("unexpected control %v", roomUnit.Control())
+	}
+	roomUnit.MarkExiting()
+	if !roomUnit.Exiting() {
+		t.Fatal("expected exiting")
+	}
+	roomUnit.Reposition(positionForTest(3, 3, 0), RotationNorth)
+	if roomUnit.Position() != positionForTest(3, 3, 0) || roomUnit.BodyRotation() != RotationNorth {
+		t.Fatalf("unexpected repositioned unit %#v", roomUnit)
+	}
+	roomUnit.SetFloorPosture(true)
+	if !roomUnit.Settled() {
+		t.Fatal("expected settled unit")
+	}
+	roomUnit.StandUp()
+	if roomUnit.Settled() {
+		t.Fatal("expected stood up unit")
+	}
+	roomUnit.SetFloorPosture(false)
+	if roomUnit.Settled() {
+		t.Fatal("expected unset posture")
+	}
+	roomUnit.SetIdle(true)
+	if !roomUnit.Idle() {
+		t.Fatal("expected idle")
+	}
+	roomUnit.SetHandItem(5)
+	if roomUnit.HandItem() != 5 {
+		t.Fatalf("expected hand item 5, got %d", roomUnit.HandItem())
+	}
+	roomUnit.SetActiveEffect(10)
+	if roomUnit.ActiveEffect() != 10 {
+		t.Fatalf("expected effect 10, got %d", roomUnit.ActiveEffect())
+	}
+	roomUnit.SetRenderOffset(2)
+	if roomUnit.RenderOffset() != 2 {
+		t.Fatalf("expected offset 2, got %v", roomUnit.RenderOffset())
 	}
 }
 
