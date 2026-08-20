@@ -95,6 +95,7 @@ func TestUnitSetPathClearsSitAndLay(t *testing.T) {
 // TestUnitSettleAppliesStatusAndForcedRotation verifies landed seat/lay state.
 func TestUnitSettleAppliesStatusAndForcedRotation(t *testing.T) {
 	roomUnit := unitForTest(t)
+	roomUnit.SetStatus(StatusDance, "3")
 	roomUnit.SetPath(path.NewPath([]path.Step{{Position: positionForTest(2, 1, 0)}}))
 	roomUnit.Advance()
 
@@ -102,6 +103,7 @@ func TestUnitSettleAppliesStatusAndForcedRotation(t *testing.T) {
 
 	assertStatus(t, roomUnit, StatusSit, "4")
 	assertNoStatus(t, roomUnit, StatusMove)
+	assertNoStatus(t, roomUnit, StatusDance)
 	if roomUnit.BodyRotation() != RotationNorth || roomUnit.HeadRotation() != RotationWest {
 		t.Fatalf("expected forced rotation body=%d head=%d", roomUnit.BodyRotation(), roomUnit.HeadRotation())
 	}

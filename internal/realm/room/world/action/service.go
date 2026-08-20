@@ -205,14 +205,5 @@ func (service *Service) ResumeForMovement(ctx context.Context, room *roomlive.Ro
 			return err
 		}
 	}
-	if hasStatus(previous, worldunit.StatusDance) {
-		packet, err := outedance.Encode(previous.UnitID, 0)
-		if err != nil {
-			return err
-		}
-		if err = broadcast.RoomPacket(ctx, service.connections, room, packet, 0); err != nil {
-			return err
-		}
-	}
 	return service.cancelExpression(ctx, room, previous.UnitID)
 }

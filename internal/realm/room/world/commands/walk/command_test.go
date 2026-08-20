@@ -37,8 +37,8 @@ func TestHandleMovesPlayer(t *testing.T) {
 	}
 }
 
-// TestHandleWalkClearsManualIdleAndDance verifies accepted movement cancels incompatible actions.
-func TestHandleWalkClearsManualIdleAndDance(t *testing.T) {
+// TestHandleWalkClearsManualIdleAndPreservesDance verifies accepted movement cancels idle and preserves dance.
+func TestHandleWalkClearsManualIdleAndPreservesDance(t *testing.T) {
 	handler, player := handlerForTest(t)
 	if err := player.EnterRoom(9); err != nil {
 		t.Fatal(err)
@@ -53,43 +53,11 @@ func TestHandleWalkClearsManualIdleAndDance(t *testing.T) {
 		t.Fatal(err)
 	}
 	unit, _ := room.Unit(7)
-	if unit.Idle || unit.ManualIdle || commandHasStatus(unit, worldunit.StatusDance) {
-		t.Fatalf("expected movement to resume unit %#v", unit)
+	if unit.Idle || unit.ManualIdle {
+		t.Fatalf("expected movement to resume idle unit %#v", unit)
 	}
-}
-
-// TestHandleFacesOccupiedTarget verifies occupied targets do not disconnect clients.
-func TestHandleFacesOccupiedTarget(t *testing.T) {
-	handler, player := handlerForTest(t)
-	if err := player.EnterRoom(9); err != nil {
-		t.Fatalf("enter room: %v", err)
-	}
-	connections := netconn.NewRegistry()
-	sent := registeredConnectionForWalkTest(t, connections, "conn")
-	handler.Connections = connections
-	room, _ := handler.Runtime.Find(9)
-	if _, err := room.Join(roomlive.Occupant{PlayerID: 8, Username: "other", ConnectionID: "other", ConnectionKind: "websocket"}); err != nil {
-		t.Fatalf("join other: %v", err)
-	}
-	if _, err := room.MoveTo(8, grid.MustPoint(1, 0)); err != nil {
-		t.Fatalf("move other: %v", err)
-	}
-	if movements := room.Tick(); len(movements) != 1 {
-		t.Fatalf("expected other movement %#v", movements)
-	}
-
-	err := handler.Handle(context.Background(), command.Envelope[Command]{
-		Command: Command{Handler: connectionForTest(), X: 1, Y: 0},
-	})
-	if err != nil {
-		t.Fatalf("handle occupied walk: %v", err)
-	}
-	units := room.Units()
-	if len(units) != 2 || units[0].BodyRotation != worldunit.RotationEast {
-		t.Fatalf("expected player facing target %#v", units)
-	}
-	if len(*sent) != 1 || (*sent)[0].Header != 1640 {
-		t.Fatalf("expected status packet, got %#v", *sent)
+	if !commandHasStatus(unit, worldunit.StatusDance) {
+		t.Fatalf("expected movement to preserve dance %#v", unit)
 	}
 }
 

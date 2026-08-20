@@ -115,10 +115,12 @@ func TestConfigDefaultsAndEnvironment(t *testing.T) {
 
 // TestSchedulerLifecycle verifies loop startup and idempotent shutdown.
 func TestSchedulerLifecycle(t *testing.T) {
-	scheduler := NewScheduler(Config{SweepInterval: time.Millisecond}, roomlive.NewRegistry(nil), netconn.NewRegistry(), New(Config{TransitionDelay: time.Nanosecond}, nil, nil), zap.NewNop())
+	scheduler := NewScheduler(Config{SweepInterval: 5 * time.Millisecond}, roomlive.NewRegistry(nil), netconn.NewRegistry(), New(Config{TransitionDelay: time.Nanosecond}, nil, nil), zap.NewNop())
 	lifecycle := fxtest.NewLifecycle(t)
 	RegisterScheduler(lifecycle, scheduler)
-	lifecycle.RequireStart().RequireStop()
+	lifecycle.RequireStart()
+	time.Sleep(15 * time.Millisecond)
+	lifecycle.RequireStop()
 }
 
 // BenchmarkIdleState measures the per-presence scheduler decision.
