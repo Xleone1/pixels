@@ -6,9 +6,32 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    name: Test
+  lint:
+    name: Format and Vet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: true
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Vet
+        run: go vet ./...
+
+  migrations:
+    name: Database migrations
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -28,28 +51,59 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26.x'
-          cache: true
-
-      - name: Check formatting
-        run: test -z "$(gofmt -l .)"
-
-      - name: Vet
-        run: go vet ./...
-
       - name: Validate database migrations
         run: docker run --rm --network host -v "$PWD:/workspace" -w /workspace liquibase/liquibase:4.31 --defaults-file=database/liquibase.ci.properties validate
 
       - name: Apply database migrations
         run: docker run --rm --network host -v "$PWD:/workspace" -w /workspace liquibase/liquibase:4.31 --defaults-file=database/liquibase.ci.properties update
 
+  test:
+    name: Test shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: true
+
       - name: Test
         run: |
-          set -o pipefail
-          go test -race -covermode=atomic -coverprofile=coverage.out ./... | tee coverage.log
+          set -euo pipefail
+          mapfile -t pkgs < <(go list ./... | awk -v n=4 -v s=${{ matrix.shard }} 'NR % n == s')
+          mkdir -p covdata
+          go test -race -count=1 -covermode=atomic -cover "${pkgs[@]}" -args -test.gocoverdir="$PWD/covdata"
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: covdata-${{ matrix.shard }}
+          path: covdata
+          retention-days: 1
+
+  coverage:
+    name: Check coverage
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: true
+
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: covdata-*
+          path: shards
 
       - name: Check coverage
         # The repository predates a usable coverage gate and currently measures
@@ -58,6 +112,10 @@ jobs:
         env:
           COVERAGE_BASELINE: "49.5"
         run: |
+          set -euo pipefail
+          dirs="$(ls -d shards/covdata-* | paste -sd,)"
+          go tool covdata merge "-i=$dirs" -o=covdata-merged
+          go tool covdata textfmt -i=covdata-merged -o=coverage.out
           coverage="$(go tool cover -func=coverage.out | awk '/^total:/ {print substr($3, 1, length($3)-1)}')"
           echo "Total coverage: ${coverage}% (ratchet baseline: ${COVERAGE_BASELINE}%)"
           awk -v coverage="$coverage" -v baseline="$COVERAGE_BASELINE" 'BEGIN { exit !(coverage >= baseline) }'
