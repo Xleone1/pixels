@@ -114,6 +114,7 @@ jobs:
         run: |
           set -euo pipefail
           dirs="$(ls -d shards/covdata-* | paste -sd,)"
+          mkdir -p covdata-merged
           go tool covdata merge "-i=$dirs" -o=covdata-merged
           go tool covdata textfmt -i=covdata-merged -o=coverage.out
           coverage="$(go tool cover -func=coverage.out | awk '/^total:/ {print substr($3, 1, length($3)-1)}')"
